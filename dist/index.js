@@ -1,4 +1,4 @@
-define("@validapp/sc-core", (require, exports)=>{
+define("@scom/sc-core", (require, exports)=>{
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
