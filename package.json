@@ -1,5 +1,5 @@
 {
-  "name": "@validapp/sc-core",
+  "name": "@scom/sc-core",
   "version": "0.1.1",
   "description": "",
   "main": "lib/index.js",
