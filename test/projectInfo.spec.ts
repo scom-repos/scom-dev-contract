@@ -1,13 +1,19 @@
 import 'mocha';
 
 import {Utils, Wallet, Erc20, BigNumber} from "@ijstech/eth-wallet";
-import {AuditorInfo, ProjectInfo, Scom} from '../src/contracts';
+import {AuditorInfo, ProjectInfo, Scom} from '../src/contracts/index';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 
-suite('##Contracts', function() {  
+describe('##Contracts', function() {  
     this.timeout(40000);
-    let provider = Ganache.provider();        
+    let provider = Ganache.provider({
+        logging: {
+            logger: {
+                log: () => { }
+            }
+        }
+    });        
     let wallet = new Wallet(provider);
     let token: Scom;   
     let auditorInfo: AuditorInfo;
@@ -50,10 +56,10 @@ suite('##Contracts', function() {
         return projectVersions;
     }
 
-    setup(async function(){
+    before(async function(){
         accounts = await wallet.accounts;
     })
-    test('Deploy contracts', async function(){
+    it('Deploy contracts', async function(){
         wallet.defaultAccount = accounts[0]; 
         token = new Scom(wallet);  
         await token.deploy({
@@ -76,16 +82,15 @@ suite('##Contracts', function() {
             auditorInfo: auditorInfo.address,
             token: token.address
         });
-        console.log('projectInfo', projectInfo.address)     
     })    
-    test('Create a new project and a project version', async function() {    
+    it('Create a new project and a project version', async function() {    
         let newProjectEvent = await createNewProject('bay1');
         // let newProjectVersionEvent = await createNewVersion(newProjectEvent.projectId.toNumber(), 'bay1');
         let projectVersionList = await getProjectVersionsByProjectId(newProjectEvent.projectId.toNumber());
         assert.strictEqual(projectVersionList.length, 1); 
         projectVersionMap[0] = projectVersionList;
     })
-    test('Add project admin and remove project admin', async function() {    
+    it('Add project admin and remove project admin', async function() {    
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.addProjectAdmin({
             projectId: 0,
@@ -101,7 +106,7 @@ suite('##Contracts', function() {
             admin: accounts[1]
         });
     })    
-    test('Create 2 more projects and a project version for each', async function() {    
+    it('Create 2 more projects and a project version for each', async function() {    
         let newProject2Event = await createNewProject('bay2');
         // let newProject2VersionEvent = await createNewVersion(newProject2Event.projectId.toNumber(), 'bay2');
         projectVersionMap[1] = await getProjectVersionsByProjectId(newProject2Event.projectId.toNumber());
@@ -109,13 +114,13 @@ suite('##Contracts', function() {
         // let newProject3VersionEvent = await createNewVersion(newProject3Event.projectId.toNumber(), 'bay3');
         projectVersionMap[2] = await getProjectVersionsByProjectId(newProject3Event.projectId.toNumber());
     })
-    test('Add more versions to Project Id 0', async function() { 
+    it('Add more versions to Project Id 0', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await createNewVersion(0, 'bay4');
         await createNewVersion(0, 'bay5');
         projectVersionMap[0] = await getProjectVersionsByProjectId(0);       
     })
-    test('Create a new package', async function() { 
+    it('Create a new package', async function() { 
         wallet.defaultAccount = accounts[0]; 
         let newPackageReceipt = await projectInfo.newPackage({
             projectId: 0,
@@ -138,10 +143,9 @@ suite('##Contracts', function() {
                 param2: i          
             })
             let packageInfo = await projectInfo.packages(packageId);
-            console.log('packageInfo', packageInfo);
         }
     })
-    test('Bump package patch version', async function() { 
+    it('Bump package patch version', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.newPackageVersion({
             projectId: 0,
@@ -154,7 +158,7 @@ suite('##Contracts', function() {
             ipfsCid: 'baad1'
         })
     })   
-    test('Bump package minor version', async function() { 
+    it('Bump package minor version', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.newPackageVersion({
             projectId: 0,
@@ -167,7 +171,7 @@ suite('##Contracts', function() {
             ipfsCid: 'baad1'
         })
     }) 
-    test('Bump package major version', async function() { 
+    it('Bump package major version', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.newPackageVersion({
             projectId: 0,
@@ -180,11 +184,11 @@ suite('##Contracts', function() {
             ipfsCid: 'baad1'
         })
     })            
-    test('Add auditor', async function() {
+    it('Add auditor', async function() {
         wallet.defaultAccount = accounts[0]; 
         await auditorInfo.addAuditor(accounts[0]);
     })
-    test('Set package status to AUDIT_PASSED', async function() { 
+    it('Set package status to AUDIT_PASSED', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.setPackageVersionToAuditPassed({
             packageVersionId: 0,
@@ -193,7 +197,7 @@ suite('##Contracts', function() {
         let packageVersion = await projectInfo.packageVersions(0);
         assert.strictEqual(packageVersion.reportUri, 'ber2342');
     })
-    test('Stake to Project Id 0', async function() { 
+    it('Stake to Project Id 0', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await token.approve({
             spender: projectInfo.address,
@@ -211,7 +215,7 @@ suite('##Contracts', function() {
         assert.strictEqual(backerBalance.toFixed(), Utils.toDecimals(100).toFixed());
         assert.strictEqual(projectBalance.toFixed(), Utils.toDecimals(100).toFixed());
     })
-    test('Account 0: Unstake from Project Id 0', async function() { 
+    it('Account 0: Unstake from Project Id 0', async function() { 
         wallet.defaultAccount = accounts[0]; 
         await projectInfo.unstake({
             projectId: 0,
@@ -225,7 +229,7 @@ suite('##Contracts', function() {
         assert.strictEqual(backerBalance.toFixed(), Utils.toDecimals(1).toFixed());
         assert.strictEqual(projectBalance.toFixed(), Utils.toDecimals(1).toFixed());
     })
-    test('Account 1: Stake to Project Id 0', async function() { 
+    it('Account 1: Stake to Project Id 0', async function() { 
         wallet.defaultAccount = accounts[1]; 
         await token.approve({
             spender: projectInfo.address,

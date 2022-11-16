@@ -6,25 +6,27 @@
   "types": "types/index.d.ts",
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "npm run build:contracts && npm run build:lib",
-    "build:contracts": "rm -rf src/contracts && rm -rf types/contracts && sol2ts contracts.json",
-    "build:lib": "rm -rf lib/contracts && tsc && node esbuild.bundle",
+    "build": "rm -rf lib && rm -rf dist && rm -rf types && npm run build:contracts && npm run build:lib && npx @ijstech/compiler",
+    "build:contracts": "rm -rf src/contracts && sol2ts solconfig.json",
+    "build:lib": "tsc",
     "test": "mocha --exit --require ts-node/register test/*.spec.ts",
     "test:domainInfo": "mocha -exit --require ts-node/register test/domainInfo.test.ts",
     "test:projectInfo": "mocha --ui tdd --exit --require ts-node/register test/projectInfo.test.ts",
     "deploy": "ts-node tools/deploy.ts",
     "setup": "ts-node tools/setup.ts"
   },
+  "dependencies": {
+    "@ijstech/eth-contract": "^0.1.4"
+  },
   "devDependencies": {
-    "@types/mocha": "9.1.1",
+    "@ijstech/compiler": "^0.1.15",
+    "@ijstech/eth-wallet": "^0.1.25",
     "@openzeppelin/contracts": "4.7.3",
-    "@ijstech/eth-contract": "https://github.com/ijstech/eth-contract",
-    "@ijstech/eth-wallet": "0.1.16",
-    "@types/node": "14.17",
-    "esbuild": "0.13.13",
-    "ganache": "7.2.0",
-    "mocha": "9.2.0",
-    "ts-node": "10.1.0",
-    "typescript": "4.2.4"
+    "@types/mocha": "9.1.1",
+    "@types/node": "18.8.4",
+    "ganache": "7.5.0",
+    "mocha": "10.0.0",
+    "ts-node": "10.9.1",
+    "typescript":"4.8.4"
   }
 }

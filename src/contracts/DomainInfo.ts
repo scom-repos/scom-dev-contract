@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./DomainInfo.json";
 
 export interface IAllowancesParams {param1:string;param2:string;param3:string}
@@ -265,7 +265,7 @@ export class DomainInfo extends Contract{
             return result;
         }
         this.token = token_call
-        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,params.domainName,Utils.toString(params.subtractedValue)];
+        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,params.domainName,this.wallet.utils.toString(params.subtractedValue)];
         let decreaseAllowance_send = async (params: IDecreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('decreaseAllowance',decreaseAllowanceParams(params));
             return result;
@@ -288,7 +288,7 @@ export class DomainInfo extends Contract{
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
-        let depositParams = (params: IDepositParams) => [params.domainName,Utils.toString(params.amount)];
+        let depositParams = (params: IDepositParams) => [params.domainName,this.wallet.utils.toString(params.amount)];
         let deposit_send = async (params: IDepositParams): Promise<TransactionReceipt> => {
             let result = await this.send('deposit',depositParams(params));
             return result;
@@ -300,7 +300,7 @@ export class DomainInfo extends Contract{
         this.deposit = Object.assign(deposit_send, {
             call:deposit_call
         });
-        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,params.domainName,Utils.toString(params.addedValue)];
+        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,params.domainName,this.wallet.utils.toString(params.addedValue)];
         let increaseAllowance_send = async (params: IIncreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('increaseAllowance',increaseAllowanceParams(params));
             return result;
@@ -323,7 +323,7 @@ export class DomainInfo extends Contract{
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let spendParams = (params: ISpendParams) => [params.owner,params.domainName,params.destination,Utils.toString(params.amount)];
+        let spendParams = (params: ISpendParams) => [params.owner,params.domainName,params.destination,this.wallet.utils.toString(params.amount)];
         let spend_send = async (params: ISpendParams): Promise<TransactionReceipt> => {
             let result = await this.send('spend',spendParams(params));
             return result;
@@ -357,7 +357,7 @@ export class DomainInfo extends Contract{
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
-        let updateDomainInfoParams = (params: IUpdateDomainInfoParams) => [params.domainName,Utils.toString(params.moduleType),params.module];
+        let updateDomainInfoParams = (params: IUpdateDomainInfoParams) => [params.domainName,this.wallet.utils.toString(params.moduleType),params.module];
         let updateDomainInfo_send = async (params: IUpdateDomainInfoParams): Promise<TransactionReceipt> => {
             let result = await this.send('updateDomainInfo',updateDomainInfoParams(params));
             return result;
@@ -381,7 +381,7 @@ export class DomainInfo extends Contract{
         this.updateDomainModule = Object.assign(updateDomainModule_send, {
             call:updateDomainModule_call
         });
-        let withdrawParams = (params: IWithdrawParams) => [params.domainName,Utils.toString(params.amount)];
+        let withdrawParams = (params: IWithdrawParams) => [params.domainName,this.wallet.utils.toString(params.amount)];
         let withdraw_send = async (params: IWithdrawParams): Promise<TransactionReceipt> => {
             let result = await this.send('withdraw',withdrawParams(params));
             return result;

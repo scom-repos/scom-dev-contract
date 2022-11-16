@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./Scom.json";
 
 export interface IDeployParams {minter:string;initSupplyTo:string;initSupply:number|BigNumber;totalSupply:number|BigNumber}
@@ -15,7 +15,7 @@ export class Scom extends Contract{
         this.assign()
     }
     deploy(params: IDeployParams): Promise<string>{
-        return this.__deploy([params.minter,params.initSupplyTo,Utils.toString(params.initSupply),Utils.toString(params.totalSupply)]);
+        return this.__deploy([params.minter,params.initSupplyTo,this.wallet.utils.toString(params.initSupply),this.wallet.utils.toString(params.totalSupply)]);
     }
     parseApprovalEvent(receipt: TransactionReceipt): Scom.ApprovalEvent[]{
         return this.parseEvents(receipt, "Approval").map(e=>this.decodeApprovalEvent(e));
@@ -131,7 +131,7 @@ export class Scom extends Contract{
             return new BigNumber(result);
         }
         this.totalSupply = totalSupply_call
-        let approveParams = (params: IApproveParams) => [params.spender,Utils.toString(params.amount)];
+        let approveParams = (params: IApproveParams) => [params.spender,this.wallet.utils.toString(params.amount)];
         let approve_send = async (params: IApproveParams): Promise<TransactionReceipt> => {
             let result = await this.send('approve',approveParams(params));
             return result;
@@ -143,7 +143,7 @@ export class Scom extends Contract{
         this.approve = Object.assign(approve_send, {
             call:approve_call
         });
-        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,Utils.toString(params.subtractedValue)];
+        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,this.wallet.utils.toString(params.subtractedValue)];
         let decreaseAllowance_send = async (params: IDecreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('decreaseAllowance',decreaseAllowanceParams(params));
             return result;
@@ -155,7 +155,7 @@ export class Scom extends Contract{
         this.decreaseAllowance = Object.assign(decreaseAllowance_send, {
             call:decreaseAllowance_call
         });
-        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,Utils.toString(params.addedValue)];
+        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,this.wallet.utils.toString(params.addedValue)];
         let increaseAllowance_send = async (params: IIncreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('increaseAllowance',increaseAllowanceParams(params));
             return result;
@@ -167,7 +167,7 @@ export class Scom extends Contract{
         this.increaseAllowance = Object.assign(increaseAllowance_send, {
             call:increaseAllowance_call
         });
-        let mintParams = (params: IMintParams) => [params.account,Utils.toString(params.amount)];
+        let mintParams = (params: IMintParams) => [params.account,this.wallet.utils.toString(params.amount)];
         let mint_send = async (params: IMintParams): Promise<TransactionReceipt> => {
             let result = await this.send('mint',mintParams(params));
             return result;
@@ -179,7 +179,7 @@ export class Scom extends Contract{
         this.mint = Object.assign(mint_send, {
             call:mint_call
         });
-        let transferParams = (params: ITransferParams) => [params.to,Utils.toString(params.amount)];
+        let transferParams = (params: ITransferParams) => [params.to,this.wallet.utils.toString(params.amount)];
         let transfer_send = async (params: ITransferParams): Promise<TransactionReceipt> => {
             let result = await this.send('transfer',transferParams(params));
             return result;
@@ -191,7 +191,7 @@ export class Scom extends Contract{
         this.transfer = Object.assign(transfer_send, {
             call:transfer_call
         });
-        let transferFromParams = (params: ITransferFromParams) => [params.from,params.to,Utils.toString(params.amount)];
+        let transferFromParams = (params: ITransferFromParams) => [params.from,params.to,this.wallet.utils.toString(params.amount)];
         let transferFrom_send = async (params: ITransferFromParams): Promise<TransactionReceipt> => {
             let result = await this.send('transferFrom',transferFromParams(params));
             return result;

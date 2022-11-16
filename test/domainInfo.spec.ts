@@ -1,9 +1,9 @@
 import 'mocha';
 import {Contract, Utils, Wallet} from "@ijstech/eth-wallet";
-import {Contracts} from '..';
+import {Contracts} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
-const Config = require('./config');
+// const Config = require('./config');
 
 // describe('##Kovan Contract Deploy', async function(){    
 //     this.timeout(20000);
@@ -21,7 +21,13 @@ const Config = require('./config');
 describe('##Domain Registry', async function() {
     this.timeout(20000);
     let accounts: string[];
-    let provider = Ganache.provider();
+    let provider = Ganache.provider({
+        logging: {
+            logger: {
+                log: () => { }
+            }
+        }
+    });
     let contract: Contracts.DomainInfo;
     let token: Contracts.Scom;   
     

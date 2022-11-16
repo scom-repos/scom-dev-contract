@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./ModuleInfo.json";
 
 export interface IAddReleaseParams {packageHash:string;version:string;uri:string;pulishRelease:boolean}
@@ -127,7 +127,7 @@ export class ModuleInfo extends Contract{
         }
         this.getAllOwnerPackagesAndHash = getAllOwnerPackagesAndHash_call
         let getAllpackageReleases_call = async (packageHash:string): Promise<{version:string,uri:string}[]> => {
-            let result = await this.call('getAllpackageReleases',[Utils.stringToBytes32(packageHash)]);
+            let result = await this.call('getAllpackageReleases',[this.wallet.utils.stringToBytes32(packageHash)]);
             return (result.map(e=>(
                 {
                     version: e.version,
@@ -136,13 +136,13 @@ export class ModuleInfo extends Contract{
             )));
         }
         this.getAllpackageReleases = getAllpackageReleases_call
-        let getBatchOwnerPackagesParams = (params: IGetBatchOwnerPackagesParams) => [params.owner,Utils.toString(params.from),Utils.toString(params.length)];
+        let getBatchOwnerPackagesParams = (params: IGetBatchOwnerPackagesParams) => [params.owner,this.wallet.utils.toString(params.from),this.wallet.utils.toString(params.length)];
         let getBatchOwnerPackages_call = async (params: IGetBatchOwnerPackagesParams): Promise<string[]> => {
             let result = await this.call('getBatchOwnerPackages',getBatchOwnerPackagesParams(params));
             return result;
         }
         this.getBatchOwnerPackages = getBatchOwnerPackages_call
-        let getBatchOwnerPackagesAndHashParams = (params: IGetBatchOwnerPackagesAndHashParams) => [params.owner,Utils.toString(params.from),Utils.toString(params.length)];
+        let getBatchOwnerPackagesAndHashParams = (params: IGetBatchOwnerPackagesAndHashParams) => [params.owner,this.wallet.utils.toString(params.from),this.wallet.utils.toString(params.length)];
         let getBatchOwnerPackagesAndHash_call = async (params: IGetBatchOwnerPackagesAndHashParams): Promise<{packageNames:string[],packageHashes:string[],packages:{owner:string,currVersion:string,currVersionHash:string}[]}> => {
             let result = await this.call('getBatchOwnerPackagesAndHash',getBatchOwnerPackagesAndHashParams(params));
             return {
@@ -158,7 +158,7 @@ export class ModuleInfo extends Contract{
             };
         }
         this.getBatchOwnerPackagesAndHash = getBatchOwnerPackagesAndHash_call
-        let getBatchpackageReleasesParams = (params: IGetBatchpackageReleasesParams) => [Utils.stringToBytes32(params.packageHash),Utils.toString(params.from),Utils.toString(params.length)];
+        let getBatchpackageReleasesParams = (params: IGetBatchpackageReleasesParams) => [this.wallet.utils.stringToBytes32(params.packageHash),this.wallet.utils.toString(params.from),this.wallet.utils.toString(params.length)];
         let getBatchpackageReleases_call = async (params: IGetBatchpackageReleasesParams): Promise<{version:string,uri:string}[]> => {
             let result = await this.call('getBatchpackageReleases',getBatchpackageReleasesParams(params));
             return (result.map(e=>(
@@ -169,7 +169,7 @@ export class ModuleInfo extends Contract{
             )));
         }
         this.getBatchpackageReleases = getBatchpackageReleases_call
-        let ownerPackagesParams = (params: IOwnerPackagesParams) => [params.param1,Utils.toString(params.param2)];
+        let ownerPackagesParams = (params: IOwnerPackagesParams) => [params.param1,this.wallet.utils.toString(params.param2)];
         let ownerPackages_call = async (params: IOwnerPackagesParams): Promise<string> => {
             let result = await this.call('ownerPackages',ownerPackagesParams(params));
             return result;
@@ -187,7 +187,7 @@ export class ModuleInfo extends Contract{
         }
         this.ownerPackagesLength = ownerPackagesLength_call
         let packageProperties_call = async (param1:string): Promise<{owner:string,currVersion:string,currVersionHash:string}> => {
-            let result = await this.call('packageProperties',[Utils.stringToBytes32(param1)]);
+            let result = await this.call('packageProperties',[this.wallet.utils.stringToBytes32(param1)]);
             return {
                 owner: result.owner,
                 currVersion: result.currVersion,
@@ -195,7 +195,7 @@ export class ModuleInfo extends Contract{
             };
         }
         this.packageProperties = packageProperties_call
-        let packageReleasesParams = (params: IPackageReleasesParams) => [Utils.stringToBytes32(params.param1),Utils.toString(params.param2)];
+        let packageReleasesParams = (params: IPackageReleasesParams) => [this.wallet.utils.stringToBytes32(params.param1),this.wallet.utils.toString(params.param2)];
         let packageReleases_call = async (params: IPackageReleasesParams): Promise<{version:string,uri:string}> => {
             let result = await this.call('packageReleases',packageReleasesParams(params));
             return {
@@ -204,14 +204,14 @@ export class ModuleInfo extends Contract{
             };
         }
         this.packageReleases = packageReleases_call
-        let packageReleasesIndexParams = (params: IPackageReleasesIndexParams) => [Utils.stringToBytes32(params.param1),params.param2];
+        let packageReleasesIndexParams = (params: IPackageReleasesIndexParams) => [this.wallet.utils.stringToBytes32(params.param1),params.param2];
         let packageReleasesIndex_call = async (params: IPackageReleasesIndexParams): Promise<BigNumber> => {
             let result = await this.call('packageReleasesIndex',packageReleasesIndexParams(params));
             return new BigNumber(result);
         }
         this.packageReleasesIndex = packageReleasesIndex_call
         let packageReleasesLength_call = async (packageHash:string): Promise<BigNumber> => {
-            let result = await this.call('packageReleasesLength',[Utils.stringToBytes32(packageHash)]);
+            let result = await this.call('packageReleasesLength',[this.wallet.utils.stringToBytes32(packageHash)]);
             return new BigNumber(result);
         }
         this.packageReleasesLength = packageReleasesLength_call
@@ -226,7 +226,7 @@ export class ModuleInfo extends Contract{
         this.addPackage = Object.assign(addPackage_send, {
             call:addPackage_call
         });
-        let addReleaseParams = (params: IAddReleaseParams) => [Utils.stringToBytes32(params.packageHash),params.version,params.uri,params.pulishRelease];
+        let addReleaseParams = (params: IAddReleaseParams) => [this.wallet.utils.stringToBytes32(params.packageHash),params.version,params.uri,params.pulishRelease];
         let addRelease_send = async (params: IAddReleaseParams): Promise<TransactionReceipt> => {
             let result = await this.send('addRelease',addReleaseParams(params));
             return result;
@@ -238,7 +238,7 @@ export class ModuleInfo extends Contract{
         this.addRelease = Object.assign(addRelease_send, {
             call:addRelease_call
         });
-        let setCurrentVersionParams = (params: ISetCurrentVersionParams) => [Utils.stringToBytes32(params.packageHash),params.version];
+        let setCurrentVersionParams = (params: ISetCurrentVersionParams) => [this.wallet.utils.stringToBytes32(params.packageHash),params.version];
         let setCurrentVersion_send = async (params: ISetCurrentVersionParams): Promise<TransactionReceipt> => {
             let result = await this.send('setCurrentVersion',setCurrentVersionParams(params));
             return result;

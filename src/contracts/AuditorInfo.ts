@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./AuditorInfo.json";
 
 export interface IDeployParams {token:string;cooldownPeriod:number|BigNumber}
@@ -9,7 +9,7 @@ export class AuditorInfo extends Contract{
         this.assign()
     }
     deploy(params: IDeployParams): Promise<string>{
-        return this.__deploy([params.token,Utils.toString(params.cooldownPeriod)]);
+        return this.__deploy([params.token,this.wallet.utils.toString(params.cooldownPeriod)]);
     }
     parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[]{
         return this.parseEvents(receipt, "AddAuditor").map(e=>this.decodeAddAuditorEvent(e));
@@ -202,7 +202,7 @@ export class AuditorInfo extends Contract{
         }
         this.MAX_COOLDOWN_PERIOD = MAX_COOLDOWN_PERIOD_call
         let auditorBalance_call = async (param1:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('auditorBalance',[Utils.toString(param1)]);
+            let result = await this.call('auditorBalance',[this.wallet.utils.toString(param1)]);
             return new BigNumber(result);
         }
         this.auditorBalance = auditorBalance_call
@@ -217,7 +217,7 @@ export class AuditorInfo extends Contract{
         }
         this.auditorIds = auditorIds_call
         let auditorsData_call = async (param1:number|BigNumber): Promise<{auditor:string,status:BigNumber}> => {
-            let result = await this.call('auditorsData',[Utils.toString(param1)]);
+            let result = await this.call('auditorsData',[this.wallet.utils.toString(param1)]);
             return {
                 auditor: result.auditor,
                 status: new BigNumber(result.status)
@@ -229,7 +229,7 @@ export class AuditorInfo extends Contract{
             return new BigNumber(result);
         }
         this.cooldownPeriod = cooldownPeriod_call
-        let getAuditorsParams = (params: IGetAuditorsParams) => [Utils.toString(params.auditorIdStart),Utils.toString(params.length)];
+        let getAuditorsParams = (params: IGetAuditorsParams) => [this.wallet.utils.toString(params.auditorIdStart),this.wallet.utils.toString(params.length)];
         let getAuditors_call = async (params: IGetAuditorsParams): Promise<{auditor:string,status:BigNumber}[]> => {
             let result = await this.call('getAuditors',getAuditorsParams(params));
             return (result.map(e=>(
@@ -261,7 +261,7 @@ export class AuditorInfo extends Contract{
         }
         this.owner = owner_call
         let pendingWithdrawal_call = async (param1:number|BigNumber): Promise<{amount:BigNumber,releaseTime:BigNumber}> => {
-            let result = await this.call('pendingWithdrawal',[Utils.toString(param1)]);
+            let result = await this.call('pendingWithdrawal',[this.wallet.utils.toString(param1)]);
             return {
                 amount: new BigNumber(result.amount),
                 releaseTime: new BigNumber(result.releaseTime)
@@ -318,22 +318,22 @@ export class AuditorInfo extends Contract{
             call:permit_call
         });
         let setCooldownPeriod_send = async (cooldownPeriod:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('setCooldownPeriod',[Utils.toString(cooldownPeriod)]);
+            let result = await this.send('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)]);
             return result;
         }
         let setCooldownPeriod_call = async (cooldownPeriod:number|BigNumber): Promise<void> => {
-            let result = await this.call('setCooldownPeriod',[Utils.toString(cooldownPeriod)]);
+            let result = await this.call('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)]);
             return;
         }
         this.setCooldownPeriod = Object.assign(setCooldownPeriod_send, {
             call:setCooldownPeriod_call
         });
         let stakeBond_send = async (amount:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('stakeBond',[Utils.toString(amount)]);
+            let result = await this.send('stakeBond',[this.wallet.utils.toString(amount)]);
             return result;
         }
         let stakeBond_call = async (amount:number|BigNumber): Promise<void> => {
-            let result = await this.call('stakeBond',[Utils.toString(amount)]);
+            let result = await this.call('stakeBond',[this.wallet.utils.toString(amount)]);
             return;
         }
         this.stakeBond = Object.assign(stakeBond_send, {
@@ -362,11 +362,11 @@ export class AuditorInfo extends Contract{
             call:transferOwnership_call
         });
         let unstakeBondRequest_send = async (amount:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('unstakeBondRequest',[Utils.toString(amount)]);
+            let result = await this.send('unstakeBondRequest',[this.wallet.utils.toString(amount)]);
             return result;
         }
         let unstakeBondRequest_call = async (amount:number|BigNumber): Promise<void> => {
-            let result = await this.call('unstakeBondRequest',[Utils.toString(amount)]);
+            let result = await this.call('unstakeBondRequest',[this.wallet.utils.toString(amount)]);
             return;
         }
         this.unstakeBondRequest = Object.assign(unstakeBondRequest_send, {

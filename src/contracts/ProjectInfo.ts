@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./ProjectInfo.json";
 
 export interface IDeployParams {token:string;auditorInfo:string}
@@ -416,7 +416,7 @@ export class ProjectInfo extends Contract{
         }
         this.isPermitted = isPermitted_call
         let latestAuditedPackageVersion_call = async (param1:number|BigNumber): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}> => {
-            let result = await this.call('latestAuditedPackageVersion',[Utils.toString(param1)]);
+            let result = await this.call('latestAuditedPackageVersion',[this.wallet.utils.toString(param1)]);
             return {
                 packageId: new BigNumber(result.packageId),
                 version: 
@@ -442,13 +442,13 @@ export class ProjectInfo extends Contract{
             return result;
         }
         this.owner = owner_call
-        let ownersProjectsParams = (params: IOwnersProjectsParams) => [params.param1,Utils.toString(params.param2)];
+        let ownersProjectsParams = (params: IOwnersProjectsParams) => [params.param1,this.wallet.utils.toString(params.param2)];
         let ownersProjects_call = async (params: IOwnersProjectsParams): Promise<BigNumber> => {
             let result = await this.call('ownersProjects',ownersProjectsParams(params));
             return new BigNumber(result);
         }
         this.ownersProjects = ownersProjects_call
-        let ownersProjectsInvParams = (params: IOwnersProjectsInvParams) => [params.param1,Utils.toString(params.param2)];
+        let ownersProjectsInvParams = (params: IOwnersProjectsInvParams) => [params.param1,this.wallet.utils.toString(params.param2)];
         let ownersProjectsInv_call = async (params: IOwnersProjectsInvParams): Promise<BigNumber> => {
             let result = await this.call('ownersProjectsInv',ownersProjectsInvParams(params));
             return new BigNumber(result);
@@ -460,7 +460,7 @@ export class ProjectInfo extends Contract{
         }
         this.ownersProjectsLength = ownersProjectsLength_call
         let packageVersions_call = async (param1:number|BigNumber): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}> => {
-            let result = await this.call('packageVersions',[Utils.toString(param1)]);
+            let result = await this.call('packageVersions',[this.wallet.utils.toString(param1)]);
             return {
                 packageId: new BigNumber(result.packageId),
                 version: 
@@ -481,19 +481,19 @@ export class ProjectInfo extends Contract{
             return new BigNumber(result);
         }
         this.packageVersionsLength = packageVersionsLength_call
-        let packageVersionsListParams = (params: IPackageVersionsListParams) => [Utils.toString(params.param1),Utils.toString(params.param2)];
+        let packageVersionsListParams = (params: IPackageVersionsListParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
         let packageVersionsList_call = async (params: IPackageVersionsListParams): Promise<BigNumber> => {
             let result = await this.call('packageVersionsList',packageVersionsListParams(params));
             return new BigNumber(result);
         }
         this.packageVersionsList = packageVersionsList_call
         let packageVersionsListLength_call = async (packageId:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('packageVersionsListLength',[Utils.toString(packageId)]);
+            let result = await this.call('packageVersionsListLength',[this.wallet.utils.toString(packageId)]);
             return new BigNumber(result);
         }
         this.packageVersionsListLength = packageVersionsListLength_call
         let packages_call = async (param1:number|BigNumber): Promise<{projectId:BigNumber,currVersionIndex:BigNumber,status:BigNumber,ipfsCid:string}> => {
-            let result = await this.call('packages',[Utils.toString(param1)]);
+            let result = await this.call('packages',[this.wallet.utils.toString(param1)]);
             return {
                 projectId: new BigNumber(result.projectId),
                 currVersionIndex: new BigNumber(result.currVersionIndex),
@@ -507,31 +507,31 @@ export class ProjectInfo extends Contract{
             return new BigNumber(result);
         }
         this.packagesLength = packagesLength_call
-        let projectAdminParams = (params: IProjectAdminParams) => [Utils.toString(params.param1),Utils.toString(params.param2)];
+        let projectAdminParams = (params: IProjectAdminParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
         let projectAdmin_call = async (params: IProjectAdminParams): Promise<string> => {
             let result = await this.call('projectAdmin',projectAdminParams(params));
             return result;
         }
         this.projectAdmin = projectAdmin_call
-        let projectAdminInvParams = (params: IProjectAdminInvParams) => [Utils.toString(params.param1),params.param2];
+        let projectAdminInvParams = (params: IProjectAdminInvParams) => [this.wallet.utils.toString(params.param1),params.param2];
         let projectAdminInv_call = async (params: IProjectAdminInvParams): Promise<BigNumber> => {
             let result = await this.call('projectAdminInv',projectAdminInvParams(params));
             return new BigNumber(result);
         }
         this.projectAdminInv = projectAdminInv_call
         let projectAdminLength_call = async (projectId:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('projectAdminLength',[Utils.toString(projectId)]);
+            let result = await this.call('projectAdminLength',[this.wallet.utils.toString(projectId)]);
             return new BigNumber(result);
         }
         this.projectAdminLength = projectAdminLength_call
-        let projectBackerBalanceParams = (params: IProjectBackerBalanceParams) => [params.param1,Utils.toString(params.param2)];
+        let projectBackerBalanceParams = (params: IProjectBackerBalanceParams) => [params.param1,this.wallet.utils.toString(params.param2)];
         let projectBackerBalance_call = async (params: IProjectBackerBalanceParams): Promise<BigNumber> => {
             let result = await this.call('projectBackerBalance',projectBackerBalanceParams(params));
             return new BigNumber(result);
         }
         this.projectBackerBalance = projectBackerBalance_call
         let projectBalance_call = async (param1:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('projectBalance',[Utils.toString(param1)]);
+            let result = await this.call('projectBalance',[this.wallet.utils.toString(param1)]);
             return new BigNumber(result);
         }
         this.projectBalance = projectBalance_call
@@ -541,50 +541,50 @@ export class ProjectInfo extends Contract{
         }
         this.projectCount = projectCount_call
         let projectCurrentVersion_call = async (param1:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('projectCurrentVersion',[Utils.toString(param1)]);
+            let result = await this.call('projectCurrentVersion',[this.wallet.utils.toString(param1)]);
             return new BigNumber(result);
         }
         this.projectCurrentVersion = projectCurrentVersion_call
         let projectNewOwner_call = async (param1:number|BigNumber): Promise<string> => {
-            let result = await this.call('projectNewOwner',[Utils.toString(param1)]);
+            let result = await this.call('projectNewOwner',[this.wallet.utils.toString(param1)]);
             return result;
         }
         this.projectNewOwner = projectNewOwner_call
         let projectOwner_call = async (param1:number|BigNumber): Promise<string> => {
-            let result = await this.call('projectOwner',[Utils.toString(param1)]);
+            let result = await this.call('projectOwner',[this.wallet.utils.toString(param1)]);
             return result;
         }
         this.projectOwner = projectOwner_call
-        let projectPackagesParams = (params: IProjectPackagesParams) => [Utils.toString(params.param1),Utils.toString(params.param2)];
+        let projectPackagesParams = (params: IProjectPackagesParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
         let projectPackages_call = async (params: IProjectPackagesParams): Promise<BigNumber> => {
             let result = await this.call('projectPackages',projectPackagesParams(params));
             return new BigNumber(result);
         }
         this.projectPackages = projectPackages_call
-        let projectPackagesInvParams = (params: IProjectPackagesInvParams) => [Utils.toString(params.param1),Utils.toString(params.param2)];
+        let projectPackagesInvParams = (params: IProjectPackagesInvParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
         let projectPackagesInv_call = async (params: IProjectPackagesInvParams): Promise<BigNumber> => {
             let result = await this.call('projectPackagesInv',projectPackagesInvParams(params));
             return new BigNumber(result);
         }
         this.projectPackagesInv = projectPackagesInv_call
         let projectPackagesLength_call = async (projectId:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('projectPackagesLength',[Utils.toString(projectId)]);
+            let result = await this.call('projectPackagesLength',[this.wallet.utils.toString(projectId)]);
             return new BigNumber(result);
         }
         this.projectPackagesLength = projectPackagesLength_call
-        let projectVersionListParams = (params: IProjectVersionListParams) => [Utils.toString(params.param1),Utils.toString(params.param2)];
+        let projectVersionListParams = (params: IProjectVersionListParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
         let projectVersionList_call = async (params: IProjectVersionListParams): Promise<BigNumber> => {
             let result = await this.call('projectVersionList',projectVersionListParams(params));
             return new BigNumber(result);
         }
         this.projectVersionList = projectVersionList_call
         let projectVersionListLength_call = async (projectId:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('projectVersionListLength',[Utils.toString(projectId)]);
+            let result = await this.call('projectVersionListLength',[this.wallet.utils.toString(projectId)]);
             return new BigNumber(result);
         }
         this.projectVersionListLength = projectVersionListLength_call
         let projectVersions_call = async (param1:number|BigNumber): Promise<{projectId:BigNumber,version:BigNumber,ipfsCid:string,status:BigNumber,lastModifiedDate:BigNumber}> => {
-            let result = await this.call('projectVersions',[Utils.toString(param1)]);
+            let result = await this.call('projectVersions',[this.wallet.utils.toString(param1)]);
             return {
                 projectId: new BigNumber(result.projectId),
                 version: new BigNumber(result.version),
@@ -609,7 +609,7 @@ export class ProjectInfo extends Contract{
             return result;
         }
         this.token = token_call
-        let addProjectAdminParams = (params: IAddProjectAdminParams) => [Utils.toString(params.projectId),params.admin];
+        let addProjectAdminParams = (params: IAddProjectAdminParams) => [this.wallet.utils.toString(params.projectId),params.admin];
         let addProjectAdmin_send = async (params: IAddProjectAdminParams): Promise<TransactionReceipt> => {
             let result = await this.send('addProjectAdmin',addProjectAdminParams(params));
             return result;
@@ -632,7 +632,7 @@ export class ProjectInfo extends Contract{
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
-        let newPackageParams = (params: INewPackageParams) => [Utils.toString(params.projectId),params.ipfsCid];
+        let newPackageParams = (params: INewPackageParams) => [this.wallet.utils.toString(params.projectId),params.ipfsCid];
         let newPackage_send = async (params: INewPackageParams): Promise<TransactionReceipt> => {
             let result = await this.send('newPackage',newPackageParams(params));
             return result;
@@ -644,7 +644,7 @@ export class ProjectInfo extends Contract{
         this.newPackage = Object.assign(newPackage_send, {
             call:newPackage_call
         });
-        let newPackageVersionParams = (params: INewPackageVersionParams) => [Utils.toString(params.projectId),Utils.toString(params.packageId),[Utils.toString(params.version.major),Utils.toString(params.version.minor),Utils.toString(params.version.patch)],params.ipfsCid];
+        let newPackageVersionParams = (params: INewPackageVersionParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.packageId),[this.wallet.utils.toString(params.version.major),this.wallet.utils.toString(params.version.minor),this.wallet.utils.toString(params.version.patch)],params.ipfsCid];
         let newPackageVersion_send = async (params: INewPackageVersionParams): Promise<TransactionReceipt> => {
             let result = await this.send('newPackageVersion',newPackageVersionParams(params));
             return result;
@@ -667,7 +667,7 @@ export class ProjectInfo extends Contract{
         this.newProject = Object.assign(newProject_send, {
             call:newProject_call
         });
-        let newProjectVersionParams = (params: INewProjectVersionParams) => [Utils.toString(params.projectId),params.ipfsCid];
+        let newProjectVersionParams = (params: INewProjectVersionParams) => [this.wallet.utils.toString(params.projectId),params.ipfsCid];
         let newProjectVersion_send = async (params: INewProjectVersionParams): Promise<TransactionReceipt> => {
             let result = await this.send('newProjectVersion',newProjectVersionParams(params));
             return result;
@@ -690,7 +690,7 @@ export class ProjectInfo extends Contract{
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let removeProjectAdminParams = (params: IRemoveProjectAdminParams) => [Utils.toString(params.projectId),params.admin];
+        let removeProjectAdminParams = (params: IRemoveProjectAdminParams) => [this.wallet.utils.toString(params.projectId),params.admin];
         let removeProjectAdmin_send = async (params: IRemoveProjectAdminParams): Promise<TransactionReceipt> => {
             let result = await this.send('removeProjectAdmin',removeProjectAdminParams(params));
             return result;
@@ -702,7 +702,7 @@ export class ProjectInfo extends Contract{
         this.removeProjectAdmin = Object.assign(removeProjectAdmin_send, {
             call:removeProjectAdmin_call
         });
-        let setPackageVersionToAuditFailedParams = (params: ISetPackageVersionToAuditFailedParams) => [Utils.toString(params.packageVersionId),params.reportUri];
+        let setPackageVersionToAuditFailedParams = (params: ISetPackageVersionToAuditFailedParams) => [this.wallet.utils.toString(params.packageVersionId),params.reportUri];
         let setPackageVersionToAuditFailed_send = async (params: ISetPackageVersionToAuditFailedParams): Promise<TransactionReceipt> => {
             let result = await this.send('setPackageVersionToAuditFailed',setPackageVersionToAuditFailedParams(params));
             return result;
@@ -714,7 +714,7 @@ export class ProjectInfo extends Contract{
         this.setPackageVersionToAuditFailed = Object.assign(setPackageVersionToAuditFailed_send, {
             call:setPackageVersionToAuditFailed_call
         });
-        let setPackageVersionToAuditPassedParams = (params: ISetPackageVersionToAuditPassedParams) => [Utils.toString(params.packageVersionId),params.reportUri];
+        let setPackageVersionToAuditPassedParams = (params: ISetPackageVersionToAuditPassedParams) => [this.wallet.utils.toString(params.packageVersionId),params.reportUri];
         let setPackageVersionToAuditPassed_send = async (params: ISetPackageVersionToAuditPassedParams): Promise<TransactionReceipt> => {
             let result = await this.send('setPackageVersionToAuditPassed',setPackageVersionToAuditPassedParams(params));
             return result;
@@ -726,7 +726,7 @@ export class ProjectInfo extends Contract{
         this.setPackageVersionToAuditPassed = Object.assign(setPackageVersionToAuditPassed_send, {
             call:setPackageVersionToAuditPassed_call
         });
-        let setProjectCurrentVersionParams = (params: ISetProjectCurrentVersionParams) => [Utils.toString(params.projectId),Utils.toString(params.versionIdx)];
+        let setProjectCurrentVersionParams = (params: ISetProjectCurrentVersionParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.versionIdx)];
         let setProjectCurrentVersion_send = async (params: ISetProjectCurrentVersionParams): Promise<TransactionReceipt> => {
             let result = await this.send('setProjectCurrentVersion',setProjectCurrentVersionParams(params));
             return result;
@@ -738,7 +738,7 @@ export class ProjectInfo extends Contract{
         this.setProjectCurrentVersion = Object.assign(setProjectCurrentVersion_send, {
             call:setProjectCurrentVersion_call
         });
-        let stakeParams = (params: IStakeParams) => [Utils.toString(params.projectId),Utils.toString(params.amount)];
+        let stakeParams = (params: IStakeParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.amount)];
         let stake_send = async (params: IStakeParams): Promise<TransactionReceipt> => {
             let result = await this.send('stake',stakeParams(params));
             return result;
@@ -762,11 +762,11 @@ export class ProjectInfo extends Contract{
             call:takeOwnership_call
         });
         let takeProjectOwnership_send = async (projectId:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('takeProjectOwnership',[Utils.toString(projectId)]);
+            let result = await this.send('takeProjectOwnership',[this.wallet.utils.toString(projectId)]);
             return result;
         }
         let takeProjectOwnership_call = async (projectId:number|BigNumber): Promise<void> => {
-            let result = await this.call('takeProjectOwnership',[Utils.toString(projectId)]);
+            let result = await this.call('takeProjectOwnership',[this.wallet.utils.toString(projectId)]);
             return;
         }
         this.takeProjectOwnership = Object.assign(takeProjectOwnership_send, {
@@ -783,7 +783,7 @@ export class ProjectInfo extends Contract{
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
-        let transferProjectOwnershipParams = (params: ITransferProjectOwnershipParams) => [Utils.toString(params.projectId),params.newOwner];
+        let transferProjectOwnershipParams = (params: ITransferProjectOwnershipParams) => [this.wallet.utils.toString(params.projectId),params.newOwner];
         let transferProjectOwnership_send = async (params: ITransferProjectOwnershipParams): Promise<TransactionReceipt> => {
             let result = await this.send('transferProjectOwnership',transferProjectOwnershipParams(params));
             return result;
@@ -795,7 +795,7 @@ export class ProjectInfo extends Contract{
         this.transferProjectOwnership = Object.assign(transferProjectOwnership_send, {
             call:transferProjectOwnership_call
         });
-        let unstakeParams = (params: IUnstakeParams) => [Utils.toString(params.projectId),Utils.toString(params.amount)];
+        let unstakeParams = (params: IUnstakeParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.amount)];
         let unstake_send = async (params: IUnstakeParams): Promise<TransactionReceipt> => {
             let result = await this.send('unstake',unstakeParams(params));
             return result;
@@ -807,7 +807,7 @@ export class ProjectInfo extends Contract{
         this.unstake = Object.assign(unstake_send, {
             call:unstake_call
         });
-        let updatePackageIpfsCidParams = (params: IUpdatePackageIpfsCidParams) => [Utils.toString(params.projectId),Utils.toString(params.packageId),params.ipfsCid];
+        let updatePackageIpfsCidParams = (params: IUpdatePackageIpfsCidParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.packageId),params.ipfsCid];
         let updatePackageIpfsCid_send = async (params: IUpdatePackageIpfsCidParams): Promise<TransactionReceipt> => {
             let result = await this.send('updatePackageIpfsCid',updatePackageIpfsCidParams(params));
             return result;
@@ -820,17 +820,17 @@ export class ProjectInfo extends Contract{
             call:updatePackageIpfsCid_call
         });
         let voidPackageVersion_send = async (packageVersionId:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('voidPackageVersion',[Utils.toString(packageVersionId)]);
+            let result = await this.send('voidPackageVersion',[this.wallet.utils.toString(packageVersionId)]);
             return result;
         }
         let voidPackageVersion_call = async (packageVersionId:number|BigNumber): Promise<void> => {
-            let result = await this.call('voidPackageVersion',[Utils.toString(packageVersionId)]);
+            let result = await this.call('voidPackageVersion',[this.wallet.utils.toString(packageVersionId)]);
             return;
         }
         this.voidPackageVersion = Object.assign(voidPackageVersion_send, {
             call:voidPackageVersion_call
         });
-        let voidProjectVersionParams = (params: IVoidProjectVersionParams) => [Utils.toString(params.projectId),Utils.toString(params.versionIdx)];
+        let voidProjectVersionParams = (params: IVoidProjectVersionParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.versionIdx)];
         let voidProjectVersion_send = async (params: IVoidProjectVersionParams): Promise<TransactionReceipt> => {
             let result = await this.send('voidProjectVersion',voidProjectVersionParams(params));
             return result;

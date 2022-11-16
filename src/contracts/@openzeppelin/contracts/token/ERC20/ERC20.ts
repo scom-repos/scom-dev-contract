@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, Utils, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-wallet";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
 import Bin from "./ERC20.json";
 
 export interface IDeployParams {name:string;symbol:string}
@@ -110,7 +110,7 @@ export class ERC20 extends Contract{
             return new BigNumber(result);
         }
         this.totalSupply = totalSupply_call
-        let approveParams = (params: IApproveParams) => [params.spender,Utils.toString(params.amount)];
+        let approveParams = (params: IApproveParams) => [params.spender,this.wallet.utils.toString(params.amount)];
         let approve_send = async (params: IApproveParams): Promise<TransactionReceipt> => {
             let result = await this.send('approve',approveParams(params));
             return result;
@@ -122,7 +122,7 @@ export class ERC20 extends Contract{
         this.approve = Object.assign(approve_send, {
             call:approve_call
         });
-        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,Utils.toString(params.subtractedValue)];
+        let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,this.wallet.utils.toString(params.subtractedValue)];
         let decreaseAllowance_send = async (params: IDecreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('decreaseAllowance',decreaseAllowanceParams(params));
             return result;
@@ -134,7 +134,7 @@ export class ERC20 extends Contract{
         this.decreaseAllowance = Object.assign(decreaseAllowance_send, {
             call:decreaseAllowance_call
         });
-        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,Utils.toString(params.addedValue)];
+        let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,this.wallet.utils.toString(params.addedValue)];
         let increaseAllowance_send = async (params: IIncreaseAllowanceParams): Promise<TransactionReceipt> => {
             let result = await this.send('increaseAllowance',increaseAllowanceParams(params));
             return result;
@@ -146,7 +146,7 @@ export class ERC20 extends Contract{
         this.increaseAllowance = Object.assign(increaseAllowance_send, {
             call:increaseAllowance_call
         });
-        let transferParams = (params: ITransferParams) => [params.to,Utils.toString(params.amount)];
+        let transferParams = (params: ITransferParams) => [params.to,this.wallet.utils.toString(params.amount)];
         let transfer_send = async (params: ITransferParams): Promise<TransactionReceipt> => {
             let result = await this.send('transfer',transferParams(params));
             return result;
@@ -158,7 +158,7 @@ export class ERC20 extends Contract{
         this.transfer = Object.assign(transfer_send, {
             call:transfer_call
         });
-        let transferFromParams = (params: ITransferFromParams) => [params.from,params.to,Utils.toString(params.amount)];
+        let transferFromParams = (params: ITransferFromParams) => [params.from,params.to,this.wallet.utils.toString(params.amount)];
         let transferFrom_send = async (params: ITransferFromParams): Promise<TransactionReceipt> => {
             let result = await this.send('transferFrom',transferFromParams(params));
             return result;
