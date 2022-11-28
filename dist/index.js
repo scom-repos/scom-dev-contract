@@ -2136,77 +2136,97 @@ define("@scom/sc-core/contracts/index.ts", ["require", "exports", "@scom/sc-core
     Object.defineProperty(exports, "ProjectInfo", { enumerable: true, get: function () { return ProjectInfo_1.ProjectInfo; } });
     Object.defineProperty(exports, "Scom", { enumerable: true, get: function () { return Scom_1.Scom; } });
 });
-define("@scom/sc-core", ["require", "exports", "@scom/sc-core/contracts/index.ts"], function (require, exports, Contracts) {
+define("@scom/sc-core", ["require", "exports", "@ijstech/eth-wallet", "@scom/sc-core/contracts/index.ts"], function (require, exports, eth_wallet_1, Contracts) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Contracts = void 0;
+    exports.deploy = exports.DefaultDeployOptions = exports.Contracts = void 0;
     exports.Contracts = Contracts;
+    ;
+    exports.DefaultDeployOptions = {
+        token: {
+            address: '',
+            minter: '',
+            initSupplyTo: '',
+            initSupply: '0',
+            totalSupply: '100000000'
+        },
+        auditorInfo: {
+            cooldownPeriod: 60,
+            auditors: []
+        },
+        projectInfo: {
+            admins: []
+        }
+    };
+    async function deployScom(wallet, Config) {
+        let scomOptions = Config.token;
+        let token = new Contracts.Scom(wallet);
+        await token.deploy({
+            minter: scomOptions.minter,
+            initSupplyTo: scomOptions.initSupplyTo,
+            initSupply: eth_wallet_1.Utils.toDecimals(scomOptions.initSupply),
+            totalSupply: eth_wallet_1.Utils.toDecimals(scomOptions.totalSupply)
+        });
+        return token.address;
+    }
+    async function deployAuditorInfo(wallet, token, Config) {
+        let auditorInfoOptions = Config.auditorInfo;
+        let auditorInfo = new Contracts.AuditorInfo(wallet);
+        let address = await auditorInfo.deploy({
+            token,
+            cooldownPeriod: auditorInfoOptions.cooldownPeriod
+        });
+        for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {
+            await auditorInfo.addAuditor(auditorInfoOptions.auditors[i]);
+        }
+        return address;
+    }
+    async function deployProjectInfo(wallet, token, auditorInfo, Config) {
+        let projectInfoOptions = Config.projectInfo;
+        let projectInfo = new Contracts.ProjectInfo(wallet);
+        let address = await projectInfo.deploy({
+            auditorInfo,
+            token
+        });
+        for (let i = 0; i < projectInfoOptions.admins.length; i++) {
+            await projectInfo.permit(projectInfoOptions.admins[i]);
+        }
+        return address;
+    }
+    async function deployDomainInfo(wallet, token) {
+        let domainInfo = new Contracts.DomainInfo(wallet);
+        return await domainInfo.deploy(token);
+    }
+    async function deploy(wallet, Config, onProgress) {
+        var _a;
+        let result = {
+            token: '',
+            domain: '',
+            auditor: '',
+            project: ''
+        };
+        if (!Config.token.initSupplyTo) {
+            onProgress('ERROR: token.initSupplyTo not defined!');
+            return;
+        }
+        if (!((_a = Config.token) === null || _a === void 0 ? void 0 : _a.address)) {
+            onProgress('Deploy token contract');
+            result.token = await deployScom(wallet, Config);
+        }
+        else
+            result.token = Config.token.address;
+        onProgress('Deploy domain contract');
+        result.domain = await deployDomainInfo(wallet, result.token);
+        onProgress('Deploy auditor contract');
+        result.auditor = await deployAuditorInfo(wallet, result.token, Config);
+        onProgress('Deploy project contract');
+        result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
+        return result;
+    }
+    exports.deploy = deploy;
+    exports.default = {
+        Contracts,
+        deploy,
+        DefaultDeployOptions: exports.DefaultDeployOptions
+    };
 });
-// export interface DeployOptions{
-//     scom: {
-//         address?: string;
-//         minter?: string;
-//         initSupplyTo?: BigNumber;
-//         initSupply?: BigNumber;
-//         totalSupply?: BigNumber;
-//     };
-//     auditorInfo: {
-//         cooldownPeriod: number;
-//         auditors?: string[];
-//     };
-//     projectInfo: {
-//         admins: string[];
-//     };
-// };
-// async function deployScom(wallet: Wallet, Config) {
-//     let {scomOptions} = Config.deployOptions;
-//     let token = new Contracts.Scom(wallet);  
-//     await token.deploy({
-//         minter: scomOptions.minter,
-//         initSupplyTo: scomOptions.initSupplyTo, 
-//         initSupply: Utils.toDecimals(scomOptions.initSupply), 
-//         totalSupply: Utils.toDecimals(scomOptions.totalSupply)
-//     })  
-//     return token.address;
-// }
-// async function deployAuditorInfo(wallet: Wallet, token: string) {
-//     let {auditorInfoOptions} = Config.deployOptions;
-//     let auditorInfo = new Contracts.AuditorInfo(wallet);
-//     let address = await auditorInfo.deploy({
-//         token,
-//         cooldownPeriod: auditorInfoOptions.cooldownPeriod
-//     });
-//     console.log('AuditorInfo', address);
-//     for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {
-//         await auditorInfo.addAuditor(auditorInfoOptions.auditors[i]);
-//     }
-//     return address;
-// }
-// async function deployProjectInfo(wallet: Wallet, token: string, auditorInfo: string) {
-//     let {projectInfoOptions} = Config.deployOptions;
-//     let projectInfo = new Contracts.ProjectInfo(wallet);
-//     let address = await projectInfo.deploy({
-//         auditorInfo,
-//         token
-//     });
-//     console.log('ProjectInfo', address)
-//     for (let i = 0; i < projectInfoOptions.admins.length; i++) {
-//         await projectInfo.permit(projectInfoOptions.admins[i]);
-//     }
-// }
-// async function deployDomainInfo(wallet: Wallet, token: string) {
-//     let domainInfo = new Contracts.DomainInfo(wallet);
-//     let address = await domainInfo.deploy(token);
-//     console.log('DomainInfo', address)
-// }
-// export async function deploy() {
-//     let {rpcUrl, deployer} = Config;
-//     let provider = rpcUrl;
-//     let wallet = new Wallet(provider, deployer);
-//     // let token = await deployScom(wallet);
-//     // await deployDomainInfo(wallet, token);
-//     // let auditorInfo = await deployAuditorInfo(wallet, token);
-//     let token = '0xf5debAAcB2Df6854D16BFD51cC12E5c0C4a51Ba9';
-//     let auditorInfo = '0x79Aed3ac5056EdA1119812b26046e913E769BD8a';
-//     await deployProjectInfo(wallet, token, auditorInfo);
-// }

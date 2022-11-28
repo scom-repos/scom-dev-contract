@@ -1,75 +1,116 @@
-import { BigNumber } from "@ijstech/eth-contract";
+import { BigNumber, IWallet,  Utils} from "@ijstech/eth-wallet";
 import  * as Contracts from "./contracts/index";
 export {Contracts};
-// export interface DeployOptions{
-//     scom: {
-//         address?: string;
-//         minter?: string;
-//         initSupplyTo?: BigNumber;
-//         initSupply?: BigNumber;
-//         totalSupply?: BigNumber;
-//     };
-//     auditorInfo: {
-//         cooldownPeriod: number;
-//         auditors?: string[];
-//     };
-//     projectInfo: {
-//         admins: string[];
-//     };
-// };
-// async function deployScom(wallet: Wallet, Config) {
-//     let {scomOptions} = Config.deployOptions;
-//     let token = new Contracts.Scom(wallet);  
-//     await token.deploy({
-//         minter: scomOptions.minter,
-//         initSupplyTo: scomOptions.initSupplyTo, 
-//         initSupply: Utils.toDecimals(scomOptions.initSupply), 
-//         totalSupply: Utils.toDecimals(scomOptions.totalSupply)
-//     })  
-//     return token.address;
-// }
 
-// async function deployAuditorInfo(wallet: Wallet, token: string) {
-//     let {auditorInfoOptions} = Config.deployOptions;
-//     let auditorInfo = new Contracts.AuditorInfo(wallet);
-//     let address = await auditorInfo.deploy({
-//         token,
-//         cooldownPeriod: auditorInfoOptions.cooldownPeriod
-//     });
-//     console.log('AuditorInfo', address);
-//     for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {
-//         await auditorInfo.addAuditor(auditorInfoOptions.auditors[i]);
-//     }
-//     return address;
-// }
+export interface IDeployOptions{
+    token: {
+        address?: string;
+        minter?: string;
+        initSupplyTo?: string;
+        initSupply?: string;
+        totalSupply?: string;
+    };
+    auditorInfo: {
+        cooldownPeriod: number;
+        auditors?: string[];
+    };
+    projectInfo: {
+        admins: string[];
+    };
+};
+export interface IDeployResult{
+    token: string;
+    domain: string;
+    auditor: string;
+    project: string;
+}
+export var DefaultDeployOptions: IDeployOptions = {
+    token: {
+        address: '',
+        minter: '',
+        initSupplyTo: '',
+        initSupply: '0',
+        totalSupply: '100000000'
+    },
+    auditorInfo: {
+        cooldownPeriod: 60,
+        auditors: []
+    },
+    projectInfo: {
+        admins: []
+    }
+};
+async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
+    let scomOptions = Config.token;
+    let token = new Contracts.Scom(wallet);  
+    await token.deploy({
+        minter: scomOptions.minter,
+        initSupplyTo: scomOptions.initSupplyTo, 
+        initSupply: Utils.toDecimals(scomOptions.initSupply), 
+        totalSupply: Utils.toDecimals(scomOptions.totalSupply)
+    })  
+    return token.address;
+}
 
-// async function deployProjectInfo(wallet: Wallet, token: string, auditorInfo: string) {
-//     let {projectInfoOptions} = Config.deployOptions;
-//     let projectInfo = new Contracts.ProjectInfo(wallet);
-//     let address = await projectInfo.deploy({
-//         auditorInfo,
-//         token
-//     });
-//     console.log('ProjectInfo', address)
-//     for (let i = 0; i < projectInfoOptions.admins.length; i++) {
-//         await projectInfo.permit(projectInfoOptions.admins[i]);
-//     }
-// }
+async function deployAuditorInfo(wallet: IWallet, token: string, Config: IDeployOptions): Promise<string> {
+    let auditorInfoOptions = Config.auditorInfo;
+    let auditorInfo = new Contracts.AuditorInfo(wallet);
+    let address = await auditorInfo.deploy({
+        token,
+        cooldownPeriod: auditorInfoOptions.cooldownPeriod
+    });
+    for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {
+        await auditorInfo.addAuditor(auditorInfoOptions.auditors[i]);
+    }
+    return address;
+}
 
-// async function deployDomainInfo(wallet: Wallet, token: string) {
-//     let domainInfo = new Contracts.DomainInfo(wallet);
-//     let address = await domainInfo.deploy(token);
-//     console.log('DomainInfo', address)
-// }
+async function deployProjectInfo(wallet: IWallet, token: string, auditorInfo: string, Config: IDeployOptions): Promise<string> {
 
-// export async function deploy() {
-//     let {rpcUrl, deployer} = Config;
-//     let provider = rpcUrl;
-//     let wallet = new Wallet(provider, deployer);
-//     // let token = await deployScom(wallet);
-//     // await deployDomainInfo(wallet, token);
-//     // let auditorInfo = await deployAuditorInfo(wallet, token);
-//     let token = '0xf5debAAcB2Df6854D16BFD51cC12E5c0C4a51Ba9';
-//     let auditorInfo = '0x79Aed3ac5056EdA1119812b26046e913E769BD8a';
-//     await deployProjectInfo(wallet, token, auditorInfo);
-// }
+    let projectInfoOptions = Config.projectInfo;
+    let projectInfo = new Contracts.ProjectInfo(wallet);
+    let address = await projectInfo.deploy({
+        auditorInfo,
+        token
+    });
+    for (let i = 0; i < projectInfoOptions.admins.length; i++) {
+        await projectInfo.permit(projectInfoOptions.admins[i]);
+    }
+    return address;
+}
+
+async function deployDomainInfo(wallet: IWallet, token: string) {
+    let domainInfo = new Contracts.DomainInfo(wallet);
+    return await domainInfo.deploy(token);
+}
+
+export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {
+    let result: IDeployResult = {
+        token: '',
+        domain: '',
+        auditor: '',
+        project: ''
+    };
+    if (!Config.token.initSupplyTo){
+        onProgress('ERROR: token.initSupplyTo not defined!')
+        return;
+    }
+    if (!Config.token?.address){
+        onProgress('Deploy token contract')
+        result.token = await deployScom(wallet, Config);
+    }
+    else
+        result.token = Config.token.address;
+    onProgress('Deploy domain contract')
+    result.domain = await deployDomainInfo(wallet, result.token);
+    onProgress('Deploy auditor contract')
+    result.auditor = await deployAuditorInfo(wallet, result.token, Config);
+    onProgress('Deploy project contract')
+    result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
+    return result;
+}
+export default {
+    Contracts,
+    deploy,
+    DefaultDeployOptions
+};

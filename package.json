@@ -1,15 +1,18 @@
 {
-  "name": "@scom/sc-core",
+  "name": "@scom/sc-contract",
   "version": "0.1.1",
   "description": "",
   "main": "lib/index.js",
   "types": "types/index.d.ts",
   "typings": "types/index.d.ts",
   "scripts": {
-    "build": "rm -rf lib && rm -rf dist && rm -rf types && npm run build:contracts && npm run build:lib && npx @ijstech/compiler",
+    "build": "rm -rf lib && rm -rf dist && rm -rf types && npm run build:contracts && npm run build:lib && npm run build:dist && npm run build:deployer",
     "build:contracts": "rm -rf src/contracts && sol2ts solconfig.json",
+    "build:deployer": "rm -rf deployer && npx @ijstech/cli bundle deployer",
+    "build:dist": "npx @ijstech/compiler",
     "build:lib": "tsc",
-    "test": "mocha --exit --require ts-node/register test/*.spec.ts",
+    "deployer": "npx @ijstech/cli serve 8080 deployer",
+    "test": "mocha --exit --require ts-node/register --timeout 1000000 ./test/*.spec.ts",
     "test:domainInfo": "mocha -exit --require ts-node/register test/domainInfo.test.ts",
     "test:projectInfo": "mocha --ui tdd --exit --require ts-node/register test/projectInfo.test.ts",
     "deploy": "ts-node tools/deploy.ts",
@@ -19,14 +22,16 @@
     "@ijstech/eth-contract": "^0.1.4"
   },
   "devDependencies": {
+    "@ijstech/cli": "^0.1.23",
     "@ijstech/compiler": "^0.1.15",
     "@ijstech/eth-wallet": "^0.1.25",
     "@openzeppelin/contracts": "4.7.3",
+    "@scom/contract-deployer": "^0.1.8",
     "@types/mocha": "9.1.1",
     "@types/node": "18.8.4",
     "ganache": "7.5.0",
     "mocha": "10.0.0",
     "ts-node": "10.9.1",
-    "typescript":"4.8.4"
+    "typescript": "4.8.4"
   }
 }

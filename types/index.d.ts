@@ -1646,6 +1646,37 @@ declare module "@scom/sc-core/contracts/index.ts" {
 }
 /// <amd-module name="@scom/sc-core" />
 declare module "@scom/sc-core" {
+    import { IWallet } from "@ijstech/eth-wallet";
     import * as Contracts from "@scom/sc-core/contracts/index.ts";
     export { Contracts };
+    export interface IDeployOptions {
+        token: {
+            address?: string;
+            minter?: string;
+            initSupplyTo?: string;
+            initSupply?: string;
+            totalSupply?: string;
+        };
+        auditorInfo: {
+            cooldownPeriod: number;
+            auditors?: string[];
+        };
+        projectInfo: {
+            admins: string[];
+        };
+    }
+    export interface IDeployResult {
+        token: string;
+        domain: string;
+        auditor: string;
+        project: string;
+    }
+    export var DefaultDeployOptions: IDeployOptions;
+    export function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
+    const _default_7: {
+        Contracts: typeof Contracts;
+        deploy: typeof deploy;
+        DefaultDeployOptions: IDeployOptions;
+    };
+    export default _default_7;
 }
