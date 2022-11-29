@@ -95,17 +95,17 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
         onProgress('ERROR: token.initSupplyTo not defined!')
         return;
     }
-    if (!Config.token?.address){
-        onProgress('Deploy token contract')
+    onProgress('1/4 Deploy token contract')
+    if (!Config.token?.address){        
         result.token = await deployScom(wallet, Config);
     }
     else
         result.token = Config.token.address;
-    onProgress('Deploy domain contract')
+    onProgress('2/4 Deploy domain contract')
     result.domain = await deployDomainInfo(wallet, result.token);
-    onProgress('Deploy auditor contract')
+    onProgress('3/4 Deploy auditor contract')
     result.auditor = await deployAuditorInfo(wallet, result.token, Config);
-    onProgress('Deploy project contract')
+    onProgress('4/4 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
     return result;
 }

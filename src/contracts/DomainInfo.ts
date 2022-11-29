@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./DomainInfo.json";
 
 export interface IAllowancesParams {param1:string;param2:string;param3:string}
@@ -18,8 +18,8 @@ export class DomainInfo extends Contract{
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()
     }
-    deploy(token:string): Promise<string>{
-        return this.__deploy([token]);
+    deploy(token:string, options?: TransactionOptions): Promise<string>{
+        return this.__deploy([token], options);
     }
     parseApprovalEvent(receipt: TransactionReceipt): DomainInfo.ApprovalEvent[]{
         return this.parseEvents(receipt, "Approval").map(e=>this.decodeApprovalEvent(e));
@@ -141,253 +141,253 @@ export class DomainInfo extends Contract{
         };
     }
     allowances: {
-        (params: IAllowancesParams): Promise<BigNumber>;
+        (params: IAllowancesParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     balanceOf: {
-        (params: IBalanceOfParams): Promise<BigNumber>;
+        (params: IBalanceOfParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     decreaseAllowance: {
-        (params: IDecreaseAllowanceParams): Promise<TransactionReceipt>;
-        call: (params: IDecreaseAllowanceParams) => Promise<void>;
+        (params: IDecreaseAllowanceParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IDecreaseAllowanceParams, options?: TransactionOptions) => Promise<void>;
     }
     deny: {
-        (user:string): Promise<TransactionReceipt>;
-        call: (user:string) => Promise<void>;
+        (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
     deposit: {
-        (params: IDepositParams): Promise<TransactionReceipt>;
-        call: (params: IDepositParams) => Promise<void>;
+        (params: IDepositParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IDepositParams, options?: TransactionOptions) => Promise<void>;
     }
     domainModule: {
-        (params: IDomainModuleParams): Promise<string>;
+        (params: IDomainModuleParams, options?: TransactionOptions): Promise<string>;
     }
     domainType: {
-        (params: IDomainTypeParams): Promise<BigNumber>;
+        (params: IDomainTypeParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     getDomainInfo: {
-        (params: IGetDomainInfoParams): Promise<{moduleType:BigNumber,module:string}>;
+        (params: IGetDomainInfoParams, options?: TransactionOptions): Promise<{moduleType:BigNumber,module:string}>;
     }
     increaseAllowance: {
-        (params: IIncreaseAllowanceParams): Promise<TransactionReceipt>;
-        call: (params: IIncreaseAllowanceParams) => Promise<void>;
+        (params: IIncreaseAllowanceParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IIncreaseAllowanceParams, options?: TransactionOptions) => Promise<void>;
     }
     isPermitted: {
-        (param1:string): Promise<boolean>;
+        (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
     newOwner: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     owner: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     permit: {
-        (user:string): Promise<TransactionReceipt>;
-        call: (user:string) => Promise<void>;
+        (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
     spend: {
-        (params: ISpendParams): Promise<TransactionReceipt>;
-        call: (params: ISpendParams) => Promise<void>;
+        (params: ISpendParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: ISpendParams, options?: TransactionOptions) => Promise<void>;
     }
     takeOwnership: {
-        (): Promise<TransactionReceipt>;
-        call: () => Promise<void>;
+        (options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (options?: TransactionOptions) => Promise<void>;
     }
     token: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     transferOwnership: {
-        (newOwner:string): Promise<TransactionReceipt>;
-        call: (newOwner:string) => Promise<void>;
+        (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (newOwner:string, options?: TransactionOptions) => Promise<void>;
     }
     updateDomainInfo: {
-        (params: IUpdateDomainInfoParams): Promise<TransactionReceipt>;
-        call: (params: IUpdateDomainInfoParams) => Promise<void>;
+        (params: IUpdateDomainInfoParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateDomainInfoParams, options?: TransactionOptions) => Promise<void>;
     }
     updateDomainModule: {
-        (params: IUpdateDomainModuleParams): Promise<TransactionReceipt>;
-        call: (params: IUpdateDomainModuleParams) => Promise<void>;
+        (params: IUpdateDomainModuleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateDomainModuleParams, options?: TransactionOptions) => Promise<void>;
     }
     withdraw: {
-        (params: IWithdrawParams): Promise<TransactionReceipt>;
-        call: (params: IWithdrawParams) => Promise<void>;
+        (params: IWithdrawParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IWithdrawParams, options?: TransactionOptions) => Promise<void>;
     }
     private assign(){
         let allowancesParams = (params: IAllowancesParams) => [params.param1,params.param2,params.param3];
-        let allowances_call = async (params: IAllowancesParams): Promise<BigNumber> => {
-            let result = await this.call('allowances',allowancesParams(params));
+        let allowances_call = async (params: IAllowancesParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('allowances',allowancesParams(params),options);
             return new BigNumber(result);
         }
         this.allowances = allowances_call
         let balanceOfParams = (params: IBalanceOfParams) => [params.param1,params.param2];
-        let balanceOf_call = async (params: IBalanceOfParams): Promise<BigNumber> => {
-            let result = await this.call('balanceOf',balanceOfParams(params));
+        let balanceOf_call = async (params: IBalanceOfParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('balanceOf',balanceOfParams(params),options);
             return new BigNumber(result);
         }
         this.balanceOf = balanceOf_call
         let domainModuleParams = (params: IDomainModuleParams) => [params.param1,params.param2];
-        let domainModule_call = async (params: IDomainModuleParams): Promise<string> => {
-            let result = await this.call('domainModule',domainModuleParams(params));
+        let domainModule_call = async (params: IDomainModuleParams, options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('domainModule',domainModuleParams(params),options);
             return result;
         }
         this.domainModule = domainModule_call
         let domainTypeParams = (params: IDomainTypeParams) => [params.param1,params.param2];
-        let domainType_call = async (params: IDomainTypeParams): Promise<BigNumber> => {
-            let result = await this.call('domainType',domainTypeParams(params));
+        let domainType_call = async (params: IDomainTypeParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('domainType',domainTypeParams(params),options);
             return new BigNumber(result);
         }
         this.domainType = domainType_call
         let getDomainInfoParams = (params: IGetDomainInfoParams) => [params.owner,params.domainName];
-        let getDomainInfo_call = async (params: IGetDomainInfoParams): Promise<{moduleType:BigNumber,module:string}> => {
-            let result = await this.call('getDomainInfo',getDomainInfoParams(params));
+        let getDomainInfo_call = async (params: IGetDomainInfoParams, options?: TransactionOptions): Promise<{moduleType:BigNumber,module:string}> => {
+            let result = await this.call('getDomainInfo',getDomainInfoParams(params),options);
             return {
                 moduleType: new BigNumber(result.moduleType),
                 module: result.module
             };
         }
         this.getDomainInfo = getDomainInfo_call
-        let isPermitted_call = async (param1:string): Promise<boolean> => {
-            let result = await this.call('isPermitted',[param1]);
+        let isPermitted_call = async (param1:string, options?: TransactionOptions): Promise<boolean> => {
+            let result = await this.call('isPermitted',[param1],options);
             return result;
         }
         this.isPermitted = isPermitted_call
-        let newOwner_call = async (): Promise<string> => {
-            let result = await this.call('newOwner');
+        let newOwner_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('newOwner',[],options);
             return result;
         }
         this.newOwner = newOwner_call
-        let owner_call = async (): Promise<string> => {
-            let result = await this.call('owner');
+        let owner_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('owner',[],options);
             return result;
         }
         this.owner = owner_call
-        let token_call = async (): Promise<string> => {
-            let result = await this.call('token');
+        let token_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('token',[],options);
             return result;
         }
         this.token = token_call
         let decreaseAllowanceParams = (params: IDecreaseAllowanceParams) => [params.spender,params.domainName,this.wallet.utils.toString(params.subtractedValue)];
-        let decreaseAllowance_send = async (params: IDecreaseAllowanceParams): Promise<TransactionReceipt> => {
-            let result = await this.send('decreaseAllowance',decreaseAllowanceParams(params));
+        let decreaseAllowance_send = async (params: IDecreaseAllowanceParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('decreaseAllowance',decreaseAllowanceParams(params),options);
             return result;
         }
-        let decreaseAllowance_call = async (params: IDecreaseAllowanceParams): Promise<void> => {
-            let result = await this.call('decreaseAllowance',decreaseAllowanceParams(params));
+        let decreaseAllowance_call = async (params: IDecreaseAllowanceParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('decreaseAllowance',decreaseAllowanceParams(params),options);
             return;
         }
         this.decreaseAllowance = Object.assign(decreaseAllowance_send, {
             call:decreaseAllowance_call
         });
-        let deny_send = async (user:string): Promise<TransactionReceipt> => {
-            let result = await this.send('deny',[user]);
+        let deny_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('deny',[user],options);
             return result;
         }
-        let deny_call = async (user:string): Promise<void> => {
-            let result = await this.call('deny',[user]);
+        let deny_call = async (user:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('deny',[user],options);
             return;
         }
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
         let depositParams = (params: IDepositParams) => [params.domainName,this.wallet.utils.toString(params.amount)];
-        let deposit_send = async (params: IDepositParams): Promise<TransactionReceipt> => {
-            let result = await this.send('deposit',depositParams(params));
+        let deposit_send = async (params: IDepositParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('deposit',depositParams(params),options);
             return result;
         }
-        let deposit_call = async (params: IDepositParams): Promise<void> => {
-            let result = await this.call('deposit',depositParams(params));
+        let deposit_call = async (params: IDepositParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('deposit',depositParams(params),options);
             return;
         }
         this.deposit = Object.assign(deposit_send, {
             call:deposit_call
         });
         let increaseAllowanceParams = (params: IIncreaseAllowanceParams) => [params.spender,params.domainName,this.wallet.utils.toString(params.addedValue)];
-        let increaseAllowance_send = async (params: IIncreaseAllowanceParams): Promise<TransactionReceipt> => {
-            let result = await this.send('increaseAllowance',increaseAllowanceParams(params));
+        let increaseAllowance_send = async (params: IIncreaseAllowanceParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('increaseAllowance',increaseAllowanceParams(params),options);
             return result;
         }
-        let increaseAllowance_call = async (params: IIncreaseAllowanceParams): Promise<void> => {
-            let result = await this.call('increaseAllowance',increaseAllowanceParams(params));
+        let increaseAllowance_call = async (params: IIncreaseAllowanceParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('increaseAllowance',increaseAllowanceParams(params),options);
             return;
         }
         this.increaseAllowance = Object.assign(increaseAllowance_send, {
             call:increaseAllowance_call
         });
-        let permit_send = async (user:string): Promise<TransactionReceipt> => {
-            let result = await this.send('permit',[user]);
+        let permit_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('permit',[user],options);
             return result;
         }
-        let permit_call = async (user:string): Promise<void> => {
-            let result = await this.call('permit',[user]);
+        let permit_call = async (user:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('permit',[user],options);
             return;
         }
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
         let spendParams = (params: ISpendParams) => [params.owner,params.domainName,params.destination,this.wallet.utils.toString(params.amount)];
-        let spend_send = async (params: ISpendParams): Promise<TransactionReceipt> => {
-            let result = await this.send('spend',spendParams(params));
+        let spend_send = async (params: ISpendParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('spend',spendParams(params),options);
             return result;
         }
-        let spend_call = async (params: ISpendParams): Promise<void> => {
-            let result = await this.call('spend',spendParams(params));
+        let spend_call = async (params: ISpendParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('spend',spendParams(params),options);
             return;
         }
         this.spend = Object.assign(spend_send, {
             call:spend_call
         });
-        let takeOwnership_send = async (): Promise<TransactionReceipt> => {
-            let result = await this.send('takeOwnership');
+        let takeOwnership_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('takeOwnership',[],options);
             return result;
         }
-        let takeOwnership_call = async (): Promise<void> => {
-            let result = await this.call('takeOwnership');
+        let takeOwnership_call = async (options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('takeOwnership',[],options);
             return;
         }
         this.takeOwnership = Object.assign(takeOwnership_send, {
             call:takeOwnership_call
         });
-        let transferOwnership_send = async (newOwner:string): Promise<TransactionReceipt> => {
-            let result = await this.send('transferOwnership',[newOwner]);
+        let transferOwnership_send = async (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('transferOwnership',[newOwner],options);
             return result;
         }
-        let transferOwnership_call = async (newOwner:string): Promise<void> => {
-            let result = await this.call('transferOwnership',[newOwner]);
+        let transferOwnership_call = async (newOwner:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('transferOwnership',[newOwner],options);
             return;
         }
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
         let updateDomainInfoParams = (params: IUpdateDomainInfoParams) => [params.domainName,this.wallet.utils.toString(params.moduleType),params.module];
-        let updateDomainInfo_send = async (params: IUpdateDomainInfoParams): Promise<TransactionReceipt> => {
-            let result = await this.send('updateDomainInfo',updateDomainInfoParams(params));
+        let updateDomainInfo_send = async (params: IUpdateDomainInfoParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('updateDomainInfo',updateDomainInfoParams(params),options);
             return result;
         }
-        let updateDomainInfo_call = async (params: IUpdateDomainInfoParams): Promise<void> => {
-            let result = await this.call('updateDomainInfo',updateDomainInfoParams(params));
+        let updateDomainInfo_call = async (params: IUpdateDomainInfoParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('updateDomainInfo',updateDomainInfoParams(params),options);
             return;
         }
         this.updateDomainInfo = Object.assign(updateDomainInfo_send, {
             call:updateDomainInfo_call
         });
         let updateDomainModuleParams = (params: IUpdateDomainModuleParams) => [params.domainName,params.module];
-        let updateDomainModule_send = async (params: IUpdateDomainModuleParams): Promise<TransactionReceipt> => {
-            let result = await this.send('updateDomainModule',updateDomainModuleParams(params));
+        let updateDomainModule_send = async (params: IUpdateDomainModuleParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('updateDomainModule',updateDomainModuleParams(params),options);
             return result;
         }
-        let updateDomainModule_call = async (params: IUpdateDomainModuleParams): Promise<void> => {
-            let result = await this.call('updateDomainModule',updateDomainModuleParams(params));
+        let updateDomainModule_call = async (params: IUpdateDomainModuleParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('updateDomainModule',updateDomainModuleParams(params),options);
             return;
         }
         this.updateDomainModule = Object.assign(updateDomainModule_send, {
             call:updateDomainModule_call
         });
         let withdrawParams = (params: IWithdrawParams) => [params.domainName,this.wallet.utils.toString(params.amount)];
-        let withdraw_send = async (params: IWithdrawParams): Promise<TransactionReceipt> => {
-            let result = await this.send('withdraw',withdrawParams(params));
+        let withdraw_send = async (params: IWithdrawParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('withdraw',withdrawParams(params),options);
             return result;
         }
-        let withdraw_call = async (params: IWithdrawParams): Promise<void> => {
-            let result = await this.call('withdraw',withdrawParams(params));
+        let withdraw_call = async (params: IWithdrawParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('withdraw',withdrawParams(params),options);
             return;
         }
         this.withdraw = Object.assign(withdraw_send, {

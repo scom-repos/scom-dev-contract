@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj} from "@ijstech/eth-contract";
+import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./AuditorInfo.json";
 
 export interface IDeployParams {token:string;cooldownPeriod:number|BigNumber}
@@ -8,8 +8,8 @@ export class AuditorInfo extends Contract{
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()
     }
-    deploy(params: IDeployParams): Promise<string>{
-        return this.__deploy([params.token,this.wallet.utils.toString(params.cooldownPeriod)]);
+    deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>{
+        return this.__deploy([params.token,this.wallet.utils.toString(params.cooldownPeriod)], options);
     }
     parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[]{
         return this.parseEvents(receipt, "AddAuditor").map(e=>this.decodeAddAuditorEvent(e));
@@ -117,121 +117,121 @@ export class AuditorInfo extends Contract{
         };
     }
     MAX_COOLDOWN_PERIOD: {
-        (): Promise<BigNumber>;
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     addAuditor: {
-        (auditor:string): Promise<TransactionReceipt>;
-        call: (auditor:string) => Promise<void>;
+        (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (auditor:string, options?: TransactionOptions) => Promise<void>;
     }
     auditorBalance: {
-        (param1:number|BigNumber): Promise<BigNumber>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     auditorIdCount: {
-        (): Promise<BigNumber>;
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     auditorIds: {
-        (param1:string): Promise<BigNumber>;
+        (param1:string, options?: TransactionOptions): Promise<BigNumber>;
     }
     auditorsData: {
-        (param1:number|BigNumber): Promise<{auditor:string,status:BigNumber}>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{auditor:string,status:BigNumber}>;
     }
     cooldownPeriod: {
-        (): Promise<BigNumber>;
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     deny: {
-        (user:string): Promise<TransactionReceipt>;
-        call: (user:string) => Promise<void>;
+        (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
     disableAuditor: {
-        (auditor:string): Promise<TransactionReceipt>;
-        call: (auditor:string) => Promise<void>;
+        (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (auditor:string, options?: TransactionOptions) => Promise<void>;
     }
     getAuditors: {
-        (params: IGetAuditorsParams): Promise<{auditor:string,status:BigNumber}[]>;
+        (params: IGetAuditorsParams, options?: TransactionOptions): Promise<{auditor:string,status:BigNumber}[]>;
     }
     isActiveAuditor: {
-        (account:string): Promise<boolean>;
+        (account:string, options?: TransactionOptions): Promise<boolean>;
     }
     isPermitted: {
-        (param1:string): Promise<boolean>;
+        (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
     newOwner: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     owner: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     pendingWithdrawal: {
-        (param1:number|BigNumber): Promise<{amount:BigNumber,releaseTime:BigNumber}>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{amount:BigNumber,releaseTime:BigNumber}>;
     }
     permit: {
-        (user:string): Promise<TransactionReceipt>;
-        call: (user:string) => Promise<void>;
+        (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
     setCooldownPeriod: {
-        (cooldownPeriod:number|BigNumber): Promise<TransactionReceipt>;
-        call: (cooldownPeriod:number|BigNumber) => Promise<void>;
+        (cooldownPeriod:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (cooldownPeriod:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     stakeBond: {
-        (amount:number|BigNumber): Promise<TransactionReceipt>;
-        call: (amount:number|BigNumber) => Promise<void>;
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     takeOwnership: {
-        (): Promise<TransactionReceipt>;
-        call: () => Promise<void>;
+        (options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (options?: TransactionOptions) => Promise<void>;
     }
     token: {
-        (): Promise<string>;
+        (options?: TransactionOptions): Promise<string>;
     }
     transferOwnership: {
-        (newOwner:string): Promise<TransactionReceipt>;
-        call: (newOwner:string) => Promise<void>;
+        (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (newOwner:string, options?: TransactionOptions) => Promise<void>;
     }
     unstakeBondRequest: {
-        (amount:number|BigNumber): Promise<TransactionReceipt>;
-        call: (amount:number|BigNumber) => Promise<void>;
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     withdrawBond: {
-        (): Promise<TransactionReceipt>;
-        call: () => Promise<void>;
+        (options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (options?: TransactionOptions) => Promise<void>;
     }
     private assign(){
-        let MAX_COOLDOWN_PERIOD_call = async (): Promise<BigNumber> => {
-            let result = await this.call('MAX_COOLDOWN_PERIOD');
+        let MAX_COOLDOWN_PERIOD_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('MAX_COOLDOWN_PERIOD',[],options);
             return new BigNumber(result);
         }
         this.MAX_COOLDOWN_PERIOD = MAX_COOLDOWN_PERIOD_call
-        let auditorBalance_call = async (param1:number|BigNumber): Promise<BigNumber> => {
-            let result = await this.call('auditorBalance',[this.wallet.utils.toString(param1)]);
+        let auditorBalance_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('auditorBalance',[this.wallet.utils.toString(param1)],options);
             return new BigNumber(result);
         }
         this.auditorBalance = auditorBalance_call
-        let auditorIdCount_call = async (): Promise<BigNumber> => {
-            let result = await this.call('auditorIdCount');
+        let auditorIdCount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('auditorIdCount',[],options);
             return new BigNumber(result);
         }
         this.auditorIdCount = auditorIdCount_call
-        let auditorIds_call = async (param1:string): Promise<BigNumber> => {
-            let result = await this.call('auditorIds',[param1]);
+        let auditorIds_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('auditorIds',[param1],options);
             return new BigNumber(result);
         }
         this.auditorIds = auditorIds_call
-        let auditorsData_call = async (param1:number|BigNumber): Promise<{auditor:string,status:BigNumber}> => {
-            let result = await this.call('auditorsData',[this.wallet.utils.toString(param1)]);
+        let auditorsData_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{auditor:string,status:BigNumber}> => {
+            let result = await this.call('auditorsData',[this.wallet.utils.toString(param1)],options);
             return {
                 auditor: result.auditor,
                 status: new BigNumber(result.status)
             };
         }
         this.auditorsData = auditorsData_call
-        let cooldownPeriod_call = async (): Promise<BigNumber> => {
-            let result = await this.call('cooldownPeriod');
+        let cooldownPeriod_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('cooldownPeriod',[],options);
             return new BigNumber(result);
         }
         this.cooldownPeriod = cooldownPeriod_call
         let getAuditorsParams = (params: IGetAuditorsParams) => [this.wallet.utils.toString(params.auditorIdStart),this.wallet.utils.toString(params.length)];
-        let getAuditors_call = async (params: IGetAuditorsParams): Promise<{auditor:string,status:BigNumber}[]> => {
-            let result = await this.call('getAuditors',getAuditorsParams(params));
+        let getAuditors_call = async (params: IGetAuditorsParams, options?: TransactionOptions): Promise<{auditor:string,status:BigNumber}[]> => {
+            let result = await this.call('getAuditors',getAuditorsParams(params),options);
             return (result.map(e=>(
                 {
                     auditor: e.auditor,
@@ -240,144 +240,144 @@ export class AuditorInfo extends Contract{
             )));
         }
         this.getAuditors = getAuditors_call
-        let isActiveAuditor_call = async (account:string): Promise<boolean> => {
-            let result = await this.call('isActiveAuditor',[account]);
+        let isActiveAuditor_call = async (account:string, options?: TransactionOptions): Promise<boolean> => {
+            let result = await this.call('isActiveAuditor',[account],options);
             return result;
         }
         this.isActiveAuditor = isActiveAuditor_call
-        let isPermitted_call = async (param1:string): Promise<boolean> => {
-            let result = await this.call('isPermitted',[param1]);
+        let isPermitted_call = async (param1:string, options?: TransactionOptions): Promise<boolean> => {
+            let result = await this.call('isPermitted',[param1],options);
             return result;
         }
         this.isPermitted = isPermitted_call
-        let newOwner_call = async (): Promise<string> => {
-            let result = await this.call('newOwner');
+        let newOwner_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('newOwner',[],options);
             return result;
         }
         this.newOwner = newOwner_call
-        let owner_call = async (): Promise<string> => {
-            let result = await this.call('owner');
+        let owner_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('owner',[],options);
             return result;
         }
         this.owner = owner_call
-        let pendingWithdrawal_call = async (param1:number|BigNumber): Promise<{amount:BigNumber,releaseTime:BigNumber}> => {
-            let result = await this.call('pendingWithdrawal',[this.wallet.utils.toString(param1)]);
+        let pendingWithdrawal_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{amount:BigNumber,releaseTime:BigNumber}> => {
+            let result = await this.call('pendingWithdrawal',[this.wallet.utils.toString(param1)],options);
             return {
                 amount: new BigNumber(result.amount),
                 releaseTime: new BigNumber(result.releaseTime)
             };
         }
         this.pendingWithdrawal = pendingWithdrawal_call
-        let token_call = async (): Promise<string> => {
-            let result = await this.call('token');
+        let token_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('token',[],options);
             return result;
         }
         this.token = token_call
-        let addAuditor_send = async (auditor:string): Promise<TransactionReceipt> => {
-            let result = await this.send('addAuditor',[auditor]);
+        let addAuditor_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('addAuditor',[auditor],options);
             return result;
         }
-        let addAuditor_call = async (auditor:string): Promise<void> => {
-            let result = await this.call('addAuditor',[auditor]);
+        let addAuditor_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('addAuditor',[auditor],options);
             return;
         }
         this.addAuditor = Object.assign(addAuditor_send, {
             call:addAuditor_call
         });
-        let deny_send = async (user:string): Promise<TransactionReceipt> => {
-            let result = await this.send('deny',[user]);
+        let deny_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('deny',[user],options);
             return result;
         }
-        let deny_call = async (user:string): Promise<void> => {
-            let result = await this.call('deny',[user]);
+        let deny_call = async (user:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('deny',[user],options);
             return;
         }
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
-        let disableAuditor_send = async (auditor:string): Promise<TransactionReceipt> => {
-            let result = await this.send('disableAuditor',[auditor]);
+        let disableAuditor_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('disableAuditor',[auditor],options);
             return result;
         }
-        let disableAuditor_call = async (auditor:string): Promise<void> => {
-            let result = await this.call('disableAuditor',[auditor]);
+        let disableAuditor_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('disableAuditor',[auditor],options);
             return;
         }
         this.disableAuditor = Object.assign(disableAuditor_send, {
             call:disableAuditor_call
         });
-        let permit_send = async (user:string): Promise<TransactionReceipt> => {
-            let result = await this.send('permit',[user]);
+        let permit_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('permit',[user],options);
             return result;
         }
-        let permit_call = async (user:string): Promise<void> => {
-            let result = await this.call('permit',[user]);
+        let permit_call = async (user:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('permit',[user],options);
             return;
         }
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let setCooldownPeriod_send = async (cooldownPeriod:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)]);
+        let setCooldownPeriod_send = async (cooldownPeriod:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)],options);
             return result;
         }
-        let setCooldownPeriod_call = async (cooldownPeriod:number|BigNumber): Promise<void> => {
-            let result = await this.call('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)]);
+        let setCooldownPeriod_call = async (cooldownPeriod:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)],options);
             return;
         }
         this.setCooldownPeriod = Object.assign(setCooldownPeriod_send, {
             call:setCooldownPeriod_call
         });
-        let stakeBond_send = async (amount:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('stakeBond',[this.wallet.utils.toString(amount)]);
+        let stakeBond_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('stakeBond',[this.wallet.utils.toString(amount)],options);
             return result;
         }
-        let stakeBond_call = async (amount:number|BigNumber): Promise<void> => {
-            let result = await this.call('stakeBond',[this.wallet.utils.toString(amount)]);
+        let stakeBond_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('stakeBond',[this.wallet.utils.toString(amount)],options);
             return;
         }
         this.stakeBond = Object.assign(stakeBond_send, {
             call:stakeBond_call
         });
-        let takeOwnership_send = async (): Promise<TransactionReceipt> => {
-            let result = await this.send('takeOwnership');
+        let takeOwnership_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('takeOwnership',[],options);
             return result;
         }
-        let takeOwnership_call = async (): Promise<void> => {
-            let result = await this.call('takeOwnership');
+        let takeOwnership_call = async (options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('takeOwnership',[],options);
             return;
         }
         this.takeOwnership = Object.assign(takeOwnership_send, {
             call:takeOwnership_call
         });
-        let transferOwnership_send = async (newOwner:string): Promise<TransactionReceipt> => {
-            let result = await this.send('transferOwnership',[newOwner]);
+        let transferOwnership_send = async (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('transferOwnership',[newOwner],options);
             return result;
         }
-        let transferOwnership_call = async (newOwner:string): Promise<void> => {
-            let result = await this.call('transferOwnership',[newOwner]);
+        let transferOwnership_call = async (newOwner:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('transferOwnership',[newOwner],options);
             return;
         }
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
-        let unstakeBondRequest_send = async (amount:number|BigNumber): Promise<TransactionReceipt> => {
-            let result = await this.send('unstakeBondRequest',[this.wallet.utils.toString(amount)]);
+        let unstakeBondRequest_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('unstakeBondRequest',[this.wallet.utils.toString(amount)],options);
             return result;
         }
-        let unstakeBondRequest_call = async (amount:number|BigNumber): Promise<void> => {
-            let result = await this.call('unstakeBondRequest',[this.wallet.utils.toString(amount)]);
+        let unstakeBondRequest_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('unstakeBondRequest',[this.wallet.utils.toString(amount)],options);
             return;
         }
         this.unstakeBondRequest = Object.assign(unstakeBondRequest_send, {
             call:unstakeBondRequest_call
         });
-        let withdrawBond_send = async (): Promise<TransactionReceipt> => {
-            let result = await this.send('withdrawBond');
+        let withdrawBond_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('withdrawBond',[],options);
             return result;
         }
-        let withdrawBond_call = async (): Promise<void> => {
-            let result = await this.call('withdrawBond');
+        let withdrawBond_call = async (options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('withdrawBond',[],options);
             return;
         }
         this.withdrawBond = Object.assign(withdrawBond_send, {
