@@ -1,6 +1,6 @@
 import 'mocha';
-import {Contract, Utils, Wallet} from "@ijstech/eth-wallet";
-import {Contracts, deploy, DefaultDeployOptions, IDeployResult} from '../src';
+import {Utils, Wallet} from "@ijstech/eth-wallet";
+import {Contracts, deploy, DefaultDeployOptions} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 

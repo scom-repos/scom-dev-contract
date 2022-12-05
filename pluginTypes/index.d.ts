@@ -46,7 +46,7 @@ declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/
 }
 /// <amd-module name="@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" />
 declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         name: string;
         symbol: string;
@@ -76,7 +76,7 @@ declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/
         to: string;
         amount: number | BigNumber;
     }
-    export class ERC20 extends Contract {
+    export class ERC20 extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): ERC20.ApprovalEvent[];
@@ -206,7 +206,7 @@ declare module "@scom/sc-contract/contracts/AuditorInfo.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/AuditorInfo.ts" />
 declare module "@scom/sc-contract/contracts/AuditorInfo.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         token: string;
         cooldownPeriod: number | BigNumber;
@@ -215,7 +215,7 @@ declare module "@scom/sc-contract/contracts/AuditorInfo.ts" {
         auditorIdStart: number | BigNumber;
         length: number | BigNumber;
     }
-    export class AuditorInfo extends Contract {
+    export class AuditorInfo extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[];
@@ -420,8 +420,8 @@ declare module "@scom/sc-contract/contracts/Authorization.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/Authorization.ts" />
 declare module "@scom/sc-contract/contracts/Authorization.ts" {
-    import { IWallet, Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
-    export class Authorization extends Contract {
+    import { IWallet, Contract as _Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export class Authorization extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(options?: TransactionOptions): Promise<string>;
         parseAuthorizeEvent(receipt: TransactionReceipt): Authorization.AuthorizeEvent[];
@@ -526,7 +526,7 @@ declare module "@scom/sc-contract/contracts/DomainInfo.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/DomainInfo.ts" />
 declare module "@scom/sc-contract/contracts/DomainInfo.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IAllowancesParams {
         param1: string;
         param2: string;
@@ -581,7 +581,7 @@ declare module "@scom/sc-contract/contracts/DomainInfo.ts" {
         domainName: string;
         amount: number | BigNumber;
     }
-    export class DomainInfo extends Contract {
+    export class DomainInfo extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(token: string, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): DomainInfo.ApprovalEvent[];
@@ -789,7 +789,7 @@ declare module "@scom/sc-contract/contracts/ModuleInfo.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/ModuleInfo.ts" />
 declare module "@scom/sc-contract/contracts/ModuleInfo.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IAddReleaseParams {
         packageHash: string;
         version: string;
@@ -831,7 +831,7 @@ declare module "@scom/sc-contract/contracts/ModuleInfo.ts" {
         packageHash: string;
         version: string;
     }
-    export class ModuleInfo extends Contract {
+    export class ModuleInfo extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
         parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];
@@ -1037,7 +1037,7 @@ declare module "@scom/sc-contract/contracts/ProjectInfo.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/ProjectInfo.ts" />
 declare module "@scom/sc-contract/contracts/ProjectInfo.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         token: string;
         auditorInfo: string;
@@ -1137,7 +1137,7 @@ declare module "@scom/sc-contract/contracts/ProjectInfo.ts" {
         projectId: number | BigNumber;
         versionIdx: number | BigNumber;
     }
-    export class ProjectInfo extends Contract {
+    export class ProjectInfo extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAddAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddAdminEvent[];
@@ -1526,7 +1526,7 @@ declare module "@scom/sc-contract/contracts/Scom.json.ts" {
 }
 /// <amd-module name="@scom/sc-contract/contracts/Scom.ts" />
 declare module "@scom/sc-contract/contracts/Scom.ts" {
-    import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         minter: string;
         initSupplyTo: string;
@@ -1562,7 +1562,7 @@ declare module "@scom/sc-contract/contracts/Scom.ts" {
         to: string;
         amount: number | BigNumber;
     }
-    export class Scom extends Contract {
+    export class Scom extends _Contract {
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): Scom.ApprovalEvent[];
@@ -1646,7 +1646,7 @@ declare module "@scom/sc-contract/contracts/index.ts" {
 }
 /// <amd-module name="@scom/sc-contract" />
 declare module "@scom/sc-contract" {
-    import { IWallet } from "@ijstech/eth-wallet";
+    import { IWallet } from "@ijstech/eth-contract";
     import * as Contracts from "@scom/sc-contract/contracts/index.ts";
     export { Contracts };
     export interface IDeployOptions {

@@ -1,5 +1,5 @@
-import { IWallet, Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
-export declare class Authorization extends Contract {
+import { IWallet, Contract as _Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
+export declare class Authorization extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(options?: TransactionOptions): Promise<string>;
     parseAuthorizeEvent(receipt: TransactionReceipt): Authorization.AuthorizeEvent[];

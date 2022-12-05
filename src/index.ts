@@ -1,5 +1,5 @@
-import { BigNumber, IWallet,  Utils} from "@ijstech/eth-wallet";
-import  * as Contracts from "./contracts/index";
+import {IWallet} from "@ijstech/eth-contract";
+import * as Contracts from "./contracts/index";
 export {Contracts};
 
 export interface IDeployOptions{
@@ -46,8 +46,8 @@ async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<stri
     await token.deploy({
         minter: scomOptions.minter,
         initSupplyTo: scomOptions.initSupplyTo, 
-        initSupply: Utils.toDecimals(scomOptions.initSupply), 
-        totalSupply: Utils.toDecimals(scomOptions.totalSupply)
+        initSupply: wallet.utils.toDecimals(scomOptions.initSupply), 
+        totalSupply: wallet.utils.toDecimals(scomOptions.totalSupply)
     })  
     return token.address;
 }

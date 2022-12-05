@@ -1,4 +1,4 @@
-import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IAllowancesParams {
     param1: string;
     param2: string;
@@ -53,7 +53,7 @@ export interface IWithdrawParams {
     domainName: string;
     amount: number | BigNumber;
 }
-export declare class DomainInfo extends Contract {
+export declare class DomainInfo extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(token: string, options?: TransactionOptions): Promise<string>;
     parseApprovalEvent(receipt: TransactionReceipt): DomainInfo.ApprovalEvent[];

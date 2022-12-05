@@ -1,4 +1,4 @@
-import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IDeployParams {
     token: string;
     auditorInfo: string;
@@ -98,7 +98,7 @@ export interface IVoidProjectVersionParams {
     projectId: number | BigNumber;
     versionIdx: number | BigNumber;
 }
-export declare class ProjectInfo extends Contract {
+export declare class ProjectInfo extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddAdminEvent[];

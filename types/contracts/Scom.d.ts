@@ -1,4 +1,4 @@
-import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IDeployParams {
     minter: string;
     initSupplyTo: string;
@@ -34,7 +34,7 @@ export interface ITransferFromParams {
     to: string;
     amount: number | BigNumber;
 }
-export declare class Scom extends Contract {
+export declare class Scom extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseApprovalEvent(receipt: TransactionReceipt): Scom.ApprovalEvent[];

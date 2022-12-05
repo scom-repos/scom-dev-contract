@@ -1,4 +1,4 @@
-import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IAddReleaseParams {
     packageHash: string;
     version: string;
@@ -40,7 +40,7 @@ export interface ISetCurrentVersionParams {
     packageHash: string;
     version: string;
 }
-export declare class ModuleInfo extends Contract {
+export declare class ModuleInfo extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
     parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];

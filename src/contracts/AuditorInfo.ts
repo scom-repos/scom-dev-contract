@@ -1,9 +1,9 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
+import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./AuditorInfo.json";
 
 export interface IDeployParams {token:string;cooldownPeriod:number|BigNumber}
 export interface IGetAuditorsParams {auditorIdStart:number|BigNumber;length:number|BigNumber}
-export class AuditorInfo extends Contract{
+export class AuditorInfo extends _Contract{
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

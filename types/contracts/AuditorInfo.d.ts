@@ -1,4 +1,4 @@
-import { IWallet, Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IDeployParams {
     token: string;
     cooldownPeriod: number | BigNumber;
@@ -7,7 +7,7 @@ export interface IGetAuditorsParams {
     auditorIdStart: number | BigNumber;
     length: number | BigNumber;
 }
-export declare class AuditorInfo extends Contract {
+export declare class AuditorInfo extends _Contract {
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[];

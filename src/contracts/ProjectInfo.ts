@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
+import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./ProjectInfo.json";
 
 export interface IDeployParams {token:string;auditorInfo:string}
@@ -24,7 +24,7 @@ export interface ITransferProjectOwnershipParams {projectId:number|BigNumber;new
 export interface IUnstakeParams {projectId:number|BigNumber;amount:number|BigNumber}
 export interface IUpdatePackageIpfsCidParams {projectId:number|BigNumber;packageId:number|BigNumber;ipfsCid:string}
 export interface IVoidProjectVersionParams {projectId:number|BigNumber;versionIdx:number|BigNumber}
-export class ProjectInfo extends Contract{
+export class ProjectInfo extends _Contract{
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

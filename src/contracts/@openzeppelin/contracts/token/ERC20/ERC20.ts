@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
+import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./ERC20.json";
 
 export interface IDeployParams {name:string;symbol:string}
@@ -8,7 +8,7 @@ export interface IDecreaseAllowanceParams {spender:string;subtractedValue:number
 export interface IIncreaseAllowanceParams {spender:string;addedValue:number|BigNumber}
 export interface ITransferParams {to:string;amount:number|BigNumber}
 export interface ITransferFromParams {from:string;to:string;amount:number|BigNumber}
-export class ERC20 extends Contract{
+export class ERC20 extends _Contract{
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

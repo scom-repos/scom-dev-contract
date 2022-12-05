@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
+import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Scom.json";
 
 export interface IDeployParams {minter:string;initSupplyTo:string;initSupply:number|BigNumber;totalSupply:number|BigNumber}
@@ -9,7 +9,7 @@ export interface IIncreaseAllowanceParams {spender:string;addedValue:number|BigN
 export interface IMintParams {account:string;amount:number|BigNumber}
 export interface ITransferParams {to:string;amount:number|BigNumber}
 export interface ITransferFromParams {from:string;to:string;amount:number|BigNumber}
-export class Scom extends Contract{
+export class Scom extends _Contract{
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

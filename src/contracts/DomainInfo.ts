@@ -1,4 +1,4 @@
-import {IWallet, Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
+import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./DomainInfo.json";
 
 export interface IAllowancesParams {param1:string;param2:string;param3:string}
@@ -13,7 +13,7 @@ export interface ISpendParams {owner:string;domainName:string;destination:string
 export interface IUpdateDomainInfoParams {domainName:string;moduleType:number|BigNumber;module:string}
 export interface IUpdateDomainModuleParams {domainName:string;module:string}
 export interface IWithdrawParams {domainName:string;amount:number|BigNumber}
-export class DomainInfo extends Contract{
+export class DomainInfo extends _Contract{
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

@@ -2136,7 +2136,7 @@ define("@scom/sc-contract/contracts/index.ts", ["require", "exports", "@scom/sc-
     Object.defineProperty(exports, "ProjectInfo", { enumerable: true, get: function () { return ProjectInfo_1.ProjectInfo; } });
     Object.defineProperty(exports, "Scom", { enumerable: true, get: function () { return Scom_1.Scom; } });
 });
-define("@scom/sc-contract", ["require", "exports", "@ijstech/eth-wallet", "@scom/sc-contract/contracts/index.ts"], function (require, exports, eth_wallet_1, Contracts) {
+define("@scom/sc-contract", ["require", "exports", "@scom/sc-contract/contracts/index.ts"], function (require, exports, Contracts) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.deploy = exports.DefaultDeployOptions = exports.Contracts = void 0;
@@ -2164,8 +2164,8 @@ define("@scom/sc-contract", ["require", "exports", "@ijstech/eth-wallet", "@scom
         await token.deploy({
             minter: scomOptions.minter,
             initSupplyTo: scomOptions.initSupplyTo,
-            initSupply: eth_wallet_1.Utils.toDecimals(scomOptions.initSupply),
-            totalSupply: eth_wallet_1.Utils.toDecimals(scomOptions.totalSupply)
+            initSupply: wallet.utils.toDecimals(scomOptions.initSupply),
+            totalSupply: wallet.utils.toDecimals(scomOptions.totalSupply)
         });
         return token.address;
     }
