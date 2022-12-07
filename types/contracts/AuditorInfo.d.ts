@@ -8,6 +8,7 @@ export interface IGetAuditorsParams {
     length: number | BigNumber;
 }
 export declare class AuditorInfo extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[];

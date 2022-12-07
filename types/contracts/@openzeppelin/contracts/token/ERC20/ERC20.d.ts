@@ -29,6 +29,7 @@ export interface ITransferFromParams {
     amount: number | BigNumber;
 }
 export declare class ERC20 extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseApprovalEvent(receipt: TransactionReceipt): ERC20.ApprovalEvent[];

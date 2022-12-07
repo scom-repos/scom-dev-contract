@@ -41,6 +41,7 @@ export interface ISetCurrentVersionParams {
     version: string;
 }
 export declare class ModuleInfo extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
     parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];

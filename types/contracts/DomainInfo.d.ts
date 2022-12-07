@@ -54,6 +54,7 @@ export interface IWithdrawParams {
     amount: number | BigNumber;
 }
 export declare class DomainInfo extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(token: string, options?: TransactionOptions): Promise<string>;
     parseApprovalEvent(receipt: TransactionReceipt): DomainInfo.ApprovalEvent[];

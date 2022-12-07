@@ -1,6 +1,5 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./ProjectInfo.json";
-
 export interface IDeployParams {token:string;auditorInfo:string}
 export interface IAddProjectAdminParams {projectId:number|BigNumber;admin:string}
 export interface INewPackageParams {projectId:number|BigNumber;ipfsCid:string}
@@ -25,6 +24,7 @@ export interface IUnstakeParams {projectId:number|BigNumber;amount:number|BigNum
 export interface IUpdatePackageIpfsCidParams {projectId:number|BigNumber;packageId:number|BigNumber;ipfsCid:string}
 export interface IVoidProjectVersionParams {projectId:number|BigNumber;versionIdx:number|BigNumber}
 export class ProjectInfo extends _Contract{
+    static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

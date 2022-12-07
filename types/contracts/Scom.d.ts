@@ -35,6 +35,7 @@ export interface ITransferFromParams {
     amount: number | BigNumber;
 }
 export declare class Scom extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseApprovalEvent(receipt: TransactionReceipt): Scom.ApprovalEvent[];

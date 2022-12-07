@@ -77,6 +77,7 @@ declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/
         amount: number | BigNumber;
     }
     export class ERC20 extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): ERC20.ApprovalEvent[];
@@ -216,6 +217,7 @@ declare module "@scom/sc-contract/contracts/AuditorInfo.ts" {
         length: number | BigNumber;
     }
     export class AuditorInfo extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[];
@@ -422,6 +424,7 @@ declare module "@scom/sc-contract/contracts/Authorization.json.ts" {
 declare module "@scom/sc-contract/contracts/Authorization.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
     export class Authorization extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(options?: TransactionOptions): Promise<string>;
         parseAuthorizeEvent(receipt: TransactionReceipt): Authorization.AuthorizeEvent[];
@@ -582,6 +585,7 @@ declare module "@scom/sc-contract/contracts/DomainInfo.ts" {
         amount: number | BigNumber;
     }
     export class DomainInfo extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(token: string, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): DomainInfo.ApprovalEvent[];
@@ -832,6 +836,7 @@ declare module "@scom/sc-contract/contracts/ModuleInfo.ts" {
         version: string;
     }
     export class ModuleInfo extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
         parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];
@@ -1138,6 +1143,7 @@ declare module "@scom/sc-contract/contracts/ProjectInfo.ts" {
         versionIdx: number | BigNumber;
     }
     export class ProjectInfo extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAddAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddAdminEvent[];
@@ -1563,6 +1569,7 @@ declare module "@scom/sc-contract/contracts/Scom.ts" {
         amount: number | BigNumber;
     }
     export class Scom extends _Contract {
+        static _abi: any;
         constructor(wallet: IWallet, address?: string);
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseApprovalEvent(receipt: TransactionReceipt): Scom.ApprovalEvent[];

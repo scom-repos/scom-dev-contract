@@ -153,6 +153,7 @@ define("@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts
         }
     }
     exports.ERC20 = ERC20;
+    ERC20._abi = ERC20_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/AuditorInfo.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -504,6 +505,7 @@ define("@scom/sc-contract/contracts/AuditorInfo.ts", ["require", "exports", "@ij
         }
     }
     exports.AuditorInfo = AuditorInfo;
+    AuditorInfo._abi = AuditorInfo_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/Authorization.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -642,6 +644,7 @@ define("@scom/sc-contract/contracts/Authorization.ts", ["require", "exports", "@
         }
     }
     exports.Authorization = Authorization;
+    Authorization._abi = Authorization_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/DomainInfo.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -1000,6 +1003,7 @@ define("@scom/sc-contract/contracts/DomainInfo.ts", ["require", "exports", "@ijs
         }
     }
     exports.DomainInfo = DomainInfo;
+    DomainInfo._abi = DomainInfo_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/ModuleInfo.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -1218,6 +1222,7 @@ define("@scom/sc-contract/contracts/ModuleInfo.ts", ["require", "exports", "@ijs
         }
     }
     exports.ModuleInfo = ModuleInfo;
+    ModuleInfo._abi = ModuleInfo_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/ProjectInfo.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -1942,6 +1947,7 @@ define("@scom/sc-contract/contracts/ProjectInfo.ts", ["require", "exports", "@ij
         }
     }
     exports.ProjectInfo = ProjectInfo;
+    ProjectInfo._abi = ProjectInfo_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/Scom.json.ts", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -2123,6 +2129,7 @@ define("@scom/sc-contract/contracts/Scom.ts", ["require", "exports", "@ijstech/e
         }
     }
     exports.Scom = Scom;
+    Scom._abi = Scom_json_1.default.abi;
 });
 define("@scom/sc-contract/contracts/index.ts", ["require", "exports", "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts", "@scom/sc-contract/contracts/AuditorInfo.ts", "@scom/sc-contract/contracts/Authorization.ts", "@scom/sc-contract/contracts/DomainInfo.ts", "@scom/sc-contract/contracts/ModuleInfo.ts", "@scom/sc-contract/contracts/ProjectInfo.ts", "@scom/sc-contract/contracts/Scom.ts"], function (require, exports, ERC20_1, AuditorInfo_1, Authorization_1, DomainInfo_1, ModuleInfo_1, ProjectInfo_1, Scom_1) {
     "use strict";

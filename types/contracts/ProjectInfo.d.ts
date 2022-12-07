@@ -99,6 +99,7 @@ export interface IVoidProjectVersionParams {
     versionIdx: number | BigNumber;
 }
 export declare class ProjectInfo extends _Contract {
+    static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddAdminEvent[];

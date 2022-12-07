@@ -1,6 +1,5 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Scom.json";
-
 export interface IDeployParams {minter:string;initSupplyTo:string;initSupply:number|BigNumber;totalSupply:number|BigNumber}
 export interface IAllowanceParams {owner:string;spender:string}
 export interface IApproveParams {spender:string;amount:number|BigNumber}
@@ -10,6 +9,7 @@ export interface IMintParams {account:string;amount:number|BigNumber}
 export interface ITransferParams {to:string;amount:number|BigNumber}
 export interface ITransferFromParams {from:string;to:string;amount:number|BigNumber}
 export class Scom extends _Contract{
+    static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()

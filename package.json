@@ -1,6 +1,6 @@
 {
   "name": "@scom/sc-contract",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "",
   "main": "lib/index.js",
   "plugin": "dist/index.js",
@@ -18,7 +18,7 @@
     "setup": "ts-node tools/setup.ts"
   },
   "dependencies": {
-    "@ijstech/eth-contract": "^0.1.10"
+    "@ijstech/eth-contract": "^0.1.13"
   },
   "devDependencies": {
     "@ijstech/cli": "^0.1.28",

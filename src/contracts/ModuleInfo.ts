@@ -1,6 +1,5 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./ModuleInfo.json";
-
 export interface IAddReleaseParams {packageHash:string;version:string;uri:string;pulishRelease:boolean}
 export interface IGetBatchOwnerPackagesParams {owner:string;from:number|BigNumber;length:number|BigNumber}
 export interface IGetBatchOwnerPackagesAndHashParams {owner:string;from:number|BigNumber;length:number|BigNumber}
@@ -11,6 +10,7 @@ export interface IPackageReleasesParams {param1:string;param2:number|BigNumber}
 export interface IPackageReleasesIndexParams {param1:string;param2:string}
 export interface ISetCurrentVersionParams {packageHash:string;version:string}
 export class ModuleInfo extends _Contract{
+    static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
         super(wallet, address, Bin.abi, Bin.bytecode);
         this.assign()
