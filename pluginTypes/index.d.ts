@@ -1,5 +1,5 @@
-/// <amd-module name="@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.json.ts" />
-declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.json.ts" />
+declare module "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.json.ts" {
     const _default: {
         abi: ({
             inputs: {
@@ -44,8 +44,8 @@ declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/
     };
     export default _default;
 }
-/// <amd-module name="@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" />
-declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" />
+declare module "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         name: string;
@@ -139,8 +139,8 @@ declare module "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/AuditorInfo.json.ts" />
-declare module "@scom/sc-contract/contracts/AuditorInfo.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/AuditorInfo.json.ts" />
+declare module "@scom/portal-contract/contracts/AuditorInfo.json.ts" {
     const _default_1: {
         abi: ({
             inputs: {
@@ -205,8 +205,8 @@ declare module "@scom/sc-contract/contracts/AuditorInfo.json.ts" {
     };
     export default _default_1;
 }
-/// <amd-module name="@scom/sc-contract/contracts/AuditorInfo.ts" />
-declare module "@scom/sc-contract/contracts/AuditorInfo.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/AuditorInfo.ts" />
+declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         token: string;
@@ -378,8 +378,8 @@ declare module "@scom/sc-contract/contracts/AuditorInfo.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/Authorization.json.ts" />
-declare module "@scom/sc-contract/contracts/Authorization.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/Authorization.json.ts" />
+declare module "@scom/portal-contract/contracts/Authorization.json.ts" {
     const _default_2: {
         abi: ({
             inputs: any[];
@@ -420,8 +420,8 @@ declare module "@scom/sc-contract/contracts/Authorization.json.ts" {
     };
     export default _default_2;
 }
-/// <amd-module name="@scom/sc-contract/contracts/Authorization.ts" />
-declare module "@scom/sc-contract/contracts/Authorization.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/Authorization.ts" />
+declare module "@scom/portal-contract/contracts/Authorization.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, Event, TransactionOptions } from "@ijstech/eth-contract";
     export class Authorization extends _Contract {
         static _abi: any;
@@ -481,8 +481,8 @@ declare module "@scom/sc-contract/contracts/Authorization.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/DomainInfo.json.ts" />
-declare module "@scom/sc-contract/contracts/DomainInfo.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/DomainInfo.json.ts" />
+declare module "@scom/portal-contract/contracts/DomainInfo.json.ts" {
     const _default_3: {
         abi: ({
             inputs: {
@@ -527,8 +527,8 @@ declare module "@scom/sc-contract/contracts/DomainInfo.json.ts" {
     };
     export default _default_3;
 }
-/// <amd-module name="@scom/sc-contract/contracts/DomainInfo.ts" />
-declare module "@scom/sc-contract/contracts/DomainInfo.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/DomainInfo.ts" />
+declare module "@scom/portal-contract/contracts/DomainInfo.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IAllowancesParams {
         param1: string;
@@ -746,8 +746,8 @@ declare module "@scom/sc-contract/contracts/DomainInfo.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/ModuleInfo.json.ts" />
-declare module "@scom/sc-contract/contracts/ModuleInfo.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/ModuleInfo.json.ts" />
+declare module "@scom/portal-contract/contracts/ModuleInfo.json.ts" {
     const _default_4: {
         abi: ({
             anonymous: boolean;
@@ -791,8 +791,8 @@ declare module "@scom/sc-contract/contracts/ModuleInfo.json.ts" {
     };
     export default _default_4;
 }
-/// <amd-module name="@scom/sc-contract/contracts/ModuleInfo.ts" />
-declare module "@scom/sc-contract/contracts/ModuleInfo.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/ModuleInfo.ts" />
+declare module "@scom/portal-contract/contracts/ModuleInfo.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IAddReleaseParams {
         packageHash: string;
@@ -948,8 +948,8 @@ declare module "@scom/sc-contract/contracts/ModuleInfo.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/ProjectInfo.json.ts" />
-declare module "@scom/sc-contract/contracts/ProjectInfo.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/ProjectInfo.json.ts" />
+declare module "@scom/portal-contract/contracts/ProjectInfo.json.ts" {
     const _default_5: {
         abi: ({
             inputs: {
@@ -1040,8 +1040,8 @@ declare module "@scom/sc-contract/contracts/ProjectInfo.json.ts" {
     };
     export default _default_5;
 }
-/// <amd-module name="@scom/sc-contract/contracts/ProjectInfo.ts" />
-declare module "@scom/sc-contract/contracts/ProjectInfo.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/ProjectInfo.ts" />
+declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         token: string;
@@ -1484,8 +1484,8 @@ declare module "@scom/sc-contract/contracts/ProjectInfo.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/Scom.json.ts" />
-declare module "@scom/sc-contract/contracts/Scom.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/Scom.json.ts" />
+declare module "@scom/portal-contract/contracts/Scom.json.ts" {
     const _default_6: {
         abi: ({
             inputs: {
@@ -1530,8 +1530,8 @@ declare module "@scom/sc-contract/contracts/Scom.json.ts" {
     };
     export default _default_6;
 }
-/// <amd-module name="@scom/sc-contract/contracts/Scom.ts" />
-declare module "@scom/sc-contract/contracts/Scom.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/Scom.ts" />
+declare module "@scom/portal-contract/contracts/Scom.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         minter: string;
@@ -1641,20 +1641,20 @@ declare module "@scom/sc-contract/contracts/Scom.ts" {
         }
     }
 }
-/// <amd-module name="@scom/sc-contract/contracts/index.ts" />
-declare module "@scom/sc-contract/contracts/index.ts" {
-    export { ERC20 } from "@scom/sc-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts";
-    export { AuditorInfo } from "@scom/sc-contract/contracts/AuditorInfo.ts";
-    export { Authorization } from "@scom/sc-contract/contracts/Authorization.ts";
-    export { DomainInfo } from "@scom/sc-contract/contracts/DomainInfo.ts";
-    export { ModuleInfo } from "@scom/sc-contract/contracts/ModuleInfo.ts";
-    export { ProjectInfo } from "@scom/sc-contract/contracts/ProjectInfo.ts";
-    export { Scom } from "@scom/sc-contract/contracts/Scom.ts";
+/// <amd-module name="@scom/portal-contract/contracts/index.ts" />
+declare module "@scom/portal-contract/contracts/index.ts" {
+    export { ERC20 } from "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts";
+    export { AuditorInfo } from "@scom/portal-contract/contracts/AuditorInfo.ts";
+    export { Authorization } from "@scom/portal-contract/contracts/Authorization.ts";
+    export { DomainInfo } from "@scom/portal-contract/contracts/DomainInfo.ts";
+    export { ModuleInfo } from "@scom/portal-contract/contracts/ModuleInfo.ts";
+    export { ProjectInfo } from "@scom/portal-contract/contracts/ProjectInfo.ts";
+    export { Scom } from "@scom/portal-contract/contracts/Scom.ts";
 }
-/// <amd-module name="@scom/sc-contract" />
-declare module "@scom/sc-contract" {
+/// <amd-module name="@scom/portal-contract" />
+declare module "@scom/portal-contract" {
     import { IWallet } from "@ijstech/eth-contract";
-    import * as Contracts from "@scom/sc-contract/contracts/index.ts";
+    import * as Contracts from "@scom/portal-contract/contracts/index.ts";
     export { Contracts };
     export interface IDeployOptions {
         token: {
