@@ -1,6 +1,6 @@
 {
   "name": "@scom/portal-contract",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "",
   "main": "lib/index.js",
   "plugin": "dist/index.js",
