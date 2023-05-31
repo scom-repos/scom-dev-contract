@@ -55,6 +55,10 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     mapping(uint256 => uint256[]) public packageVersionsList; // packageVersionsList[packageId][idx] = packageVersionsId
     mapping(uint256 => PackageVersion) public latestAuditedPackageVersion; // latestAuditedPackageVersion[packageId] = {packageId, version, status, ipfsCid}
 
+    // package <-> admin
+    mapping(uint256 => address[]) public packageAdmin; // packageAdmin[packageId][idx] = admin
+    mapping(uint256 => mapping(address => uint256)) public packageAdminInv; // packageAdminInv[packageId][admin] = idx
+
     // project <-> package
     mapping(uint256 => uint256[]) public projectPackages; // projectPackages[projectId][projectPackagesIdx] = packageId
     mapping(uint256 => mapping(uint256 => uint256)) public projectPackagesInv; // projectPackagesInv[projectId][packageId] = projectPackagesIdx
@@ -69,6 +73,8 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     event UpdatePackageIpfsCid(uint256 indexed packageId, string ipfsCid);
     event NewPackageVersion(uint256 indexed packageId, uint256 indexed packageVersionId, SemVer version);
     event SetPackageVersionStatus(uint256 indexed packageId, uint256 indexed packageVersionId, PackageVersionStatus status);
+    event AddPackageAdmin(uint256 indexed packageId, address indexed admin);
+    event RemovePackageAdmin(uint256 indexed packageId, address indexed admin);
 
     event Stake(address indexed sender, uint256 indexed projectId, uint256 amount, uint256 newBalance);
     event Unstake(address indexed sender, uint256 indexed projectId, uint256 amount, uint256 newBalance);
@@ -88,6 +94,14 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
             projectAdmin[projectId][projectAdminInv[projectId][msg.sender]] == msg.sender 
             || projectOwner[projectId] == msg.sender
         , "not from admin");
+        _;
+    }
+
+    modifier isProjectOwner(uint256 packageId) {
+        require(packageId < packages.length, "invalid packageId");
+        Package storage package = packages[packageId];
+        uint256 projectId = package.projectId;
+        require(projectOwner[package.projectId] == msg.sender, "not from owner");
         _;
     }
 
@@ -189,6 +203,24 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(package.projectId == projectId, "projectId/packageId not match");
         package.ipfsCid = ipfsCid;
         emit UpdatePackageIpfsCid(packageId, ipfsCid);
+    }
+    function addPackageAdmin(uint256 packageId, address admin) external isProjectOwner(packageId) {
+        require(packageAdmin[packageId].length == 0 || packageAdmin[packageId][packageAdminInv[packageId][admin]] != admin, "already a admin");
+        packageAdminInv[packageId][admin] = packageAdmin[packageId].length;
+        packageAdmin[packageId].push(admin);
+        emit AddPackageAdmin(packageId, admin);
+    }
+    function removePackageAdmin(uint256 packageId, address admin) external isProjectOwner(packageId) {
+        uint256 idx = packageAdminInv[packageId][admin];
+        uint256 lastIdx = packageAdmin[packageId].length - 1;
+        if (idx < lastIdx) {
+            address lastAdmin = packageAdmin[packageId][lastIdx];
+            packageAdminInv[packageId][lastAdmin] = idx;
+            packageAdmin[packageId][idx] = lastAdmin;
+        }
+        delete packageAdminInv[packageId][admin];
+        packageAdmin[packageId].pop();
+        emit RemovePackageAdmin(packageId, admin);
     }
 
     function newPackageVersion(uint256 projectId, uint256 packageId, SemVer memory version, string calldata ipfsCid) public isProjectAdminOrOwner(projectId) returns (uint256 packageVersionId) {

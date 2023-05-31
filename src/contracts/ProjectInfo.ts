@@ -1,17 +1,21 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./ProjectInfo.json";
 export interface IDeployParams {token:string;auditorInfo:string}
+export interface IAddPackageAdminParams {packageId:number|BigNumber;admin:string}
 export interface IAddProjectAdminParams {projectId:number|BigNumber;admin:string}
 export interface INewPackageParams {projectId:number|BigNumber;ipfsCid:string}
 export interface INewPackageVersionParams {projectId:number|BigNumber;packageId:number|BigNumber;version:{major:number|BigNumber,minor:number|BigNumber,patch:number|BigNumber};ipfsCid:string}
 export interface IOwnersProjectsParams {param1:string;param2:number|BigNumber}
 export interface IOwnersProjectsInvParams {param1:string;param2:number|BigNumber}
+export interface IPackageAdminParams {param1:number|BigNumber;param2:number|BigNumber}
+export interface IPackageAdminInvParams {param1:number|BigNumber;param2:string}
 export interface IPackageVersionsListParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectAdminParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectAdminInvParams {param1:number|BigNumber;param2:string}
 export interface IProjectBackerBalanceParams {param1:string;param2:number|BigNumber}
 export interface IProjectPackagesParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectPackagesInvParams {param1:number|BigNumber;param2:number|BigNumber}
+export interface IRemovePackageAdminParams {packageId:number|BigNumber;admin:string}
 export interface IRemoveProjectAdminParams {projectId:number|BigNumber;admin:string}
 export interface ISetPackageVersionToAuditFailedParams {packageVersionId:number|BigNumber;reportUri:string}
 export interface ISetPackageVersionToAuditPassedParams {packageVersionId:number|BigNumber;reportUri:string}
@@ -35,6 +39,17 @@ export class ProjectInfo extends _Contract{
         let result = event.data;
         return {
             projectId: new BigNumber(result.projectId),
+            admin: result.admin,
+            _event: event
+        };
+    }
+    parseAddPackageAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddPackageAdminEvent[]{
+        return this.parseEvents(receipt, "AddPackageAdmin").map(e=>this.decodeAddPackageAdminEvent(e));
+    }
+    decodeAddPackageAdminEvent(event: Event): ProjectInfo.AddPackageAdminEvent{
+        let result = event.data;
+        return {
+            packageId: new BigNumber(result.packageId),
             admin: result.admin,
             _event: event
         };
@@ -108,6 +123,17 @@ export class ProjectInfo extends _Contract{
         let result = event.data;
         return {
             projectId: new BigNumber(result.projectId),
+            admin: result.admin,
+            _event: event
+        };
+    }
+    parseRemovePackageAdminEvent(receipt: TransactionReceipt): ProjectInfo.RemovePackageAdminEvent[]{
+        return this.parseEvents(receipt, "RemovePackageAdmin").map(e=>this.decodeRemovePackageAdminEvent(e));
+    }
+    decodeRemovePackageAdminEvent(event: Event): ProjectInfo.RemovePackageAdminEvent{
+        let result = event.data;
+        return {
+            packageId: new BigNumber(result.packageId),
             admin: result.admin,
             _event: event
         };
@@ -192,6 +218,10 @@ export class ProjectInfo extends _Contract{
             _event: event
         };
     }
+    addPackageAdmin: {
+        (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IAddPackageAdminParams, options?: TransactionOptions) => Promise<void>;
+    }
     addProjectAdmin: {
         (params: IAddProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IAddProjectAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -235,6 +265,12 @@ export class ProjectInfo extends _Contract{
     }
     ownersProjectsLength: {
         (owner:string, options?: TransactionOptions): Promise<BigNumber>;
+    }
+    packageAdmin: {
+        (params: IPackageAdminParams, options?: TransactionOptions): Promise<string>;
+    }
+    packageAdminInv: {
+        (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     packageVersions: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}>;
@@ -290,6 +326,10 @@ export class ProjectInfo extends _Contract{
     }
     projectPackagesLength: {
         (projectId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    }
+    removePackageAdmin: {
+        (params: IRemovePackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IRemovePackageAdminParams, options?: TransactionOptions) => Promise<void>;
     }
     removeProjectAdmin: {
         (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -393,6 +433,18 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.ownersProjectsLength = ownersProjectsLength_call
+        let packageAdminParams = (params: IPackageAdminParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
+        let packageAdmin_call = async (params: IPackageAdminParams, options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('packageAdmin',packageAdminParams(params),options);
+            return result;
+        }
+        this.packageAdmin = packageAdmin_call
+        let packageAdminInvParams = (params: IPackageAdminInvParams) => [this.wallet.utils.toString(params.param1),params.param2];
+        let packageAdminInv_call = async (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('packageAdminInv',packageAdminInvParams(params),options);
+            return new BigNumber(result);
+        }
+        this.packageAdminInv = packageAdminInv_call
         let packageVersions_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}> => {
             let result = await this.call('packageVersions',[this.wallet.utils.toString(param1)],options);
             return {
@@ -506,6 +558,18 @@ export class ProjectInfo extends _Contract{
             return result;
         }
         this.token = token_call
+        let addPackageAdminParams = (params: IAddPackageAdminParams) => [this.wallet.utils.toString(params.packageId),params.admin];
+        let addPackageAdmin_send = async (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('addPackageAdmin',addPackageAdminParams(params),options);
+            return result;
+        }
+        let addPackageAdmin_call = async (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('addPackageAdmin',addPackageAdminParams(params),options);
+            return;
+        }
+        this.addPackageAdmin = Object.assign(addPackageAdmin_send, {
+            call:addPackageAdmin_call
+        });
         let addProjectAdminParams = (params: IAddProjectAdminParams) => [this.wallet.utils.toString(params.projectId),params.admin];
         let addProjectAdmin_send = async (params: IAddProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('addProjectAdmin',addProjectAdminParams(params),options);
@@ -574,6 +638,18 @@ export class ProjectInfo extends _Contract{
         }
         this.permit = Object.assign(permit_send, {
             call:permit_call
+        });
+        let removePackageAdminParams = (params: IRemovePackageAdminParams) => [this.wallet.utils.toString(params.packageId),params.admin];
+        let removePackageAdmin_send = async (params: IRemovePackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('removePackageAdmin',removePackageAdminParams(params),options);
+            return result;
+        }
+        let removePackageAdmin_call = async (params: IRemovePackageAdminParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('removePackageAdmin',removePackageAdminParams(params),options);
+            return;
+        }
+        this.removePackageAdmin = Object.assign(removePackageAdmin_send, {
+            call:removePackageAdmin_call
         });
         let removeProjectAdminParams = (params: IRemoveProjectAdminParams) => [this.wallet.utils.toString(params.projectId),params.admin];
         let removeProjectAdmin_send = async (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
@@ -707,12 +783,14 @@ export class ProjectInfo extends _Contract{
 }
 export module ProjectInfo{
     export interface AddAdminEvent {projectId:BigNumber,admin:string,_event:Event}
+    export interface AddPackageAdminEvent {packageId:BigNumber,admin:string,_event:Event}
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface NewPackageEvent {projectId:BigNumber,packageId:BigNumber,ipfsCid:string,_event:Event}
     export interface NewPackageVersionEvent {packageId:BigNumber,packageVersionId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},_event:Event}
     export interface NewProjectEvent {projectId:BigNumber,owner:string,ipfsCid:string,_event:Event}
     export interface RemoveAdminEvent {projectId:BigNumber,admin:string,_event:Event}
+    export interface RemovePackageAdminEvent {packageId:BigNumber,admin:string,_event:Event}
     export interface SetPackageVersionStatusEvent {packageId:BigNumber,packageVersionId:BigNumber,status:BigNumber,_event:Event}
     export interface StakeEvent {sender:string,projectId:BigNumber,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
