@@ -98,6 +98,10 @@ export interface IUpdatePackageIpfsCidParams {
     packageId: number | BigNumber;
     ipfsCid: string;
 }
+export interface IUpdateProjectIpfsCidParams {
+    projectId: number | BigNumber;
+    ipfsCid: string;
+}
 export declare class ProjectInfo extends _Contract {
     static _abi: any;
     constructor(wallet: IWallet, address?: string);
@@ -134,6 +138,8 @@ export declare class ProjectInfo extends _Contract {
     decodeUnstakeEvent(event: Event): ProjectInfo.UnstakeEvent;
     parseUpdatePackageIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageIpfsCidEvent[];
     decodeUpdatePackageIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageIpfsCidEvent;
+    parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[];
+    decodeUpdateProjectIpfsCidEvent(event: Event): ProjectInfo.UpdateProjectIpfsCidEvent;
     addPackageAdmin: {
         (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IAddPackageAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -253,6 +259,9 @@ export declare class ProjectInfo extends _Contract {
     projectCount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
+    projectIpfsCid: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
     projectNewOwner: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
     };
@@ -314,6 +323,10 @@ export declare class ProjectInfo extends _Contract {
     updatePackageIpfsCid: {
         (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updateProjectIpfsCid: {
+        (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions) => Promise<void>;
     };
     voidPackageVersion: {
         (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -407,6 +420,11 @@ export declare module ProjectInfo {
     }
     interface UpdatePackageIpfsCidEvent {
         packageId: BigNumber;
+        ipfsCid: string;
+        _event: Event;
+    }
+    interface UpdateProjectIpfsCidEvent {
+        projectId: BigNumber;
         ipfsCid: string;
         _event: Event;
     }

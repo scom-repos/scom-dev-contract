@@ -40,6 +40,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
     mapping(uint256 => uint256) public projectBalance; //projectBalance[projectId] = amount
     mapping(address => mapping(uint256 => uint256)) public projectBackerBalance; //projectBackerBalance[staker][projectId] = amount
+    mapping(uint256 => string) public projectIpfsCid; // projectIpfsCid[projectId] = ipfsCid
     
     // project <-> owner / admin
     mapping(uint256 => address) public projectOwner; // projectOwner[projectId] = owner
@@ -64,6 +65,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     mapping(uint256 => mapping(uint256 => uint256)) public projectPackagesInv; // projectPackagesInv[projectId][packageId] = projectPackagesIdx
 
     event NewProject(uint256 indexed projectId, address indexed owner, string ipfsCid);
+    event UpdateProjectIpfsCid(uint256 indexed projectId, string ipfsCid);
     
     event TransferProjectOwnership(uint256 indexed projectId, address indexed newOwner);
     event AddAdmin(uint256 indexed projectId, address indexed admin);
@@ -137,8 +139,14 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         projectOwner[projectId] = msg.sender;
         ownersProjectsInv[msg.sender][projectId] = ownersProjects[msg.sender].length;
         ownersProjects[msg.sender].push(projectId);
+        projectIpfsCid[projectId] = ipfsCid;
         projectCount++;
         emit NewProject(projectId, msg.sender, ipfsCid);
+    }
+    function updateProjectIpfsCid(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
+        require(projectId < projectCount, "invalid projectId");
+        projectIpfsCid[projectId] = ipfsCid;
+        emit UpdateProjectIpfsCid(projectId, ipfsCid);
     }
     function _removeProjectFromOwner(address owner, uint256 projectId) internal {
         // make sure the project ownership is checked !
