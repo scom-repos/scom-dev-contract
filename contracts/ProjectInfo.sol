@@ -14,13 +14,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     enum PackageStatus {INACTIVE, ACTIVE}
     enum PackageVersionStatus {AUDITING, AUDIT_PASSED, AUDIT_FAILED, VOIDED}
 
-    struct ProjectVersion {
-        uint256 projectId;
-        uint256 version;
-        string ipfsCid;
-        ProjectStatus status;
-        uint64 lastModifiedDate;
-    }
     struct Package {
         uint256 projectId;
         uint256 currVersionIndex;
@@ -56,12 +49,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     mapping(uint256 => address[]) public projectAdmin; // projectAdmin[projectId][idx] = admin
     mapping(uint256 => mapping(address => uint256)) public projectAdminInv; // projectAdminInv[projectId][admin] = idx
 
-    // project meta
-    ProjectVersion[] public projectVersions; // projectVersions[projectVersionIdx] = {projectId, version, ipfsCid, PackageVersionStatus}
-    mapping(string => uint256) public projectVersionsInv; // projectVersionsInv[ipfsCid] = projectVersionIdx;
-    mapping(uint256 => uint256) public projectCurrentVersion; // projectCurrentVersion[projectId] = projectVersionIdx;
-    mapping(uint256 => uint256[]) public projectVersionList; // projectVersionList[projectId][idx] = projectVersionIdx
-
     // package
     Package[] public packages; // packages[packageId] = {projectId, currVersionIndex, status}
     PackageVersion[] public packageVersions; // packageVersions[packageVersionsId] = {packageId, version, status, ipfsCid}
@@ -72,10 +59,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     mapping(uint256 => uint256[]) public projectPackages; // projectPackages[projectId][projectPackagesIdx] = packageId
     mapping(uint256 => mapping(uint256 => uint256)) public projectPackagesInv; // projectPackagesInv[projectId][packageId] = projectPackagesIdx
 
-    event NewProject(uint256 indexed projectId, address indexed owner);
-    event NewProjectVersion(uint256 indexed projectId, uint256 indexed projectVersionIdx, string ipfsCid);
-    event VoidProjectVersion(uint256 indexed projectVersionIdx);
-    event SetProjectCurrentVersion(uint256 indexed projectId, uint256 indexed projectVersionIdx);
+    event NewProject(uint256 indexed projectId, address indexed owner, string ipfsCid);
     
     event TransferProjectOwnership(uint256 indexed projectId, address indexed newOwner);
     event AddAdmin(uint256 indexed projectId, address indexed admin);
@@ -85,8 +69,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     event UpdatePackageIpfsCid(uint256 indexed packageId, string ipfsCid);
     event NewPackageVersion(uint256 indexed packageId, uint256 indexed packageVersionId, SemVer version);
     event SetPackageVersionStatus(uint256 indexed packageId, uint256 indexed packageVersionId, PackageVersionStatus status);
-    // event AddProjectPackage(uint256 indexed projectId, uint256 indexed packageId);
-    // event RemoveProjectPackage(uint256 indexed projectId, uint256 indexed packageId);
 
     event Stake(address indexed sender, uint256 indexed projectId, uint256 amount, uint256 newBalance);
     event Unstake(address indexed sender, uint256 indexed projectId, uint256 amount, uint256 newBalance);
@@ -120,12 +102,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     function projectAdminLength(uint256 projectId) external view returns (uint256 length) {
         length = projectAdmin[projectId].length;
     }
-    function projectVersionsLength() external view returns (uint256 length) {
-        length = projectVersions.length;
-    }
-    function projectVersionListLength(uint256 projectId) external view returns (uint256 length) {
-        length = projectVersionList[projectId].length;
-    }
     function packagesLength() external view returns (uint256 length) {
         length = packages.length;
     }
@@ -148,9 +124,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         ownersProjectsInv[msg.sender][projectId] = ownersProjects[msg.sender].length;
         ownersProjects[msg.sender].push(projectId);
         projectCount++;
-        emit NewProject(projectId, msg.sender);
-        uint256 versionIdx = newProjectVersion(projectId, ipfsCid);
-        projectCurrentVersion[projectId] = versionIdx;
+        emit NewProject(projectId, msg.sender, ipfsCid);
     }
     function _removeProjectFromOwner(address owner, uint256 projectId) internal {
         // make sure the project ownership is checked !
@@ -197,36 +171,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         projectAdmin[projectId].pop();
 
         emit RemoveAdmin(projectId, admin);
-    }
-    function newProjectVersion(uint256 projectId, string calldata ipfsCid) public isProjectAdminOrOwner(projectId) returns (uint256 versionIdx) {
-        versionIdx = projectVersions.length;
-        projectVersionList[projectId].push(versionIdx); // start from 0
-
-        projectVersionsInv[ipfsCid] = versionIdx;
-        projectVersions.push(ProjectVersion({
-            projectId: projectId,
-            version: projectVersionList[projectId].length, // start from 1
-            ipfsCid: ipfsCid,
-            status: ProjectStatus.ACTIVE,
-            lastModifiedDate: uint64(block.timestamp)
-        }));
-        emit NewProjectVersion(projectId, versionIdx, ipfsCid);
-    }
-    function setProjectCurrentVersion(uint256 projectId, uint256 versionIdx) external isProjectAdminOrOwner(projectId) {
-        require(versionIdx < projectVersions.length, "project not exist");
-        ProjectVersion storage version = projectVersions[versionIdx];
-        require(version.projectId == projectId, "projectId/versionIdx not match");
-        require(version.status == ProjectStatus.ACTIVE, "project not active");
-        projectCurrentVersion[projectId] = versionIdx;
-        emit SetProjectCurrentVersion(projectId, versionIdx);
-    }
-    function voidProjectVersion(uint256 projectId, uint256 versionIdx) external isProjectAdminOrOwner(projectId) {
-        require(versionIdx < projectVersions.length, "project not exist");
-        ProjectVersion storage version = projectVersions[versionIdx];
-        require(version.projectId == projectId, "projectId/versionIdx not match");
-        version.status = ProjectStatus.INACTIVE;
-        version.lastModifiedDate = uint64(block.timestamp);
-        emit VoidProjectVersion(versionIdx);
     }
     function newPackage(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) returns (uint256 packageId) {
         packageId = packages.length;
@@ -306,26 +250,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         packageVersion.reportUri = reportUri;
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDIT_FAILED);
     }         
-    // function addProjectPackage(uint256 projectId, uint256 packageId) external isProjectAdminOrOwner(projectId) {
-    //     require(packageId < packages.length, "invalid packageId");
-    //     projectPackagesInv[projectId][packageId] = projectPackages[projectId].length;
-    //     projectPackages[projectId].push(packageId);
-
-    //     emit AddProjectPackage(projectId, packageId);
-    // }
-    // function removeProjectPackage(uint256 projectId, uint256 packageId) external isProjectAdminOrOwner(projectId) {
-    //     uint256 idx = projectPackagesInv[projectId][packageId];
-    //     uint256 lastIdx = projectPackages[projectId].length - 1;
-    //     if (idx < lastIdx) {
-    //         uint256 lastPackageId = projectPackages[projectId][lastIdx];
-    //         projectPackagesInv[projectId][lastPackageId] = idx;
-    //         projectPackages[projectId][idx] = lastPackageId;
-    //     }
-    //     delete projectPackagesInv[projectId][packageId];
-    //     projectPackages[projectId].pop();
-
-    //     emit RemoveProjectPackage(projectId, packageId);        
-    // }
 
     function stake(uint256 projectId, uint256 amount) external nonReentrant {
         require(amount > 0, "amount = 0");

@@ -4,7 +4,6 @@ export interface IDeployParams {token:string;auditorInfo:string}
 export interface IAddProjectAdminParams {projectId:number|BigNumber;admin:string}
 export interface INewPackageParams {projectId:number|BigNumber;ipfsCid:string}
 export interface INewPackageVersionParams {projectId:number|BigNumber;packageId:number|BigNumber;version:{major:number|BigNumber,minor:number|BigNumber,patch:number|BigNumber};ipfsCid:string}
-export interface INewProjectVersionParams {projectId:number|BigNumber;ipfsCid:string}
 export interface IOwnersProjectsParams {param1:string;param2:number|BigNumber}
 export interface IOwnersProjectsInvParams {param1:string;param2:number|BigNumber}
 export interface IPackageVersionsListParams {param1:number|BigNumber;param2:number|BigNumber}
@@ -13,16 +12,13 @@ export interface IProjectAdminInvParams {param1:number|BigNumber;param2:string}
 export interface IProjectBackerBalanceParams {param1:string;param2:number|BigNumber}
 export interface IProjectPackagesParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectPackagesInvParams {param1:number|BigNumber;param2:number|BigNumber}
-export interface IProjectVersionListParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IRemoveProjectAdminParams {projectId:number|BigNumber;admin:string}
 export interface ISetPackageVersionToAuditFailedParams {packageVersionId:number|BigNumber;reportUri:string}
 export interface ISetPackageVersionToAuditPassedParams {packageVersionId:number|BigNumber;reportUri:string}
-export interface ISetProjectCurrentVersionParams {projectId:number|BigNumber;versionIdx:number|BigNumber}
 export interface IStakeParams {projectId:number|BigNumber;amount:number|BigNumber}
 export interface ITransferProjectOwnershipParams {projectId:number|BigNumber;newOwner:string}
 export interface IUnstakeParams {projectId:number|BigNumber;amount:number|BigNumber}
 export interface IUpdatePackageIpfsCidParams {projectId:number|BigNumber;packageId:number|BigNumber;ipfsCid:string}
-export interface IVoidProjectVersionParams {projectId:number|BigNumber;versionIdx:number|BigNumber}
 export class ProjectInfo extends _Contract{
     static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
@@ -101,17 +97,6 @@ export class ProjectInfo extends _Contract{
         return {
             projectId: new BigNumber(result.projectId),
             owner: result.owner,
-            _event: event
-        };
-    }
-    parseNewProjectVersionEvent(receipt: TransactionReceipt): ProjectInfo.NewProjectVersionEvent[]{
-        return this.parseEvents(receipt, "NewProjectVersion").map(e=>this.decodeNewProjectVersionEvent(e));
-    }
-    decodeNewProjectVersionEvent(event: Event): ProjectInfo.NewProjectVersionEvent{
-        let result = event.data;
-        return {
-            projectId: new BigNumber(result.projectId),
-            projectVersionIdx: new BigNumber(result.projectVersionIdx),
             ipfsCid: result.ipfsCid,
             _event: event
         };
@@ -136,17 +121,6 @@ export class ProjectInfo extends _Contract{
             packageId: new BigNumber(result.packageId),
             packageVersionId: new BigNumber(result.packageVersionId),
             status: new BigNumber(result.status),
-            _event: event
-        };
-    }
-    parseSetProjectCurrentVersionEvent(receipt: TransactionReceipt): ProjectInfo.SetProjectCurrentVersionEvent[]{
-        return this.parseEvents(receipt, "SetProjectCurrentVersion").map(e=>this.decodeSetProjectCurrentVersionEvent(e));
-    }
-    decodeSetProjectCurrentVersionEvent(event: Event): ProjectInfo.SetProjectCurrentVersionEvent{
-        let result = event.data;
-        return {
-            projectId: new BigNumber(result.projectId),
-            projectVersionIdx: new BigNumber(result.projectVersionIdx),
             _event: event
         };
     }
@@ -218,16 +192,6 @@ export class ProjectInfo extends _Contract{
             _event: event
         };
     }
-    parseVoidProjectVersionEvent(receipt: TransactionReceipt): ProjectInfo.VoidProjectVersionEvent[]{
-        return this.parseEvents(receipt, "VoidProjectVersion").map(e=>this.decodeVoidProjectVersionEvent(e));
-    }
-    decodeVoidProjectVersionEvent(event: Event): ProjectInfo.VoidProjectVersionEvent{
-        let result = event.data;
-        return {
-            projectVersionIdx: new BigNumber(result.projectVersionIdx),
-            _event: event
-        };
-    }
     addProjectAdmin: {
         (params: IAddProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IAddProjectAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -259,10 +223,6 @@ export class ProjectInfo extends _Contract{
     newProject: {
         (ipfsCid:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (ipfsCid:string, options?: TransactionOptions) => Promise<BigNumber>;
-    }
-    newProjectVersion: {
-        (params: INewProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: INewProjectVersionParams, options?: TransactionOptions) => Promise<BigNumber>;
     }
     owner: {
         (options?: TransactionOptions): Promise<string>;
@@ -316,9 +276,6 @@ export class ProjectInfo extends _Contract{
     projectCount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
-    projectCurrentVersion: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    }
     projectNewOwner: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<string>;
     }
@@ -334,21 +291,6 @@ export class ProjectInfo extends _Contract{
     projectPackagesLength: {
         (projectId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
-    projectVersionList: {
-        (params: IProjectVersionListParams, options?: TransactionOptions): Promise<BigNumber>;
-    }
-    projectVersionListLength: {
-        (projectId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    }
-    projectVersions: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{projectId:BigNumber,version:BigNumber,ipfsCid:string,status:BigNumber,lastModifiedDate:BigNumber}>;
-    }
-    projectVersionsInv: {
-        (param1:string, options?: TransactionOptions): Promise<BigNumber>;
-    }
-    projectVersionsLength: {
-        (options?: TransactionOptions): Promise<BigNumber>;
-    }
     removeProjectAdmin: {
         (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IRemoveProjectAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -360,10 +302,6 @@ export class ProjectInfo extends _Contract{
     setPackageVersionToAuditPassed: {
         (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
-    }
-    setProjectCurrentVersion: {
-        (params: ISetProjectCurrentVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetProjectCurrentVersionParams, options?: TransactionOptions) => Promise<void>;
     }
     stake: {
         (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -399,10 +337,6 @@ export class ProjectInfo extends _Contract{
     voidPackageVersion: {
         (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (packageVersionId:number|BigNumber, options?: TransactionOptions) => Promise<void>;
-    }
-    voidProjectVersion: {
-        (params: IVoidProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IVoidProjectVersionParams, options?: TransactionOptions) => Promise<void>;
     }
     private assign(){
         let auditorInfo_call = async (options?: TransactionOptions): Promise<string> => {
@@ -540,11 +474,6 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.projectCount = projectCount_call
-        let projectCurrentVersion_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectCurrentVersion',[this.wallet.utils.toString(param1)],options);
-            return new BigNumber(result);
-        }
-        this.projectCurrentVersion = projectCurrentVersion_call
         let projectNewOwner_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<string> => {
             let result = await this.call('projectNewOwner',[this.wallet.utils.toString(param1)],options);
             return result;
@@ -572,38 +501,6 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.projectPackagesLength = projectPackagesLength_call
-        let projectVersionListParams = (params: IProjectVersionListParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
-        let projectVersionList_call = async (params: IProjectVersionListParams, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectVersionList',projectVersionListParams(params),options);
-            return new BigNumber(result);
-        }
-        this.projectVersionList = projectVersionList_call
-        let projectVersionListLength_call = async (projectId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectVersionListLength',[this.wallet.utils.toString(projectId)],options);
-            return new BigNumber(result);
-        }
-        this.projectVersionListLength = projectVersionListLength_call
-        let projectVersions_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{projectId:BigNumber,version:BigNumber,ipfsCid:string,status:BigNumber,lastModifiedDate:BigNumber}> => {
-            let result = await this.call('projectVersions',[this.wallet.utils.toString(param1)],options);
-            return {
-                projectId: new BigNumber(result.projectId),
-                version: new BigNumber(result.version),
-                ipfsCid: result.ipfsCid,
-                status: new BigNumber(result.status),
-                lastModifiedDate: new BigNumber(result.lastModifiedDate)
-            };
-        }
-        this.projectVersions = projectVersions_call
-        let projectVersionsInv_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectVersionsInv',[param1],options);
-            return new BigNumber(result);
-        }
-        this.projectVersionsInv = projectVersionsInv_call
-        let projectVersionsLength_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectVersionsLength',[],options);
-            return new BigNumber(result);
-        }
-        this.projectVersionsLength = projectVersionsLength_call
         let token_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('token',[],options);
             return result;
@@ -667,18 +564,6 @@ export class ProjectInfo extends _Contract{
         this.newProject = Object.assign(newProject_send, {
             call:newProject_call
         });
-        let newProjectVersionParams = (params: INewProjectVersionParams) => [this.wallet.utils.toString(params.projectId),params.ipfsCid];
-        let newProjectVersion_send = async (params: INewProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('newProjectVersion',newProjectVersionParams(params),options);
-            return result;
-        }
-        let newProjectVersion_call = async (params: INewProjectVersionParams, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('newProjectVersion',newProjectVersionParams(params),options);
-            return new BigNumber(result);
-        }
-        this.newProjectVersion = Object.assign(newProjectVersion_send, {
-            call:newProjectVersion_call
-        });
         let permit_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('permit',[user],options);
             return result;
@@ -725,18 +610,6 @@ export class ProjectInfo extends _Contract{
         }
         this.setPackageVersionToAuditPassed = Object.assign(setPackageVersionToAuditPassed_send, {
             call:setPackageVersionToAuditPassed_call
-        });
-        let setProjectCurrentVersionParams = (params: ISetProjectCurrentVersionParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.versionIdx)];
-        let setProjectCurrentVersion_send = async (params: ISetProjectCurrentVersionParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('setProjectCurrentVersion',setProjectCurrentVersionParams(params),options);
-            return result;
-        }
-        let setProjectCurrentVersion_call = async (params: ISetProjectCurrentVersionParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('setProjectCurrentVersion',setProjectCurrentVersionParams(params),options);
-            return;
-        }
-        this.setProjectCurrentVersion = Object.assign(setProjectCurrentVersion_send, {
-            call:setProjectCurrentVersion_call
         });
         let stakeParams = (params: IStakeParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.amount)];
         let stake_send = async (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
@@ -830,18 +703,6 @@ export class ProjectInfo extends _Contract{
         this.voidPackageVersion = Object.assign(voidPackageVersion_send, {
             call:voidPackageVersion_call
         });
-        let voidProjectVersionParams = (params: IVoidProjectVersionParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.versionIdx)];
-        let voidProjectVersion_send = async (params: IVoidProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('voidProjectVersion',voidProjectVersionParams(params),options);
-            return result;
-        }
-        let voidProjectVersion_call = async (params: IVoidProjectVersionParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('voidProjectVersion',voidProjectVersionParams(params),options);
-            return;
-        }
-        this.voidProjectVersion = Object.assign(voidProjectVersion_send, {
-            call:voidProjectVersion_call
-        });
     }
 }
 export module ProjectInfo{
@@ -850,16 +711,13 @@ export module ProjectInfo{
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface NewPackageEvent {projectId:BigNumber,packageId:BigNumber,ipfsCid:string,_event:Event}
     export interface NewPackageVersionEvent {packageId:BigNumber,packageVersionId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},_event:Event}
-    export interface NewProjectEvent {projectId:BigNumber,owner:string,_event:Event}
-    export interface NewProjectVersionEvent {projectId:BigNumber,projectVersionIdx:BigNumber,ipfsCid:string,_event:Event}
+    export interface NewProjectEvent {projectId:BigNumber,owner:string,ipfsCid:string,_event:Event}
     export interface RemoveAdminEvent {projectId:BigNumber,admin:string,_event:Event}
     export interface SetPackageVersionStatusEvent {packageId:BigNumber,packageVersionId:BigNumber,status:BigNumber,_event:Event}
-    export interface SetProjectCurrentVersionEvent {projectId:BigNumber,projectVersionIdx:BigNumber,_event:Event}
     export interface StakeEvent {sender:string,projectId:BigNumber,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
     export interface TransferOwnershipEvent {user:string,_event:Event}
     export interface TransferProjectOwnershipEvent {projectId:BigNumber,newOwner:string,_event:Event}
     export interface UnstakeEvent {sender:string,projectId:BigNumber,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface UpdatePackageIpfsCidEvent {packageId:BigNumber,ipfsCid:string,_event:Event}
-    export interface VoidProjectVersionEvent {projectVersionIdx:BigNumber,_event:Event}
 }
