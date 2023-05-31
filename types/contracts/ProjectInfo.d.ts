@@ -13,6 +13,7 @@ export interface IAddProjectAdminParams {
 }
 export interface INewPackageParams {
     projectId: number | BigNumber;
+    name: string;
     ipfsCid: string;
 }
 export interface INewPackageVersionParams {
@@ -23,6 +24,10 @@ export interface INewPackageVersionParams {
         minor: number | BigNumber;
         patch: number | BigNumber;
     };
+    ipfsCid: string;
+}
+export interface INewProjectParams {
+    name: string;
     ipfsCid: string;
 }
 export interface IOwnersProjectsParams {
@@ -98,9 +103,18 @@ export interface IUpdatePackageIpfsCidParams {
     packageId: number | BigNumber;
     ipfsCid: string;
 }
+export interface IUpdatePackageNameParams {
+    projectId: number | BigNumber;
+    packageId: number | BigNumber;
+    name: string;
+}
 export interface IUpdateProjectIpfsCidParams {
     projectId: number | BigNumber;
     ipfsCid: string;
+}
+export interface IUpdateProjectNameParams {
+    projectId: number | BigNumber;
+    name: string;
 }
 export declare class ProjectInfo extends _Contract {
     static _abi: any;
@@ -183,8 +197,8 @@ export declare class ProjectInfo extends _Contract {
         call: (params: INewPackageVersionParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     newProject: {
-        (ipfsCid: string, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (ipfsCid: string, options?: TransactionOptions) => Promise<BigNumber>;
+        (params: INewProjectParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: INewProjectParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     owner: {
         (options?: TransactionOptions): Promise<string>;
@@ -203,6 +217,12 @@ export declare class ProjectInfo extends _Contract {
     };
     packageAdminInv: {
         (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    packageName: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
+    packageNameInv: {
+        (param1: string, options?: TransactionOptions): Promise<BigNumber>;
     };
     packageVersions: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<{
@@ -261,6 +281,12 @@ export declare class ProjectInfo extends _Contract {
     };
     projectIpfsCid: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
+    projectName: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
+    projectNameInv: {
+        (param1: string, options?: TransactionOptions): Promise<BigNumber>;
     };
     projectNewOwner: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
@@ -324,9 +350,17 @@ export declare class ProjectInfo extends _Contract {
         (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions) => Promise<void>;
     };
+    updatePackageName: {
+        (params: IUpdatePackageNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdatePackageNameParams, options?: TransactionOptions) => Promise<void>;
+    };
     updateProjectIpfsCid: {
         (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updateProjectName: {
+        (params: IUpdateProjectNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateProjectNameParams, options?: TransactionOptions) => Promise<void>;
     };
     voidPackageVersion: {
         (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -356,6 +390,7 @@ export declare module ProjectInfo {
     interface NewPackageEvent {
         projectId: BigNumber;
         packageId: BigNumber;
+        name: string;
         ipfsCid: string;
         _event: Event;
     }
@@ -372,6 +407,7 @@ export declare module ProjectInfo {
     interface NewProjectEvent {
         projectId: BigNumber;
         owner: string;
+        name: string;
         ipfsCid: string;
         _event: Event;
     }

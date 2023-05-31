@@ -7,8 +7,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./AuditorInfo.sol";
 
+library StringCompare {
+    function compare(string calldata s1, string storage s2) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(s1)) == keccak256(abi.encodePacked(s2));
+    }
+}
 contract ProjectInfo is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using StringCompare for string;
 
     enum ProjectStatus {INACTIVE, ACTIVE}
     enum PackageStatus {INACTIVE, ACTIVE}
@@ -37,9 +43,12 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     AuditorInfo public auditorInfo;
     // active package list
     uint256 public projectCount;
+    uint256 private maxNameLength = 100;
 
     mapping(uint256 => uint256) public projectBalance; //projectBalance[projectId] = amount
     mapping(address => mapping(uint256 => uint256)) public projectBackerBalance; //projectBackerBalance[staker][projectId] = amount
+    mapping(uint256 => string) public projectName; // projectName[projectId] = name
+    mapping(string => uint256) public projectNameInv; //  projectNameInv[name] = projectId
     mapping(uint256 => string) public projectIpfsCid; // projectIpfsCid[projectId] = ipfsCid
     
     // project <-> owner / admin
@@ -55,6 +64,8 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     PackageVersion[] public packageVersions; // packageVersions[packageVersionsId] = {packageId, version, status, ipfsCid}
     mapping(uint256 => uint256[]) public packageVersionsList; // packageVersionsList[packageId][idx] = packageVersionsId
     mapping(uint256 => PackageVersion) public latestAuditedPackageVersion; // latestAuditedPackageVersion[packageId] = {packageId, version, status, ipfsCid}
+    mapping(uint256 => string) public packageName; // packageName[packageId] = name;
+    mapping(string => uint256) public packageNameInv; // packageNameInv[name] = packageId;
 
     // package <-> admin
     mapping(uint256 => address[]) public packageAdmin; // packageAdmin[packageId][idx] = admin
@@ -63,15 +74,16 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     // project <-> package
     mapping(uint256 => uint256[]) public projectPackages; // projectPackages[projectId][projectPackagesIdx] = packageId
     mapping(uint256 => mapping(uint256 => uint256)) public projectPackagesInv; // projectPackagesInv[projectId][packageId] = projectPackagesIdx
+    mapping(uint256 => uint256) private projectPackagesMaxName; // projectPackagesMaxName[projectId] = packageId
 
-    event NewProject(uint256 indexed projectId, address indexed owner, string ipfsCid);
+    event NewProject(uint256 indexed projectId, address indexed owner, string name, string ipfsCid);
     event UpdateProjectIpfsCid(uint256 indexed projectId, string ipfsCid);
     
     event TransferProjectOwnership(uint256 indexed projectId, address indexed newOwner);
     event AddAdmin(uint256 indexed projectId, address indexed admin);
     event RemoveAdmin(uint256 indexed projectId, address indexed admin);
 
-    event NewPackage(uint256 indexed projectId, uint256 indexed packageId, string ipfsCid);
+    event NewPackage(uint256 indexed projectId, uint256 indexed packageId, string name, string ipfsCid);
     event UpdatePackageIpfsCid(uint256 indexed packageId, string ipfsCid);
     event NewPackageVersion(uint256 indexed packageId, uint256 indexed packageVersionId, SemVer version);
     event SetPackageVersionStatus(uint256 indexed packageId, uint256 indexed packageVersionId, PackageVersionStatus status);
@@ -130,18 +142,68 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     function projectPackagesLength(uint256 projectId) external view returns (uint256 length) {
         length = projectPackages[projectId].length;
     }
+    function _isValidName(string calldata name) internal view returns (bool) {
+        // package name max length: 214, repository name max length: 100
+        bytes memory bName = bytes(name);
+        if (bName.length == 0 || bName.length >= maxNameLength) return false;
+        // first char must be a-z0-9-
+        if (
+            bName[0] == 0x2d
+            ||
+            (bName[0] >= 0x30 && bName[0] <= 0x39) ||
+            (bName[0] >= 0x61 && bName[0] <= 0x7a)
+        ) {
+            // Allowed characters: a-z0-9-._
+            for (uint i = 1; i < bName.length; i++) {
+                if (
+                    !(bName[i] == 0x2d ||
+                        bName[i] == 0x2e ||
+                        bName[i] == 0x5f ||
+                        (bName[i] >= 0x30 && bName[i] <= 0x39) ||
+                        (bName[i] >= 0x61 && bName[i] <= 0x7a))
+                ) return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function isValidProjectName(uint256 projectId, string calldata name) internal view returns (bool) {
+        bytes memory bName = bytes(name);
+        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        if ((bName.length + bPackageName.length) >= maxNameLength) return false;
+        if (projectNameInv[name] != projectId && name.compare(projectName[projectNameInv[name]])) return false;
+        return _isValidName(name);
+    }
+    
+    function isValidPackageName(uint256 projectId, uint256 packageId, string calldata name) internal view returns (bool) {
+        bytes memory bName = bytes(name);
+        bytes memory bProjectName = bytes(projectName[projectId]);
+        if ((bProjectName.length + bName.length) >= maxNameLength) return false;
+        if (packageNameInv[name] != packageId && name.compare(packageName[packageNameInv[name]])) return false;
+        return _isValidName(name);
+    }
 
     //
     // functions called by project owners
     //
-    function newProject(string calldata ipfsCid) external returns (uint256 projectId) {
+    function newProject(string calldata name, string calldata ipfsCid) external returns (uint256 projectId) {
         projectId = projectCount;
+        require(isValidProjectName(projectId, name), "invalid project name");
         projectOwner[projectId] = msg.sender;
         ownersProjectsInv[msg.sender][projectId] = ownersProjects[msg.sender].length;
         ownersProjects[msg.sender].push(projectId);
+        projectName[projectId] = name;
+        projectNameInv[name] = projectId;
         projectIpfsCid[projectId] = ipfsCid;
         projectCount++;
-        emit NewProject(projectId, msg.sender, ipfsCid);
+        emit NewProject(projectId, msg.sender, name, ipfsCid);
+    }
+    function updateProjectName(uint256 projectId, string calldata name) external isProjectAdminOrOwner(projectId) {
+        require(isValidProjectName(projectId, name), "invalid project name");
+        delete projectNameInv[projectName[projectId]];
+        projectName[projectId] = name;
+        projectNameInv[name] = projectId;
     }
     function updateProjectIpfsCid(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
         require(projectId < projectCount, "invalid projectId");
@@ -194,16 +256,35 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
         emit RemoveAdmin(projectId, admin);
     }
-    function newPackage(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) returns (uint256 packageId) {
+    function newPackage(uint256 projectId, string calldata name, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) returns (uint256 packageId) {
         packageId = packages.length;
+        require(isValidPackageName(projectId, packageId, name), "invalid package name");
         packages.push(Package({
             projectId: projectId,
             currVersionIndex: 0,
             status: PackageStatus.ACTIVE,
             ipfsCid: ipfsCid
         }));
+        packageName[packageId] = name;
+        packageNameInv[name] = packageId;
         projectPackages[projectId].push(packageId);
-        emit NewPackage(projectId, packageId, ipfsCid);
+        bytes memory bName = bytes(name);
+        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        if (bName.length > bPackageName.length) {
+            projectPackagesMaxName[projectId] = packageId;
+        }
+        emit NewPackage(projectId, packageId, name, ipfsCid);
+    }
+    function updatePackageName(uint256 projectId, uint256 packageId, string calldata name) external isProjectAdminOrOwner(projectId) {
+        require(isValidPackageName(projectId, packageId, name), "invalid package name");
+        delete  packageNameInv[packageName[packageId]];
+        packageName[packageId] = name;
+        packageNameInv[name] = packageId;
+        bytes memory bName = bytes(name);
+        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        if (bName.length > bPackageName.length) {
+            projectPackagesMaxName[projectId] = packageId;
+        }
     }
     function updatePackageIpfsCid(uint256 projectId, uint256 packageId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
         require(packageId < packages.length, "invalid packageId");
