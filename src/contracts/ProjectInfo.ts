@@ -311,6 +311,9 @@ export class ProjectInfo extends _Contract{
     packageAdminInv: {
         (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
     }
+    packageAdminLength: {
+        (packageId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    }
     packageName: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<string>;
     }
@@ -396,6 +399,10 @@ export class ProjectInfo extends _Contract{
     setPackageVersionToAuditPassed: {
         (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
+    }
+    setPackageVersionToAuditing: {
+        (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (packageVersionId:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     stake: {
         (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -511,6 +518,11 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.packageAdminInv = packageAdminInv_call
+        let packageAdminLength_call = async (packageId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('packageAdminLength',[this.wallet.utils.toString(packageId)],options);
+            return new BigNumber(result);
+        }
+        this.packageAdminLength = packageAdminLength_call
         let packageName_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<string> => {
             let result = await this.call('packageName',[this.wallet.utils.toString(param1)],options);
             return result;
@@ -778,6 +790,17 @@ export class ProjectInfo extends _Contract{
         }
         this.setPackageVersionToAuditPassed = Object.assign(setPackageVersionToAuditPassed_send, {
             call:setPackageVersionToAuditPassed_call
+        });
+        let setPackageVersionToAuditing_send = async (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('setPackageVersionToAuditing',[this.wallet.utils.toString(packageVersionId)],options);
+            return result;
+        }
+        let setPackageVersionToAuditing_call = async (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('setPackageVersionToAuditing',[this.wallet.utils.toString(packageVersionId)],options);
+            return;
+        }
+        this.setPackageVersionToAuditing = Object.assign(setPackageVersionToAuditing_send, {
+            call:setPackageVersionToAuditing_call
         });
         let stakeParams = (params: IStakeParams) => [this.wallet.utils.toString(params.projectId),this.wallet.utils.toString(params.amount)];
         let stake_send = async (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt> => {

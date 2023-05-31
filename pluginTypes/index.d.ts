@@ -838,7 +838,7 @@ declare module "@scom/portal-contract/contracts/ModuleInfo.ts" {
     export class ModuleInfo extends _Contract {
         static _abi: any;
         constructor(wallet: IWallet, address?: string);
-        deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
+        deploy(options?: TransactionOptions): Promise<string>;
         parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];
         decodeCurrentVersionEvent(event: Event): ModuleInfo.CurrentVersionEvent;
         parseNewPackageEvent(receipt: TransactionReceipt): ModuleInfo.NewPackageEvent[];
@@ -1266,6 +1266,9 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         packageAdminInv: {
             (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
         };
+        packageAdminLength: {
+            (packageId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
         packageName: {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
         };
@@ -1366,6 +1369,10 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         setPackageVersionToAuditPassed: {
             (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
+        };
+        setPackageVersionToAuditing: {
+            (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (packageVersionId: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
         stake: {
             (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt>;

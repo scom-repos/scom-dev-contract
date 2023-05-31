@@ -222,6 +222,9 @@ export declare class ProjectInfo extends _Contract {
     packageAdminInv: {
         (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
     };
+    packageAdminLength: {
+        (packageId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    };
     packageName: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
     };
@@ -322,6 +325,10 @@ export declare class ProjectInfo extends _Contract {
     setPackageVersionToAuditPassed: {
         (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
+    };
+    setPackageVersionToAuditing: {
+        (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (packageVersionId: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     stake: {
         (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt>;

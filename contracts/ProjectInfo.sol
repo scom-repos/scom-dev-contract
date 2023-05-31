@@ -18,7 +18,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
     enum ProjectStatus {INACTIVE, ACTIVE}
     enum PackageStatus {INACTIVE, ACTIVE}
-    enum PackageVersionStatus {AUDITING, AUDIT_PASSED, AUDIT_FAILED, VOIDED}
+    enum PackageVersionStatus {WORKING, AUDITING, AUDIT_PASSED, AUDIT_FAILED, VOIDED}
 
     struct Package {
         uint256 projectId;
@@ -131,6 +131,9 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     }
     function projectAdminLength(uint256 projectId) external view returns (uint256 length) {
         length = projectAdmin[projectId].length;
+    }
+    function packageAdminLength(uint256 packageId) external view returns (uint256 length) {
+        length = packageAdmin[packageId].length;
     }
     function packagesLength() external view returns (uint256 length) {
         length = packages.length;
@@ -340,7 +343,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         packageVersions.push(PackageVersion({
             packageId: packageId,
             version: version,
-            status: PackageVersionStatus.AUDITING,
+            status: PackageVersionStatus.WORKING,
             ipfsCid: ipfsCid,
             reportUri: ""
         }));
@@ -357,8 +360,23 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(packageVersionId < packageVersions.length, "invalid packageVersionId");
         PackageVersion storage packageVersion = packageVersions[packageVersionId];
         require(packageVersion.status != PackageVersionStatus.VOIDED, "already voided");
-        require(packageVersion.status != PackageVersionStatus.AUDIT_PASSED, "Audit passed version cannot be voided");
+        // require(packageVersion.status != PackageVersionStatus.AUDIT_PASSED, "Audit passed version cannot be voided");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.VOIDED);
+    }
+    function setPackageVersionToAuditing(uint256 packageVersionId) external {
+        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
+        PackageVersion storage packageVersion = packageVersions[packageVersionId];
+        require(packageVersion.status == PackageVersionStatus.WORKING, "not under working");
+        Package storage package = packages[packageVersion.packageId];
+        uint256 packageId = packageVersion.packageId;
+        uint256 projectId = package.projectId;
+        require((projectAdmin[projectId].length > 0 &&  
+            projectAdmin[projectId][projectAdminInv[projectId][msg.sender]] == msg.sender)
+            || projectOwner[projectId] == msg.sender
+            || (packageAdmin[packageId].length > 0 &&
+            packageAdmin[packageId][packageAdminInv[packageId][msg.sender]] == msg.sender)
+        , "not from admin");
+        _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDITING);
     }
     function setPackageVersionToAuditPassed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
         require(packageVersionId < packageVersions.length, "invalid packageVersionId");
