@@ -77,6 +77,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     mapping(uint256 => uint256) private projectPackagesMaxName; // projectPackagesMaxName[projectId] = packageId
 
     event NewProject(uint256 indexed projectId, address indexed owner, string name, string ipfsCid);
+    event UpdateProjectName(uint256 indexed projectId, string name);
     event UpdateProjectIpfsCid(uint256 indexed projectId, string ipfsCid);
     
     event TransferProjectOwnership(uint256 indexed projectId, address indexed newOwner);
@@ -84,6 +85,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     event RemoveAdmin(uint256 indexed projectId, address indexed admin);
 
     event NewPackage(uint256 indexed projectId, uint256 indexed packageId, string name, string ipfsCid);
+    event UpdatePackageName(uint256 indexed packageId, string name);
     event UpdatePackageIpfsCid(uint256 indexed packageId, string ipfsCid);
     event NewPackageVersion(uint256 indexed packageId, uint256 indexed packageVersionId, SemVer version);
     event SetPackageVersionStatus(uint256 indexed packageId, uint256 indexed packageVersionId, PackageVersionStatus status);
@@ -204,6 +206,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         delete projectNameInv[projectName[projectId]];
         projectName[projectId] = name;
         projectNameInv[name] = projectId;
+        emit UpdateProjectName(projectId, name);
     }
     function updateProjectIpfsCid(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
         require(projectId < projectCount, "invalid projectId");
@@ -285,6 +288,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         if (bName.length > bPackageName.length) {
             projectPackagesMaxName[projectId] = packageId;
         }
+        emit UpdatePackageName(packageId, name);
     }
     function updatePackageIpfsCid(uint256 projectId, uint256 packageId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
         require(packageId < packages.length, "invalid packageId");

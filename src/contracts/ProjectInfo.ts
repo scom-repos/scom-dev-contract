@@ -224,6 +224,17 @@ export class ProjectInfo extends _Contract{
             _event: event
         };
     }
+    parseUpdatePackageNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageNameEvent[]{
+        return this.parseEvents(receipt, "UpdatePackageName").map(e=>this.decodeUpdatePackageNameEvent(e));
+    }
+    decodeUpdatePackageNameEvent(event: Event): ProjectInfo.UpdatePackageNameEvent{
+        let result = event.data;
+        return {
+            packageId: new BigNumber(result.packageId),
+            name: result.name,
+            _event: event
+        };
+    }
     parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[]{
         return this.parseEvents(receipt, "UpdateProjectIpfsCid").map(e=>this.decodeUpdateProjectIpfsCidEvent(e));
     }
@@ -232,6 +243,17 @@ export class ProjectInfo extends _Contract{
         return {
             projectId: new BigNumber(result.projectId),
             ipfsCid: result.ipfsCid,
+            _event: event
+        };
+    }
+    parseUpdateProjectNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectNameEvent[]{
+        return this.parseEvents(receipt, "UpdateProjectName").map(e=>this.decodeUpdateProjectNameEvent(e));
+    }
+    decodeUpdateProjectNameEvent(event: Event): ProjectInfo.UpdateProjectNameEvent{
+        let result = event.data;
+        return {
+            projectId: new BigNumber(result.projectId),
+            name: result.name,
             _event: event
         };
     }
@@ -904,5 +926,7 @@ export module ProjectInfo{
     export interface TransferProjectOwnershipEvent {projectId:BigNumber,newOwner:string,_event:Event}
     export interface UnstakeEvent {sender:string,projectId:BigNumber,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface UpdatePackageIpfsCidEvent {packageId:BigNumber,ipfsCid:string,_event:Event}
+    export interface UpdatePackageNameEvent {packageId:BigNumber,name:string,_event:Event}
     export interface UpdateProjectIpfsCidEvent {projectId:BigNumber,ipfsCid:string,_event:Event}
+    export interface UpdateProjectNameEvent {projectId:BigNumber,name:string,_event:Event}
 }

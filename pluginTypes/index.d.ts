@@ -838,7 +838,7 @@ declare module "@scom/portal-contract/contracts/ModuleInfo.ts" {
     export class ModuleInfo extends _Contract {
         static _abi: any;
         constructor(wallet: IWallet, address?: string);
-        deploy(options?: TransactionOptions): Promise<string>;
+        deploy(options?: number | BigNumber | TransactionOptions): Promise<string>;
         parseCurrentVersionEvent(receipt: TransactionReceipt): ModuleInfo.CurrentVersionEvent[];
         decodeCurrentVersionEvent(event: Event): ModuleInfo.CurrentVersionEvent;
         parseNewPackageEvent(receipt: TransactionReceipt): ModuleInfo.NewPackageEvent[];
@@ -1196,8 +1196,12 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         decodeUnstakeEvent(event: Event): ProjectInfo.UnstakeEvent;
         parseUpdatePackageIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageIpfsCidEvent[];
         decodeUpdatePackageIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageIpfsCidEvent;
+        parseUpdatePackageNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageNameEvent[];
+        decodeUpdatePackageNameEvent(event: Event): ProjectInfo.UpdatePackageNameEvent;
         parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[];
         decodeUpdateProjectIpfsCidEvent(event: Event): ProjectInfo.UpdateProjectIpfsCidEvent;
+        parseUpdateProjectNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectNameEvent[];
+        decodeUpdateProjectNameEvent(event: Event): ProjectInfo.UpdateProjectNameEvent;
         addPackageAdmin: {
             (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IAddPackageAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -1503,9 +1507,19 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
             ipfsCid: string;
             _event: Event;
         }
+        interface UpdatePackageNameEvent {
+            packageId: BigNumber;
+            name: string;
+            _event: Event;
+        }
         interface UpdateProjectIpfsCidEvent {
             projectId: BigNumber;
             ipfsCid: string;
+            _event: Event;
+        }
+        interface UpdateProjectNameEvent {
+            projectId: BigNumber;
+            name: string;
             _event: Event;
         }
     }

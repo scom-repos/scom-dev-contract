@@ -152,8 +152,12 @@ export declare class ProjectInfo extends _Contract {
     decodeUnstakeEvent(event: Event): ProjectInfo.UnstakeEvent;
     parseUpdatePackageIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageIpfsCidEvent[];
     decodeUpdatePackageIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageIpfsCidEvent;
+    parseUpdatePackageNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageNameEvent[];
+    decodeUpdatePackageNameEvent(event: Event): ProjectInfo.UpdatePackageNameEvent;
     parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[];
     decodeUpdateProjectIpfsCidEvent(event: Event): ProjectInfo.UpdateProjectIpfsCidEvent;
+    parseUpdateProjectNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectNameEvent[];
+    decodeUpdateProjectNameEvent(event: Event): ProjectInfo.UpdateProjectNameEvent;
     addPackageAdmin: {
         (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IAddPackageAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -459,9 +463,19 @@ export declare module ProjectInfo {
         ipfsCid: string;
         _event: Event;
     }
+    interface UpdatePackageNameEvent {
+        packageId: BigNumber;
+        name: string;
+        _event: Event;
+    }
     interface UpdateProjectIpfsCidEvent {
         projectId: BigNumber;
         ipfsCid: string;
+        _event: Event;
+    }
+    interface UpdateProjectNameEvent {
+        projectId: BigNumber;
+        name: string;
         _event: Event;
     }
 }
