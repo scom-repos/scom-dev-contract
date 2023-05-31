@@ -1,4 +1,4 @@
-import { IWallet } from "@ijstech/eth-contract";
+import { IWallet, BigNumber } from "@ijstech/eth-contract";
 import * as Contracts from "./contracts/index";
 export { Contracts };
 export interface IDeployOptions {
@@ -16,12 +16,18 @@ export interface IDeployOptions {
     projectInfo: {
         admins: string[];
     };
+    audit: {
+        quorum: number | BigNumber;
+        auditDuration: number | BigNumber;
+        minAuditRequired: number | BigNumber;
+    };
 }
 export interface IDeployResult {
     token: string;
     domain: string;
     auditor: string;
     project: string;
+    audit: string;
 }
 export declare var DefaultDeployOptions: IDeployOptions;
 export declare function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
