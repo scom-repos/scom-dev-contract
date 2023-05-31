@@ -1,5 +1,5 @@
 import 'mocha';
-import {Utils, Wallet} from "@ijstech/eth-wallet";
+import {BigNumber, Utils, Wallet} from "@ijstech/eth-wallet";
 import {Contracts, deploy, DefaultDeployOptions} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
@@ -121,18 +121,196 @@ describe('## SC-Contract', async function() {
         before(async function(){
             wallet.defaultAccount = accounts[0]; 
         })
+        it('New Invalid Project', async function() {
+            try {
+                await projectContract.newProject({
+                    name: '_abc',
+                    ipfsCid: 'abc'
+                });
+            } catch (err) {
+                assert.strictEqual(err.data.reason, 'invalid project name');
+                return;
+            }  
+            throw new Error('Exception not catched');
+        })
         it('New Project', async function(){
-            let newProjectReceipt = await projectContract.newProject('abc');
+            let newProjectReceipt = await projectContract.newProject({
+                name: 'abc',
+                ipfsCid: 'abc'
+            });
             let newProjectEvent = projectContract.parseNewProjectEvent(newProjectReceipt)[0];
             
             let projectCount = await projectContract.projectCount();
             assert.strictEqual(newProjectEvent.projectId.toNumber() + 1, projectCount.toNumber());
-            let projectFirstVersion = await projectContract.projectVersionList({ 
-                param1: newProjectEvent.projectId.toNumber(),
+            let name = await projectContract.projectName(newProjectEvent.projectId);
+            let ipfsCid = await projectContract.projectIpfsCid(newProjectEvent.projectId);
+            assert.strictEqual(name, 'abc');
+            assert.strictEqual(ipfsCid, 'abc');
+        })
+        it('Duplicate Project Name', async function() {
+            try {
+                await projectContract.newProject({
+                    name: 'abc',
+                    ipfsCid: 'abc'
+                });
+            } catch (err) {
+                assert.strictEqual(err.data.reason, 'invalid project name');
+                return;
+            }  
+            throw new Error('Exception not catched');
+        })
+        it('Update Project Name', async function() {
+            await projectContract.updateProjectName({
+                projectId: 0,
+                name: 'scom'
+            });
+            let name = await projectContract.projectName(0);
+            assert.strictEqual(name, 'scom');
+        })
+        it('Update Project IpfsCid', async function() {
+            await projectContract.updateProjectIpfsCid({
+                projectId: 0,
+                ipfsCid: 'abcd'
+            });
+            let ipfsCid = await projectContract.projectIpfsCid(0);
+            assert.strictEqual(ipfsCid, 'abcd');
+        })
+        it('New Invalid Package', async function() {
+            try {
+                await projectContract.newPackage({
+                    projectId: 0,
+                    name: '???',
+                    ipfsCid: ''
+                });
+            } catch (err) {
+                assert.strictEqual(err.data.reason, 'invalid package name');
+                return;
+            }
+            throw new Error('Exception not catched');
+        })
+        it('New Package', async function() {
+            let newPackageReceipt = await projectContract.newPackage({
+                projectId: 0,
+                name: 'package',
+                ipfsCid: 'abc'
+            });
+            let newPackageEvent = projectContract.parseNewPackageEvent(newPackageReceipt)[0];
+            let packageInfo = await projectContract.packages(newPackageEvent.packageId);
+            assert.strictEqual(packageInfo.projectId.toNumber(), 0);
+            assert.strictEqual(packageInfo.ipfsCid, 'abc');
+        })
+        it('Duplicate Package Name', async function() {
+            try {
+                await projectContract.newPackage({
+                    projectId: 0,
+                    name: 'package',
+                    ipfsCid: 'abc'
+                });
+            } catch (err) {
+                assert.strictEqual(err.data.reason, 'invalid package name');
+                return;
+            }  
+            throw new Error('Exception not catched');
+        })
+        it('Duplicate Package Name (different project)', async function() {
+            let newProjectReceipt = await projectContract.newProject({
+                name: 'xxx',
+                ipfsCid: 'abc'
+            });
+            let newProjectEvent = projectContract.parseNewProjectEvent(newProjectReceipt)[0];
+            
+            let newPackageReceipt = await projectContract.newPackage({
+                projectId: newProjectEvent.projectId,
+                name: 'package',
+                ipfsCid: 'abc'
+            });
+            let newPackageEvent = projectContract.parseNewPackageEvent(newPackageReceipt)[0];
+            let packageInfo = await projectContract.packages(newPackageEvent.packageId);
+            assert.strictEqual(packageInfo.projectId.toNumber(), 1);
+            assert.strictEqual(packageInfo.ipfsCid, 'abc');
+        })
+        it('Update Package Name', async function() {
+            await projectContract.updatePackageName({
+                projectId: 0,
+                packageId: 0,
+                name: 'portal'
+            });
+            let name = await projectContract.packageName({
+                param1: 0,
                 param2: 0
             });
-            let projectCurrentVersion = await projectContract.projectCurrentVersion(newProjectEvent.projectId.toNumber());
-            assert.strictEqual(projectFirstVersion.toNumber(), projectCurrentVersion.toNumber());
+            assert.strictEqual(name, 'portal');
+        })
+        it('Add Package Admin', async function() {
+            await projectContract.addPackageAdmin({
+                packageId: 0,
+                admin: accounts[1]
+            });
+            let length = await projectContract.packageAdminLength(0);
+            assert.strictEqual(length.toNumber(), 1);
+            let idx = await projectContract.packageAdminInv({
+                param1: 0,
+                param2: accounts[1]
+            });
+            let admin = await projectContract.packageAdmin({
+                param1: 0,
+                param2: idx
+            });
+            assert.strictEqual(admin, accounts[1]);
+        })
+        it('New Package Version', async function() {
+            let version = {
+                major: new BigNumber(0),
+                minor: new BigNumber(1),
+                patch: new BigNumber(0)
+            }
+            let receipt = await projectContract.newPackageVersion({
+                projectId: 0,
+                packageId: 0,
+                version: version,
+                ipfsCid: 'abc'
+            });
+            let event = projectContract.parseNewPackageVersionEvent(receipt)[0];
+            let packageVersion = await projectContract.packageVersions(event.packageVersionId);
+            assert.deepStrictEqual(packageVersion.version, version);
+            assert.strictEqual(packageVersion.status.toNumber(), 0);
+        })
+        it('Update Package Version IpfsCid', async function() {
+            wallet.defaultAccount = accounts[1]; 
+            let packageVersionId = 0;
+            await projectContract.updatePackageVersionIpfsCid({
+                packageVersionId,
+                ipfsCid: 'baf'
+            });
+            let packageVersion = await projectContract.packageVersions(packageVersionId);
+            assert.strictEqual(packageVersion.ipfsCid, 'baf');
+        })
+        it('Remove Package Admin', async function() {
+            wallet.defaultAccount = accounts[0]; 
+            await projectContract.removePackageAdmin({
+                packageId: 0,
+                admin: accounts[1]
+            });
+            let length = await projectContract.packageAdminLength(0);
+            assert.strictEqual(length.toNumber(), 0);
+        })
+        it('Set Package Version To Auditing', async function() {
+            let packageVersionId = 0;
+            await projectContract.setPackageVersionToAuditing(packageVersionId);
+            let packageVersion = await projectContract.packageVersions(packageVersionId);
+            assert.strictEqual(packageVersion.status.toNumber(), 1);
+        })
+        it('Update Package Version IpfsCid (not under working)', async function() {
+            try {
+                await projectContract.updatePackageVersionIpfsCid({
+                    packageVersionId: 0,
+                    ipfsCid: 'baf'
+                });
+            } catch (err) {
+                assert.strictEqual(err.data.reason, 'not under working');
+                return;
+            }
+            throw new Error('Exception not catched');
         })
     })
 })

@@ -10,6 +10,8 @@ export interface IOwnersProjectsParams {param1:string;param2:number|BigNumber}
 export interface IOwnersProjectsInvParams {param1:string;param2:number|BigNumber}
 export interface IPackageAdminParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IPackageAdminInvParams {param1:number|BigNumber;param2:string}
+export interface IPackageNameParams {param1:number|BigNumber;param2:number|BigNumber}
+export interface IPackageNameInvParams {param1:number|BigNumber;param2:string}
 export interface IPackageVersionsListParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectAdminParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IProjectAdminInvParams {param1:number|BigNumber;param2:string}
@@ -25,6 +27,7 @@ export interface ITransferProjectOwnershipParams {projectId:number|BigNumber;new
 export interface IUnstakeParams {projectId:number|BigNumber;amount:number|BigNumber}
 export interface IUpdatePackageIpfsCidParams {projectId:number|BigNumber;packageId:number|BigNumber;ipfsCid:string}
 export interface IUpdatePackageNameParams {projectId:number|BigNumber;packageId:number|BigNumber;name:string}
+export interface IUpdatePackageVersionIpfsCidParams {packageVersionId:number|BigNumber;ipfsCid:string}
 export interface IUpdateProjectIpfsCidParams {projectId:number|BigNumber;ipfsCid:string}
 export interface IUpdateProjectNameParams {projectId:number|BigNumber;name:string}
 export class ProjectInfo extends _Contract{
@@ -235,6 +238,18 @@ export class ProjectInfo extends _Contract{
             _event: event
         };
     }
+    parseUpdatePackageVersionIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageVersionIpfsCidEvent[]{
+        return this.parseEvents(receipt, "UpdatePackageVersionIpfsCid").map(e=>this.decodeUpdatePackageVersionIpfsCidEvent(e));
+    }
+    decodeUpdatePackageVersionIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageVersionIpfsCidEvent{
+        let result = event.data;
+        return {
+            packageId: new BigNumber(result.packageId),
+            packageVersionId: new BigNumber(result.packageVersionId),
+            ipfsCid: result.ipfsCid,
+            _event: event
+        };
+    }
     parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[]{
         return this.parseEvents(receipt, "UpdateProjectIpfsCid").map(e=>this.decodeUpdateProjectIpfsCidEvent(e));
     }
@@ -315,10 +330,10 @@ export class ProjectInfo extends _Contract{
         (packageId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     packageName: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<string>;
+        (params: IPackageNameParams, options?: TransactionOptions): Promise<string>;
     }
     packageNameInv: {
-        (param1:string, options?: TransactionOptions): Promise<BigNumber>;
+        (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     packageVersions: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}>;
@@ -439,6 +454,10 @@ export class ProjectInfo extends _Contract{
         (params: IUpdatePackageNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdatePackageNameParams, options?: TransactionOptions) => Promise<void>;
     }
+    updatePackageVersionIpfsCid: {
+        (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+    }
     updateProjectIpfsCid: {
         (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions) => Promise<void>;
@@ -523,13 +542,15 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.packageAdminLength = packageAdminLength_call
-        let packageName_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<string> => {
-            let result = await this.call('packageName',[this.wallet.utils.toString(param1)],options);
+        let packageNameParams = (params: IPackageNameParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.toString(params.param2)];
+        let packageName_call = async (params: IPackageNameParams, options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('packageName',packageNameParams(params),options);
             return result;
         }
         this.packageName = packageName_call
-        let packageNameInv_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('packageNameInv',[param1],options);
+        let packageNameInvParams = (params: IPackageNameInvParams) => [this.wallet.utils.toString(params.param1),params.param2];
+        let packageNameInv_call = async (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('packageNameInv',packageNameInvParams(params),options);
             return new BigNumber(result);
         }
         this.packageNameInv = packageNameInv_call
@@ -895,6 +916,18 @@ export class ProjectInfo extends _Contract{
         this.updatePackageName = Object.assign(updatePackageName_send, {
             call:updatePackageName_call
         });
+        let updatePackageVersionIpfsCidParams = (params: IUpdatePackageVersionIpfsCidParams) => [this.wallet.utils.toString(params.packageVersionId),params.ipfsCid];
+        let updatePackageVersionIpfsCid_send = async (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('updatePackageVersionIpfsCid',updatePackageVersionIpfsCidParams(params),options);
+            return result;
+        }
+        let updatePackageVersionIpfsCid_call = async (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('updatePackageVersionIpfsCid',updatePackageVersionIpfsCidParams(params),options);
+            return;
+        }
+        this.updatePackageVersionIpfsCid = Object.assign(updatePackageVersionIpfsCid_send, {
+            call:updatePackageVersionIpfsCid_call
+        });
         let updateProjectIpfsCidParams = (params: IUpdateProjectIpfsCidParams) => [this.wallet.utils.toString(params.projectId),params.ipfsCid];
         let updateProjectIpfsCid_send = async (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('updateProjectIpfsCid',updateProjectIpfsCidParams(params),options);
@@ -950,6 +983,7 @@ export module ProjectInfo{
     export interface UnstakeEvent {sender:string,projectId:BigNumber,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface UpdatePackageIpfsCidEvent {packageId:BigNumber,ipfsCid:string,_event:Event}
     export interface UpdatePackageNameEvent {packageId:BigNumber,name:string,_event:Event}
+    export interface UpdatePackageVersionIpfsCidEvent {packageId:BigNumber,packageVersionId:BigNumber,ipfsCid:string,_event:Event}
     export interface UpdateProjectIpfsCidEvent {projectId:BigNumber,ipfsCid:string,_event:Event}
     export interface UpdateProjectNameEvent {projectId:BigNumber,name:string,_event:Event}
 }

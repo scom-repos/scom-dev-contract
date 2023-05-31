@@ -1090,6 +1090,14 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         param1: number | BigNumber;
         param2: string;
     }
+    export interface IPackageNameParams {
+        param1: number | BigNumber;
+        param2: number | BigNumber;
+    }
+    export interface IPackageNameInvParams {
+        param1: number | BigNumber;
+        param2: string;
+    }
     export interface IPackageVersionsListParams {
         param1: number | BigNumber;
         param2: number | BigNumber;
@@ -1152,6 +1160,10 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         packageId: number | BigNumber;
         name: string;
     }
+    export interface IUpdatePackageVersionIpfsCidParams {
+        packageVersionId: number | BigNumber;
+        ipfsCid: string;
+    }
     export interface IUpdateProjectIpfsCidParams {
         projectId: number | BigNumber;
         ipfsCid: string;
@@ -1198,6 +1210,8 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         decodeUpdatePackageIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageIpfsCidEvent;
         parseUpdatePackageNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageNameEvent[];
         decodeUpdatePackageNameEvent(event: Event): ProjectInfo.UpdatePackageNameEvent;
+        parseUpdatePackageVersionIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageVersionIpfsCidEvent[];
+        decodeUpdatePackageVersionIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageVersionIpfsCidEvent;
         parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[];
         decodeUpdateProjectIpfsCidEvent(event: Event): ProjectInfo.UpdateProjectIpfsCidEvent;
         parseUpdateProjectNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectNameEvent[];
@@ -1270,10 +1284,10 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
             (packageId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
         };
         packageName: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+            (params: IPackageNameParams, options?: TransactionOptions): Promise<string>;
         };
         packageNameInv: {
-            (param1: string, options?: TransactionOptions): Promise<BigNumber>;
+            (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber>;
         };
         packageVersions: {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<{
@@ -1409,6 +1423,10 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
             (params: IUpdatePackageNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IUpdatePackageNameParams, options?: TransactionOptions) => Promise<void>;
         };
+        updatePackageVersionIpfsCid: {
+            (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+        };
         updateProjectIpfsCid: {
             (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions) => Promise<void>;
@@ -1517,6 +1535,12 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         interface UpdatePackageNameEvent {
             packageId: BigNumber;
             name: string;
+            _event: Event;
+        }
+        interface UpdatePackageVersionIpfsCidEvent {
+            packageId: BigNumber;
+            packageVersionId: BigNumber;
+            ipfsCid: string;
             _event: Event;
         }
         interface UpdateProjectIpfsCidEvent {

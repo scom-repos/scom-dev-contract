@@ -64,8 +64,8 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     PackageVersion[] public packageVersions; // packageVersions[packageVersionsId] = {packageId, version, status, ipfsCid}
     mapping(uint256 => uint256[]) public packageVersionsList; // packageVersionsList[packageId][idx] = packageVersionsId
     mapping(uint256 => PackageVersion) public latestAuditedPackageVersion; // latestAuditedPackageVersion[packageId] = {packageId, version, status, ipfsCid}
-    mapping(uint256 => string) public packageName; // packageName[packageId] = name;
-    mapping(string => uint256) public packageNameInv; // packageNameInv[name] = packageId;
+    mapping(uint256 => mapping(uint256 => string)) public packageName; // packageName[projectId][packageId] = name;
+    mapping(uint256 => mapping(string => uint256)) public packageNameInv; // packageNameInv[projectId][name] = packageId;
 
     // package <-> admin
     mapping(uint256 => address[]) public packageAdmin; // packageAdmin[packageId][idx] = admin
@@ -88,6 +88,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     event UpdatePackageName(uint256 indexed packageId, string name);
     event UpdatePackageIpfsCid(uint256 indexed packageId, string ipfsCid);
     event NewPackageVersion(uint256 indexed packageId, uint256 indexed packageVersionId, SemVer version);
+    event UpdatePackageVersionIpfsCid(uint256 indexed packageId, uint256 indexed packageVersionId, string ipfsCid);
     event SetPackageVersionStatus(uint256 indexed packageId, uint256 indexed packageVersionId, PackageVersionStatus status);
     event AddPackageAdmin(uint256 indexed packageId, address indexed admin);
     event RemovePackageAdmin(uint256 indexed packageId, address indexed admin);
@@ -172,21 +173,31 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         }
         return false;
     }
-
     function isValidProjectName(uint256 projectId, string calldata name) internal view returns (bool) {
         bytes memory bName = bytes(name);
-        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        bytes memory bPackageName = bytes(packageName[projectId][projectPackagesMaxName[projectId]]);
         if ((bName.length + bPackageName.length) >= maxNameLength) return false;
         if (projectNameInv[name] != projectId && name.compare(projectName[projectNameInv[name]])) return false;
         return _isValidName(name);
     }
-    
     function isValidPackageName(uint256 projectId, uint256 packageId, string calldata name) internal view returns (bool) {
         bytes memory bName = bytes(name);
         bytes memory bProjectName = bytes(projectName[projectId]);
         if ((bProjectName.length + bName.length) >= maxNameLength) return false;
-        if (packageNameInv[name] != packageId && name.compare(packageName[packageNameInv[name]])) return false;
+        uint256 _packageId = packageNameInv[projectId][name];
+        if (_packageId != packageId && name.compare(packageName[projectId][_packageId])) return false;
         return _isValidName(name);
+    }
+    function isPackageAdmin(uint256 packageId) internal view returns (bool) {
+        Package storage package = packages[packageId];
+        uint256 projectId = package.projectId;
+        if((projectAdmin[projectId].length > 0 &&  
+            projectAdmin[projectId][projectAdminInv[projectId][msg.sender]] == msg.sender)
+            || projectOwner[projectId] == msg.sender
+            || (packageAdmin[packageId].length > 0 &&
+            packageAdmin[packageId][packageAdminInv[packageId][msg.sender]] == msg.sender)
+        ) return true;
+        return false;
     }
 
     //
@@ -271,11 +282,11 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
             status: PackageStatus.ACTIVE,
             ipfsCid: ipfsCid
         }));
-        packageName[packageId] = name;
-        packageNameInv[name] = packageId;
+        packageName[projectId][packageId] = name;
+        packageNameInv[projectId][name] = packageId;
         projectPackages[projectId].push(packageId);
         bytes memory bName = bytes(name);
-        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        bytes memory bPackageName = bytes(packageName[projectId][projectPackagesMaxName[projectId]]);
         if (bName.length > bPackageName.length) {
             projectPackagesMaxName[projectId] = packageId;
         }
@@ -283,11 +294,11 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     }
     function updatePackageName(uint256 projectId, uint256 packageId, string calldata name) external isProjectAdminOrOwner(projectId) {
         require(isValidPackageName(projectId, packageId, name), "invalid package name");
-        delete  packageNameInv[packageName[packageId]];
-        packageName[packageId] = name;
-        packageNameInv[name] = packageId;
+        delete  packageNameInv[projectId][packageName[projectId][packageId]];
+        packageName[projectId][packageId] = name;
+        packageNameInv[projectId][name] = packageId;
         bytes memory bName = bytes(name);
-        bytes memory bPackageName = bytes(packageName[projectPackagesMaxName[projectId]]);
+        bytes memory bPackageName = bytes(packageName[projectId][projectPackagesMaxName[projectId]]);
         if (bName.length > bPackageName.length) {
             projectPackagesMaxName[projectId] = packageId;
         }
@@ -350,6 +361,14 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
         emit NewPackageVersion(packageId, packageVersionId, version);
     }
+    function updatePackageVersionIpfsCid(uint256 packageVersionId, string calldata ipfsCid) external {
+        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
+        PackageVersion storage packageVersion = packageVersions[packageVersionId];
+        require(packageVersion.status == PackageVersionStatus.WORKING, "not under working");
+        require(isPackageAdmin(packageVersion.packageId), "not from admin");
+        packageVersion.ipfsCid = ipfsCid;
+        emit UpdatePackageVersionIpfsCid(packageVersion.packageId, packageVersionId, ipfsCid);
+    }
 
     function _setPackageVersionStatus(PackageVersion storage packageVersion, uint256 packageVersionId, PackageVersionStatus status) internal {
         packageVersion.status = status;
@@ -367,15 +386,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(packageVersionId < packageVersions.length, "invalid packageVersionId");
         PackageVersion storage packageVersion = packageVersions[packageVersionId];
         require(packageVersion.status == PackageVersionStatus.WORKING, "not under working");
-        Package storage package = packages[packageVersion.packageId];
-        uint256 packageId = packageVersion.packageId;
-        uint256 projectId = package.projectId;
-        require((projectAdmin[projectId].length > 0 &&  
-            projectAdmin[projectId][projectAdminInv[projectId][msg.sender]] == msg.sender)
-            || projectOwner[projectId] == msg.sender
-            || (packageAdmin[packageId].length > 0 &&
-            packageAdmin[packageId][packageAdminInv[packageId][msg.sender]] == msg.sender)
-        , "not from admin");
+        require(isPackageAdmin(packageVersion.packageId), "not from admin");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDITING);
     }
     function setPackageVersionToAuditPassed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
