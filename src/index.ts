@@ -1,4 +1,4 @@
-import {IWallet} from "@ijstech/eth-contract";
+import {IWallet, BigNumber} from "@ijstech/eth-contract";
 import * as Contracts from "./contracts/index";
 export {Contracts};
 
@@ -17,12 +17,18 @@ export interface IDeployOptions{
     projectInfo: {
         admins: string[];
     };
+    audit: {
+        quorum: number|BigNumber;
+        auditDuration: number|BigNumber;
+        minAuditRequired: number|BigNumber;
+    };
 };
 export interface IDeployResult{
     token: string;
     domain: string;
     auditor: string;
     project: string;
+    audit: string;
 }
 export var DefaultDeployOptions: IDeployOptions = {
     token: {
@@ -38,6 +44,11 @@ export var DefaultDeployOptions: IDeployOptions = {
     },
     projectInfo: {
         admins: []
+    },
+    audit: {
+        quorum: 500, // base 10e3
+        auditDuration: 14 * 24*60*60,  // 14 days
+        minAuditRequired: 3
     }
 };
 async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
@@ -84,29 +95,37 @@ async function deployDomainInfo(wallet: IWallet, token: string) {
     return await domainInfo.deploy(token);
 }
 
+async function deployAuditInfo(wallet: IWallet, projectInfo: string, auditorInfo: string, Config: IDeployOptions) {
+    let auditInfo = new Contracts.AuditInfo(wallet);
+    return await auditInfo.deploy({projectInfo, auditorInfo, ...Config.audit});
+}
+
 export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {
     let result: IDeployResult = {
         token: '',
         domain: '',
         auditor: '',
-        project: ''
+        project: '',
+        audit: '',
     };
     if (!Config.token.initSupplyTo){
         onProgress('ERROR: token.initSupplyTo not defined!')
         return;
     }
-    onProgress('1/4 Deploy token contract')
+    onProgress('1/5 Deploy token contract')
     if (!Config.token?.address){        
         result.token = await deployScom(wallet, Config);
     }
     else
         result.token = Config.token.address;
-    onProgress('2/4 Deploy domain contract')
+    onProgress('2/5 Deploy domain contract')
     result.domain = await deployDomainInfo(wallet, result.token);
-    onProgress('3/4 Deploy auditor contract')
+    onProgress('3/5 Deploy auditor contract')
     result.auditor = await deployAuditorInfo(wallet, result.token, Config);
-    onProgress('4/4 Deploy project contract')
+    onProgress('4/5 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
+    onProgress('5/5 Deploy audit contract')
+    result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config)
     return result;
 }
 export default {
