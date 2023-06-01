@@ -63,13 +63,11 @@ describe('## SC-Contract', async function() {
     
     it('', async function(){
         wallet.defaultAccount = projectOwner;
-        let newProjectReceipt = await projectInfoContract.newProject("ipfs1");
+        let newProjectReceipt = await projectInfoContract.newProject({name: "scom", ipfsCid: "ipfs1"});
         let newProjectEvent = projectInfoContract.parseNewProjectEvent(newProjectReceipt)[0];
 print(newProjectEvent);
-        let newProjectVersionEvent = projectInfoContract.parseNewProjectVersionEvent(newProjectReceipt)[0];
-print(newProjectVersionEvent);
 
-        let newPackageReceipt = await projectInfoContract.newPackage({projectId: 0, ipfsCid: 'ipfs2'});
+        let newPackageReceipt = await projectInfoContract.newPackage({projectId: 0, name: 'portal', ipfsCid: 'ipfs2'});
         let newPackageEvent = projectInfoContract.parseNewPackageEvent(newPackageReceipt)[0];
 print(newPackageEvent);
         let newPackageVersionReceipt = await projectInfoContract.newPackageVersion({projectId:newProjectEvent.projectId, packageId:newPackageEvent.packageId, version:{major:0,minor:1,patch:0}, ipfsCid:"ipfs3"})
