@@ -30,7 +30,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         SemVer version;
         PackageVersionStatus status;
         string ipfsCid;
-        string reportUri;
+        uint256 timestamp;
     }
     
     IERC20 public immutable token;
@@ -351,7 +351,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
             version: version,
             status: PackageVersionStatus.WORKING,
             ipfsCid: ipfsCid,
-            reportUri: ""
+            timestamp: block.timestamp
         }));
 
         emit NewPackageVersion(packageId, packageVersionId, version);
@@ -376,7 +376,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(packageVersion.status != PackageVersionStatus.VOIDED, "already voided");
         // require(packageVersion.status != PackageVersionStatus.AUDIT_PASSED, "Audit passed version cannot be voided");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.VOIDED);
-    }
+    } 
     function setPackageVersionToAuditing(uint256 packageVersionId) external {
         require(packageVersionId < packageVersions.length, "invalid packageVersionId");
         PackageVersion storage packageVersion = packageVersions[packageVersionId];
@@ -384,21 +384,26 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(isPackageAdmin(packageVersion.packageId), "not from admin");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDITING);
     }
-    function setPackageVersionToAuditPassed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
-        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
-        PackageVersion storage packageVersion = packageVersions[packageVersionId];
-        require(packageVersion.status == PackageVersionStatus.AUDITING, "not under auditing");
-        latestAuditedPackageVersion[packageVersion.packageId] = packageVersion;
-        packageVersion.reportUri = reportUri;
-        _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDIT_PASSED);
-    } 
-    function setPackageVersionToAuditFailed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
-        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
-        PackageVersion storage packageVersion = packageVersions[packageVersionId];
-        require(packageVersion.status == PackageVersionStatus.AUDITING, "not under auditing");
-        packageVersion.reportUri = reportUri;
-        _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDIT_FAILED);
-    }         
+    // function addProjectPackage(uint256 projectId, uint256 packageId) external isProjectAdminOrOwner(projectId) {
+    //     require(packageId < packages.length, "invalid packageId");
+    //     projectPackagesInv[projectId][packageId] = projectPackages[projectId].length;
+    //     projectPackages[projectId].push(packageId);
+
+    //     emit AddProjectPackage(projectId, packageId);
+    // }
+    // function removeProjectPackage(uint256 projectId, uint256 packageId) external isProjectAdminOrOwner(projectId) {
+    //     uint256 idx = projectPackagesInv[projectId][packageId];
+    //     uint256 lastIdx = projectPackages[projectId].length - 1;
+    //     if (idx < lastIdx) {
+    //         uint256 lastPackageId = projectPackages[projectId][lastIdx];
+    //         projectPackagesInv[projectId][lastPackageId] = idx;
+    //         projectPackages[projectId][idx] = lastPackageId;
+    //     }
+    //     delete projectPackagesInv[projectId][packageId];
+    //     projectPackages[projectId].pop();
+
+    //     emit RemoveProjectPackage(projectId, packageId);        
+    // }
 
     function stake(uint256 projectId, uint256 amount) external nonReentrant {
         require(amount > 0, "amount = 0");

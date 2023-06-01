@@ -139,9 +139,219 @@ declare module "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ER
         }
     }
 }
+/// <amd-module name="@scom/portal-contract/contracts/AuditInfo.json.ts" />
+declare module "@scom/portal-contract/contracts/AuditInfo.json.ts" {
+    const _default_1: {
+        abi: ({
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
+        } | {
+            anonymous: boolean;
+            inputs: {
+                indexed: boolean;
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            type: string;
+            stateMutability?: undefined;
+            outputs?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        })[];
+        bytecode: string;
+    };
+    export default _default_1;
+}
+/// <amd-module name="@scom/portal-contract/contracts/AuditInfo.ts" />
+declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export interface IDeployParams {
+        projectInfo: string;
+        auditorInfo: string;
+        quorum: number | BigNumber;
+        auditDuration: number | BigNumber;
+        minAuditRequired: number | BigNumber;
+    }
+    export interface IAddAuditReportParams {
+        packageVersionsId: number | BigNumber;
+        auditResult: number | BigNumber;
+        ipfsCid: string;
+    }
+    export interface IAuditHistoryParams {
+        param1: number | BigNumber;
+        param2: number | BigNumber;
+        param3: number | BigNumber;
+    }
+    export interface IAuditHistoryLengthParams {
+        packageVersionsId: number | BigNumber;
+        auditor: string;
+    }
+    export interface IPackageVersionsAuditorsParams {
+        param1: number | BigNumber;
+        param2: number | BigNumber;
+    }
+    export interface IPackageVersionsAuditorsInvParams {
+        param1: number | BigNumber;
+        param2: string;
+    }
+    export class AuditInfo extends _Contract {
+        static _abi: any;
+        constructor(wallet: IWallet, address?: string);
+        deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
+        parseAddAuditReportEvent(receipt: TransactionReceipt): AuditInfo.AddAuditReportEvent[];
+        decodeAddAuditReportEvent(event: Event): AuditInfo.AddAuditReportEvent;
+        parseAuthorizeEvent(receipt: TransactionReceipt): AuditInfo.AuthorizeEvent[];
+        decodeAuthorizeEvent(event: Event): AuditInfo.AuthorizeEvent;
+        parseDeauthorizeEvent(receipt: TransactionReceipt): AuditInfo.DeauthorizeEvent[];
+        decodeDeauthorizeEvent(event: Event): AuditInfo.DeauthorizeEvent;
+        parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditInfo.StartOwnershipTransferEvent[];
+        decodeStartOwnershipTransferEvent(event: Event): AuditInfo.StartOwnershipTransferEvent;
+        parseTransferOwnershipEvent(receipt: TransactionReceipt): AuditInfo.TransferOwnershipEvent[];
+        decodeTransferOwnershipEvent(event: Event): AuditInfo.TransferOwnershipEvent;
+        QUORUM_BASE: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        addAuditReport: {
+            (params: IAddAuditReportParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IAddAuditReportParams, options?: TransactionOptions) => Promise<void>;
+        };
+        auditDuration: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        auditHistory: {
+            (params: IAuditHistoryParams, options?: TransactionOptions): Promise<{
+                auditResult: BigNumber;
+                ipfsCid: string;
+                timestamp: BigNumber;
+            }>;
+        };
+        auditHistoryAuditorLength: {
+            (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        auditHistoryLength: {
+            (params: IAuditHistoryLengthParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        auditorInfo: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        deny: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        getLastAuditResult: {
+            (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<{
+                auditors: string[];
+                results: BigNumber[];
+            }>;
+        };
+        isPermitted: {
+            (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        lastAuditResultBeforeAuditPeriod: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        latestAuditResult: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        minAuditRequired: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        newOwner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        owner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        packageVersionsAuditors: {
+            (params: IPackageVersionsAuditorsParams, options?: TransactionOptions): Promise<string>;
+        };
+        packageVersionsAuditorsInv: {
+            (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        permit: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        projectInfo: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        quorum: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        setAuditDuration: {
+            (auditDuration: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (auditDuration: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        setMinAuditRequired: {
+            (minAuditRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (minAuditRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        setQuorum: {
+            (quorum: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (quorum: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        takeOwnership: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        transferOwnership: {
+            (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        private assign;
+    }
+    export module AuditInfo {
+        interface AddAuditReportEvent {
+            auditor: string;
+            packageVersionsId: BigNumber;
+            auditResult: BigNumber;
+            ipfsCid: string;
+            _event: Event;
+        }
+        interface AuthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface DeauthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
+            _event: Event;
+        }
+        interface TransferOwnershipEvent {
+            user: string;
+            _event: Event;
+        }
+    }
+}
 /// <amd-module name="@scom/portal-contract/contracts/AuditorInfo.json.ts" />
 declare module "@scom/portal-contract/contracts/AuditorInfo.json.ts" {
-    const _default_1: {
+    const _default_2: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -203,7 +413,7 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_1;
+    export default _default_2;
 }
 /// <amd-module name="@scom/portal-contract/contracts/AuditorInfo.ts" />
 declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
@@ -380,7 +590,7 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/Authorization.json.ts" />
 declare module "@scom/portal-contract/contracts/Authorization.json.ts" {
-    const _default_2: {
+    const _default_3: {
         abi: ({
             inputs: any[];
             stateMutability: string;
@@ -418,7 +628,7 @@ declare module "@scom/portal-contract/contracts/Authorization.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_2;
+    export default _default_3;
 }
 /// <amd-module name="@scom/portal-contract/contracts/Authorization.ts" />
 declare module "@scom/portal-contract/contracts/Authorization.ts" {
@@ -483,7 +693,7 @@ declare module "@scom/portal-contract/contracts/Authorization.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/DomainInfo.json.ts" />
 declare module "@scom/portal-contract/contracts/DomainInfo.json.ts" {
-    const _default_3: {
+    const _default_4: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -525,7 +735,7 @@ declare module "@scom/portal-contract/contracts/DomainInfo.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_3;
+    export default _default_4;
 }
 /// <amd-module name="@scom/portal-contract/contracts/DomainInfo.ts" />
 declare module "@scom/portal-contract/contracts/DomainInfo.ts" {
@@ -748,7 +958,7 @@ declare module "@scom/portal-contract/contracts/DomainInfo.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/ModuleInfo.json.ts" />
 declare module "@scom/portal-contract/contracts/ModuleInfo.json.ts" {
-    const _default_4: {
+    const _default_5: {
         abi: ({
             anonymous: boolean;
             inputs: {
@@ -789,7 +999,7 @@ declare module "@scom/portal-contract/contracts/ModuleInfo.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_4;
+    export default _default_5;
 }
 /// <amd-module name="@scom/portal-contract/contracts/ModuleInfo.ts" />
 declare module "@scom/portal-contract/contracts/ModuleInfo.ts" {
@@ -950,7 +1160,7 @@ declare module "@scom/portal-contract/contracts/ModuleInfo.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/ProjectInfo.json.ts" />
 declare module "@scom/portal-contract/contracts/ProjectInfo.json.ts" {
-    const _default_5: {
+    const _default_6: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -1038,7 +1248,7 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_5;
+    export default _default_6;
 }
 /// <amd-module name="@scom/portal-contract/contracts/ProjectInfo.ts" />
 declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
@@ -1129,14 +1339,6 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
     export interface IRemoveProjectAdminParams {
         projectId: number | BigNumber;
         admin: string;
-    }
-    export interface ISetPackageVersionToAuditFailedParams {
-        packageVersionId: number | BigNumber;
-        reportUri: string;
-    }
-    export interface ISetPackageVersionToAuditPassedParams {
-        packageVersionId: number | BigNumber;
-        reportUri: string;
     }
     export interface IStakeParams {
         projectId: number | BigNumber;
@@ -1244,7 +1446,7 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
                 };
                 status: BigNumber;
                 ipfsCid: string;
-                reportUri: string;
+                timestamp: BigNumber;
             }>;
         };
         newOwner: {
@@ -1299,7 +1501,7 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
                 };
                 status: BigNumber;
                 ipfsCid: string;
-                reportUri: string;
+                timestamp: BigNumber;
             }>;
         };
         packageVersionsLength: {
@@ -1375,14 +1577,6 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         removeProjectAdmin: {
             (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IRemoveProjectAdminParams, options?: TransactionOptions) => Promise<void>;
-        };
-        setPackageVersionToAuditFailed: {
-            (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions) => Promise<void>;
-        };
-        setPackageVersionToAuditPassed: {
-            (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
         };
         setPackageVersionToAuditing: {
             (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -1557,7 +1751,7 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/Scom.json.ts" />
 declare module "@scom/portal-contract/contracts/Scom.json.ts" {
-    const _default_6: {
+    const _default_7: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -1599,7 +1793,7 @@ declare module "@scom/portal-contract/contracts/Scom.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_6;
+    export default _default_7;
 }
 /// <amd-module name="@scom/portal-contract/contracts/Scom.ts" />
 declare module "@scom/portal-contract/contracts/Scom.ts" {
@@ -1715,6 +1909,7 @@ declare module "@scom/portal-contract/contracts/Scom.ts" {
 /// <amd-module name="@scom/portal-contract/contracts/index.ts" />
 declare module "@scom/portal-contract/contracts/index.ts" {
     export { ERC20 } from "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts";
+    export { AuditInfo } from "@scom/portal-contract/contracts/AuditInfo.ts";
     export { AuditorInfo } from "@scom/portal-contract/contracts/AuditorInfo.ts";
     export { Authorization } from "@scom/portal-contract/contracts/Authorization.ts";
     export { DomainInfo } from "@scom/portal-contract/contracts/DomainInfo.ts";
@@ -1724,7 +1919,7 @@ declare module "@scom/portal-contract/contracts/index.ts" {
 }
 /// <amd-module name="@scom/portal-contract" />
 declare module "@scom/portal-contract" {
-    import { IWallet } from "@ijstech/eth-contract";
+    import { IWallet, BigNumber } from "@ijstech/eth-contract";
     import * as Contracts from "@scom/portal-contract/contracts/index.ts";
     export { Contracts };
     export interface IDeployOptions {
@@ -1742,19 +1937,25 @@ declare module "@scom/portal-contract" {
         projectInfo: {
             admins: string[];
         };
+        audit: {
+            quorum: number | BigNumber;
+            auditDuration: number | BigNumber;
+            minAuditRequired: number | BigNumber;
+        };
     }
     export interface IDeployResult {
         token: string;
         domain: string;
         auditor: string;
         project: string;
+        audit: string;
     }
     export var DefaultDeployOptions: IDeployOptions;
     export function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
-    const _default_7: {
+    const _default_8: {
         Contracts: typeof Contracts;
         deploy: typeof deploy;
         DefaultDeployOptions: IDeployOptions;
     };
-    export default _default_7;
+    export default _default_8;
 }

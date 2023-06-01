@@ -20,8 +20,6 @@ export interface IProjectPackagesParams {param1:number|BigNumber;param2:number|B
 export interface IProjectPackagesInvParams {param1:number|BigNumber;param2:number|BigNumber}
 export interface IRemovePackageAdminParams {packageId:number|BigNumber;admin:string}
 export interface IRemoveProjectAdminParams {projectId:number|BigNumber;admin:string}
-export interface ISetPackageVersionToAuditFailedParams {packageVersionId:number|BigNumber;reportUri:string}
-export interface ISetPackageVersionToAuditPassedParams {packageVersionId:number|BigNumber;reportUri:string}
 export interface IStakeParams {projectId:number|BigNumber;amount:number|BigNumber}
 export interface ITransferProjectOwnershipParams {projectId:number|BigNumber;newOwner:string}
 export interface IUnstakeParams {projectId:number|BigNumber;amount:number|BigNumber}
@@ -291,7 +289,7 @@ export class ProjectInfo extends _Contract{
         (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
     latestAuditedPackageVersion: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}>;
     }
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
@@ -336,7 +334,7 @@ export class ProjectInfo extends _Contract{
         (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber>;
     }
     packageVersions: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}>;
     }
     packageVersionsLength: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -407,14 +405,6 @@ export class ProjectInfo extends _Contract{
         (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IRemoveProjectAdminParams, options?: TransactionOptions) => Promise<void>;
     }
-    setPackageVersionToAuditFailed: {
-        (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions) => Promise<void>;
-    }
-    setPackageVersionToAuditPassed: {
-        (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
-    }
     setPackageVersionToAuditing: {
         (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (packageVersionId:number|BigNumber, options?: TransactionOptions) => Promise<void>;
@@ -481,7 +471,7 @@ export class ProjectInfo extends _Contract{
             return result;
         }
         this.isPermitted = isPermitted_call
-        let latestAuditedPackageVersion_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}> => {
+        let latestAuditedPackageVersion_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}> => {
             let result = await this.call('latestAuditedPackageVersion',[this.wallet.utils.toString(param1)],options);
             return {
                 packageId: new BigNumber(result.packageId),
@@ -494,7 +484,7 @@ export class ProjectInfo extends _Contract{
                 ,
                 status: new BigNumber(result.status),
                 ipfsCid: result.ipfsCid,
-                reportUri: result.reportUri
+                timestamp: new BigNumber(result.timestamp)
             };
         }
         this.latestAuditedPackageVersion = latestAuditedPackageVersion_call
@@ -554,7 +544,7 @@ export class ProjectInfo extends _Contract{
             return new BigNumber(result);
         }
         this.packageNameInv = packageNameInv_call
-        let packageVersions_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,reportUri:string}> => {
+        let packageVersions_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}> => {
             let result = await this.call('packageVersions',[this.wallet.utils.toString(param1)],options);
             return {
                 packageId: new BigNumber(result.packageId),
@@ -567,7 +557,7 @@ export class ProjectInfo extends _Contract{
                 ,
                 status: new BigNumber(result.status),
                 ipfsCid: result.ipfsCid,
-                reportUri: result.reportUri
+                timestamp: new BigNumber(result.timestamp)
             };
         }
         this.packageVersions = packageVersions_call
@@ -787,30 +777,6 @@ export class ProjectInfo extends _Contract{
         }
         this.removeProjectAdmin = Object.assign(removeProjectAdmin_send, {
             call:removeProjectAdmin_call
-        });
-        let setPackageVersionToAuditFailedParams = (params: ISetPackageVersionToAuditFailedParams) => [this.wallet.utils.toString(params.packageVersionId),params.reportUri];
-        let setPackageVersionToAuditFailed_send = async (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('setPackageVersionToAuditFailed',setPackageVersionToAuditFailedParams(params),options);
-            return result;
-        }
-        let setPackageVersionToAuditFailed_call = async (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('setPackageVersionToAuditFailed',setPackageVersionToAuditFailedParams(params),options);
-            return;
-        }
-        this.setPackageVersionToAuditFailed = Object.assign(setPackageVersionToAuditFailed_send, {
-            call:setPackageVersionToAuditFailed_call
-        });
-        let setPackageVersionToAuditPassedParams = (params: ISetPackageVersionToAuditPassedParams) => [this.wallet.utils.toString(params.packageVersionId),params.reportUri];
-        let setPackageVersionToAuditPassed_send = async (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('setPackageVersionToAuditPassed',setPackageVersionToAuditPassedParams(params),options);
-            return result;
-        }
-        let setPackageVersionToAuditPassed_call = async (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('setPackageVersionToAuditPassed',setPackageVersionToAuditPassedParams(params),options);
-            return;
-        }
-        this.setPackageVersionToAuditPassed = Object.assign(setPackageVersionToAuditPassed_send, {
-            call:setPackageVersionToAuditPassed_call
         });
         let setPackageVersionToAuditing_send = async (packageVersionId:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('setPackageVersionToAuditing',[this.wallet.utils.toString(packageVersionId)],options);
