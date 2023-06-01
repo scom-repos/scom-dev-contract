@@ -144,7 +144,7 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(newProjectEvent.projectId.toNumber() + 1, projectCount.toNumber());
             let name = await projectContract.projectName(newProjectEvent.projectId);
             let ipfsCid = await projectContract.projectIpfsCid(newProjectEvent.projectId);
-            assert.strictEqual(name, 'abc');
+            assert.strictEqual(Utils.bytes32ToString(name), 'abc');
             assert.strictEqual(ipfsCid, 'abc');
         })
         it('Duplicate Project Name', async function() {
@@ -165,7 +165,7 @@ describe('## SC-Contract', async function() {
                 name: 'scom'
             });
             let name = await projectContract.projectName(0);
-            assert.strictEqual(name, 'scom');
+            assert.strictEqual(Utils.bytes32ToString(name), 'scom');
         })
         it('Update Project IpfsCid', async function() {
             await projectContract.updateProjectIpfsCid({
@@ -239,7 +239,7 @@ describe('## SC-Contract', async function() {
                 param1: 0,
                 param2: 0
             });
-            assert.strictEqual(name, 'portal');
+            assert.strictEqual(Utils.bytes32ToString(name), 'portal');
         })
         it('Add Package Admin', async function() {
             await projectContract.addPackageAdmin({
