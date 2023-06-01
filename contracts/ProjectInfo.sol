@@ -37,7 +37,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         SemVer version;
         PackageVersionStatus status;
         string ipfsCid;
-        string reportUri;
+        uint256 timestamp;
     }
     
     IERC20 public immutable token;
@@ -273,7 +273,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
             version: version,
             status: PackageVersionStatus.AUDITING,
             ipfsCid: ipfsCid,
-            reportUri: ""
+            timestamp: block.timestamp
         }));
 
         emit NewPackageVersion(packageId, packageVersionId, version);
@@ -290,22 +290,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         require(packageVersion.status != PackageVersionStatus.VOIDED, "already voided");
         require(packageVersion.status != PackageVersionStatus.AUDIT_PASSED, "Audit passed version cannot be voided");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.VOIDED);
-    }
-    function setPackageVersionToAuditPassed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
-        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
-        PackageVersion storage packageVersion = packageVersions[packageVersionId];
-        require(packageVersion.status == PackageVersionStatus.AUDITING, "not under auditing");
-        latestAuditedPackageVersion[packageVersion.packageId] = packageVersion;
-        packageVersion.reportUri = reportUri;
-        _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDIT_PASSED);
     } 
-    function setPackageVersionToAuditFailed(uint256 packageVersionId, string calldata reportUri) external onlyActiveAuditor {
-        require(packageVersionId < packageVersions.length, "invalid packageVersionId");
-        PackageVersion storage packageVersion = packageVersions[packageVersionId];
-        require(packageVersion.status == PackageVersionStatus.AUDITING, "not under auditing");
-        packageVersion.reportUri = reportUri;
-        _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.AUDIT_FAILED);
-    }         
     // function addProjectPackage(uint256 projectId, uint256 packageId) external isProjectAdminOrOwner(projectId) {
     //     require(packageId < packages.length, "invalid packageId");
     //     projectPackagesInv[projectId][packageId] = projectPackages[projectId].length;

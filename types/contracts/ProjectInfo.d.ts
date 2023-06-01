@@ -65,14 +65,6 @@ export interface IRemoveProjectAdminParams {
     projectId: number | BigNumber;
     admin: string;
 }
-export interface ISetPackageVersionToAuditFailedParams {
-    packageVersionId: number | BigNumber;
-    reportUri: string;
-}
-export interface ISetPackageVersionToAuditPassedParams {
-    packageVersionId: number | BigNumber;
-    reportUri: string;
-}
 export interface ISetProjectCurrentVersionParams {
     projectId: number | BigNumber;
     versionIdx: number | BigNumber;
@@ -160,7 +152,7 @@ export declare class ProjectInfo extends _Contract {
             };
             status: BigNumber;
             ipfsCid: string;
-            reportUri: string;
+            timestamp: BigNumber;
         }>;
     };
     newOwner: {
@@ -204,7 +196,7 @@ export declare class ProjectInfo extends _Contract {
             };
             status: BigNumber;
             ipfsCid: string;
-            reportUri: string;
+            timestamp: BigNumber;
         }>;
     };
     packageVersionsLength: {
@@ -291,14 +283,6 @@ export declare class ProjectInfo extends _Contract {
     removeProjectAdmin: {
         (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IRemoveProjectAdminParams, options?: TransactionOptions) => Promise<void>;
-    };
-    setPackageVersionToAuditFailed: {
-        (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetPackageVersionToAuditFailedParams, options?: TransactionOptions) => Promise<void>;
-    };
-    setPackageVersionToAuditPassed: {
-        (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetPackageVersionToAuditPassedParams, options?: TransactionOptions) => Promise<void>;
     };
     setProjectCurrentVersion: {
         (params: ISetProjectCurrentVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
