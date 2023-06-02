@@ -5,9 +5,9 @@ import "./ProjectInfo.sol";
 
 contract AuditInfo is Authorization, ReentrancyGuard {
 
-    enum AuditResult {FAILED, PASSED}
+    enum AuditResult {FAILED, WARNING, PASSED}
 
-    uint256 public constant QUORUM_BASE = 10 ** 3;
+    uint256 public constant THRESHOLD_BASE = 10 ** 3;
 
     struct AuditReport {
         AuditResult auditResult;
@@ -23,7 +23,8 @@ contract AuditInfo is Authorization, ReentrancyGuard {
     mapping (uint256 => AuditResult) public lastAuditResultBeforeAuditPeriod; // latestAuditResultBeforeAuditPeriod[packageVersionsId] = auditResult
 
 
-    uint256 public quorum;
+    uint256 public warningThreshold;
+    uint256 public passedThreshold;
     uint256 public minAuditRequired;
     uint256 public auditDuration;
 
@@ -34,16 +35,20 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         _;
     }
 
-    constructor(ProjectInfo _projectInfo, AuditorInfo _auditorInfo, uint256 _quorum, uint256 _auditDuration, uint256 _minAuditRequired) {
-        require(_quorum < QUORUM_BASE, "invalid quorum");
+    constructor(ProjectInfo _projectInfo, AuditorInfo _auditorInfo, uint256 _warningThreshold, uint256 _passedThreshold, uint256 _auditDuration, uint256 _minAuditRequired) {
+        require(warningThreshold < _passedThreshold && _passedThreshold <= THRESHOLD_BASE, "invalid threshold");
         projectInfo = _projectInfo;
         auditorInfo = _auditorInfo;
-        quorum = _quorum;
+        warningThreshold = _warningThreshold;
+        passedThreshold = _passedThreshold;
         auditDuration = _auditDuration;
         minAuditRequired = _minAuditRequired;
     }
-    function setQuorum(uint256 _quorum) external onlyOwner {
-        quorum = _quorum;
+    function setWarningThreshold(uint256 _warningThreshold) external onlyOwner {
+        warningThreshold = _warningThreshold;
+    }
+    function setPassedThreshold(uint256 _passedThreshold) external onlyOwner {
+        passedThreshold = _passedThreshold;
     }
     function setAuditDuration(uint256 _auditDuration) external onlyOwner {
         auditDuration = _auditDuration;
@@ -94,18 +99,21 @@ contract AuditInfo is Authorization, ReentrancyGuard {
 
         uint256 length = auditHistory[packageVersionsId].length;
         if (length >= minAuditRequired) {
-            uint256 required = length * quorum / QUORUM_BASE;
-            AuditResult finalResult = AuditResult.FAILED;
+            uint256 count;
             for (uint256 i = 0 ; i < length ; i++) {
                 AuditReport[] storage array = auditHistory[packageVersionsId][i];
                 if (array[array.length - 1].auditResult == AuditResult.PASSED) {
-                    required--;
-                    if (required == 0) {
-                        finalResult = AuditResult.PASSED;
-                        break;
-                    }
+                    count++;
+                    // if (count >= passed) {
+                    //     break;
+                    // }
                 }
             }
+     
+            AuditResult finalResult = (count >= (length * passedThreshold / THRESHOLD_BASE)) ? AuditResult.PASSED : 
+                                      (count >= (length * warningThreshold / THRESHOLD_BASE)) ? AuditResult.WARNING : 
+                                      AuditResult.FAILED;
+
             latestAuditResult[packageVersionsId] = finalResult;
             (,,,,uint256 timestamp) = projectInfo.packageVersions(packageVersionsId);
             if (block.timestamp < timestamp + auditDuration) {
