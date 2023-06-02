@@ -18,10 +18,15 @@ export interface IDeployOptions{
         admins: string[];
     };
     audit: {
-        quorum: number|BigNumber;
+        warningThreshold: number|BigNumber;
+        passedThreshold: number|BigNumber;
         auditDuration: number|BigNumber;
         minAuditRequired: number|BigNumber;
     };
+    vault: {
+        foundation: string;
+        amm: string;
+    }
 };
 export interface IDeployResult{
     token: string;
@@ -29,6 +34,7 @@ export interface IDeployResult{
     auditor: string;
     project: string;
     audit: string;
+    vault: string;
 }
 export var DefaultDeployOptions: IDeployOptions = {
     token: {
@@ -46,9 +52,14 @@ export var DefaultDeployOptions: IDeployOptions = {
         admins: []
     },
     audit: {
-        quorum: 500, // base 10e3
+        warningThreshold: 600, // base 10e3
+        passedThreshold: 900, // base 10e3
         auditDuration: 14 * 24*60*60,  // 14 days
         minAuditRequired: 3
+    },
+    vault: {
+        foundation: '',
+        amm: ''
     }
 };
 async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
@@ -100,6 +111,11 @@ async function deployAuditInfo(wallet: IWallet, projectInfo: string, auditorInfo
     return await auditInfo.deploy({projectInfo, auditorInfo, ...Config.audit});
 }
 
+async function deployVault(wallet: IWallet, scom: string, Config: IDeployOptions) {
+    let vault = new Contracts.Vault(wallet);
+    return await vault.deploy({foundation: Config.vault.foundation, scom:scom, amm: Config.vault.amm});
+}
+
 export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {
     let result: IDeployResult = {
         token: '',
@@ -107,25 +123,28 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
         auditor: '',
         project: '',
         audit: '',
+        vault: '',
     };
-    if (!Config.token.initSupplyTo){
-        onProgress('ERROR: token.initSupplyTo not defined!')
-        return;
-    }
-    onProgress('1/5 Deploy token contract')
+    onProgress('1/6 Deploy token contract')
     if (!Config.token?.address){        
+        if (!Config.token.initSupplyTo){
+            onProgress('ERROR: token.initSupplyTo not defined!')
+            return;
+        }
         result.token = await deployScom(wallet, Config);
     }
     else
         result.token = Config.token.address;
-    onProgress('2/5 Deploy domain contract')
+    onProgress('2/6 Deploy domain contract')
     result.domain = await deployDomainInfo(wallet, result.token);
-    onProgress('3/5 Deploy auditor contract')
+    onProgress('3/6 Deploy auditor contract')
     result.auditor = await deployAuditorInfo(wallet, result.token, Config);
-    onProgress('4/5 Deploy project contract')
+    onProgress('4/6 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
-    onProgress('5/5 Deploy audit contract')
-    result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config)
+    onProgress('5/6 Deploy audit contract')
+    result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config);
+    onProgress('6/6 Deploy vault contract')
+    result.vault = await deployVault(wallet, result.token, Config);
     return result;
 }
 export default {

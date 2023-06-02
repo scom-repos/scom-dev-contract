@@ -6,3 +6,4 @@ export { DomainInfo } from './DomainInfo';
 export { ModuleInfo } from './ModuleInfo';
 export { ProjectInfo } from './ProjectInfo';
 export { Scom } from './Scom';
+export { Vault } from './Vault';

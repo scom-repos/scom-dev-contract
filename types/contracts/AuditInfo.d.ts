@@ -2,7 +2,8 @@ import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, T
 export interface IDeployParams {
     projectInfo: string;
     auditorInfo: string;
-    quorum: number | BigNumber;
+    warningThreshold: number | BigNumber;
+    passedThreshold: number | BigNumber;
     auditDuration: number | BigNumber;
     minAuditRequired: number | BigNumber;
 }
@@ -42,7 +43,7 @@ export declare class AuditInfo extends _Contract {
     decodeStartOwnershipTransferEvent(event: Event): AuditInfo.StartOwnershipTransferEvent;
     parseTransferOwnershipEvent(receipt: TransactionReceipt): AuditInfo.TransferOwnershipEvent[];
     decodeTransferOwnershipEvent(event: Event): AuditInfo.TransferOwnershipEvent;
-    QUORUM_BASE: {
+    THRESHOLD_BASE: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
     addAuditReport: {
@@ -102,15 +103,15 @@ export declare class AuditInfo extends _Contract {
     packageVersionsAuditorsInv: {
         (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
     };
+    passedThreshold: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
     permit: {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
     };
     projectInfo: {
         (options?: TransactionOptions): Promise<string>;
-    };
-    quorum: {
-        (options?: TransactionOptions): Promise<BigNumber>;
     };
     setAuditDuration: {
         (auditDuration: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -120,9 +121,13 @@ export declare class AuditInfo extends _Contract {
         (minAuditRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (minAuditRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
-    setQuorum: {
-        (quorum: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (quorum: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    setPassedThreshold: {
+        (passedThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (passedThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    };
+    setWarningThreshold: {
+        (warningThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (warningThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     takeOwnership: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -131,6 +136,9 @@ export declare class AuditInfo extends _Contract {
     transferOwnership: {
         (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+    };
+    warningThreshold: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     };
     private assign;
 }

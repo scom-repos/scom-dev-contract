@@ -191,7 +191,8 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
     export interface IDeployParams {
         projectInfo: string;
         auditorInfo: string;
-        quorum: number | BigNumber;
+        warningThreshold: number | BigNumber;
+        passedThreshold: number | BigNumber;
         auditDuration: number | BigNumber;
         minAuditRequired: number | BigNumber;
     }
@@ -231,7 +232,7 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         decodeStartOwnershipTransferEvent(event: Event): AuditInfo.StartOwnershipTransferEvent;
         parseTransferOwnershipEvent(receipt: TransactionReceipt): AuditInfo.TransferOwnershipEvent[];
         decodeTransferOwnershipEvent(event: Event): AuditInfo.TransferOwnershipEvent;
-        QUORUM_BASE: {
+        THRESHOLD_BASE: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
         addAuditReport: {
@@ -291,15 +292,15 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         packageVersionsAuditorsInv: {
             (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
         };
+        passedThreshold: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
         permit: {
             (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (user: string, options?: TransactionOptions) => Promise<void>;
         };
         projectInfo: {
             (options?: TransactionOptions): Promise<string>;
-        };
-        quorum: {
-            (options?: TransactionOptions): Promise<BigNumber>;
         };
         setAuditDuration: {
             (auditDuration: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -309,9 +310,13 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
             (minAuditRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (minAuditRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
-        setQuorum: {
-            (quorum: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (quorum: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        setPassedThreshold: {
+            (passedThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (passedThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        setWarningThreshold: {
+            (warningThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (warningThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
         takeOwnership: {
             (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -320,6 +325,9 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         transferOwnership: {
             (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        warningThreshold: {
+            (options?: TransactionOptions): Promise<BigNumber>;
         };
         private assign;
     }
@@ -1835,6 +1843,265 @@ declare module "@scom/portal-contract/contracts/Scom.ts" {
         }
     }
 }
+/// <amd-module name="@scom/portal-contract/contracts/Vault.json.ts" />
+declare module "@scom/portal-contract/contracts/Vault.json.ts" {
+    const _default_8: {
+        abi: ({
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
+        } | {
+            anonymous: boolean;
+            inputs: {
+                indexed: boolean;
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            type: string;
+            stateMutability?: undefined;
+            outputs?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        } | {
+            inputs: {
+                components: {
+                    internalType: string;
+                    name: string;
+                    type: string;
+                }[];
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: any[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        })[];
+        bytecode: string;
+    };
+    export default _default_8;
+}
+/// <amd-module name="@scom/portal-contract/contracts/Vault.ts" />
+declare module "@scom/portal-contract/contracts/Vault.ts" {
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export interface IDeployParams {
+        foundation: string;
+        scom: string;
+        amm: string;
+    }
+    export interface IBuyParams {
+        salesId: number | BigNumber;
+        allocation: number | BigNumber;
+        proof: string[];
+    }
+    export interface IStartParams {
+        startTime: number | BigNumber;
+        endTime: number | BigNumber;
+        decrementDecimal: number | BigNumber;
+    }
+    export interface IUpdateReleaseSchduleParams {
+        endTime: number | BigNumber;
+        initialReleaseAmount: number | BigNumber;
+        decrementDecimal: number | BigNumber;
+    }
+    export class Vault extends _Contract {
+        static _abi: any;
+        constructor(wallet: IWallet, address?: string);
+        deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
+        parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[];
+        decodeAuthorizeEvent(event: Event): Vault.AuthorizeEvent;
+        parseDeauthorizeEvent(receipt: TransactionReceipt): Vault.DeauthorizeEvent[];
+        decodeDeauthorizeEvent(event: Event): Vault.DeauthorizeEvent;
+        parseNewSaleEvent(receipt: TransactionReceipt): Vault.NewSaleEvent[];
+        decodeNewSaleEvent(event: Event): Vault.NewSaleEvent;
+        parseStartOwnershipTransferEvent(receipt: TransactionReceipt): Vault.StartOwnershipTransferEvent[];
+        decodeStartOwnershipTransferEvent(event: Event): Vault.StartOwnershipTransferEvent;
+        parseTransferOwnershipEvent(receipt: TransactionReceipt): Vault.TransferOwnershipEvent[];
+        decodeTransferOwnershipEvent(event: Event): Vault.TransferOwnershipEvent;
+        amm: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        amountUsedInSale: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        availableAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        buy: {
+            (params: IBuyParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IBuyParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+        };
+        currReleaseAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        decrementDecimal: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        deny: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        endTime: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        foundation: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        initialReleaseAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        isPermitted: {
+            (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        lasReleaseAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        lastUpdate: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        newOwner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        newSale: {
+            (sale: {
+                startTime: number | BigNumber;
+                privateSaleEndTime: number | BigNumber;
+                semiPrivateSaleEndTime: number | BigNumber;
+                amount: number | BigNumber;
+                merkleRoot: string;
+                ipfsCid: string;
+            }, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (sale: {
+                startTime: number | BigNumber;
+                privateSaleEndTime: number | BigNumber;
+                semiPrivateSaleEndTime: number | BigNumber;
+                amount: number | BigNumber;
+                merkleRoot: string;
+                ipfsCid: string;
+            }, options?: TransactionOptions) => Promise<void>;
+        };
+        oneMinusDecrement: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        owner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        permit: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        publicBuy: {
+            (options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+        };
+        publicSaleAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        release: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<BigNumber>;
+        };
+        releaseAndBuy: {
+            (salesIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (salesIds: (number | BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
+        };
+        releaseToPublic: {
+            (salesIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (salesIds: (number | BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
+        };
+        sales: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<{
+                startTime: BigNumber;
+                privateSaleEndTime: BigNumber;
+                semiPrivateSaleEndTime: BigNumber;
+                amount: BigNumber;
+                merkleRoot: string;
+                ipfsCid: string;
+            }>;
+        };
+        scom: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        start: {
+            (params: IStartParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IStartParams, options?: TransactionOptions) => Promise<void>;
+        };
+        startTime: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        takeOwnership: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        token0IsScom: {
+            (options?: TransactionOptions): Promise<boolean>;
+        };
+        totalAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        totalSuppyAt: {
+            (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        transferOwnership: {
+            (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        updateReleaseSchdule: {
+            (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IUpdateReleaseSchduleParams, options?: TransactionOptions) => Promise<void>;
+        };
+        weth: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        private assign;
+    }
+    export module Vault {
+        interface AuthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface DeauthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface NewSaleEvent {
+            salesId: BigNumber;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
+            _event: Event;
+        }
+        interface TransferOwnershipEvent {
+            user: string;
+            _event: Event;
+        }
+    }
+}
 /// <amd-module name="@scom/portal-contract/contracts/index.ts" />
 declare module "@scom/portal-contract/contracts/index.ts" {
     export { ERC20 } from "@scom/portal-contract/contracts/@openzeppelin/contracts/token/ERC20/ERC20.ts";
@@ -1845,6 +2112,7 @@ declare module "@scom/portal-contract/contracts/index.ts" {
     export { ModuleInfo } from "@scom/portal-contract/contracts/ModuleInfo.ts";
     export { ProjectInfo } from "@scom/portal-contract/contracts/ProjectInfo.ts";
     export { Scom } from "@scom/portal-contract/contracts/Scom.ts";
+    export { Vault } from "@scom/portal-contract/contracts/Vault.ts";
 }
 /// <amd-module name="@scom/portal-contract" />
 declare module "@scom/portal-contract" {
@@ -1867,9 +2135,14 @@ declare module "@scom/portal-contract" {
             admins: string[];
         };
         audit: {
-            quorum: number | BigNumber;
+            warningThreshold: number | BigNumber;
+            passedThreshold: number | BigNumber;
             auditDuration: number | BigNumber;
             minAuditRequired: number | BigNumber;
+        };
+        vault: {
+            foundation: string;
+            amm: string;
         };
     }
     export interface IDeployResult {
@@ -1878,13 +2151,14 @@ declare module "@scom/portal-contract" {
         auditor: string;
         project: string;
         audit: string;
+        vault: string;
     }
     export var DefaultDeployOptions: IDeployOptions;
     export function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
-    const _default_8: {
+    const _default_9: {
         Contracts: typeof Contracts;
         deploy: typeof deploy;
         DefaultDeployOptions: IDeployOptions;
     };
-    export default _default_8;
+    export default _default_9;
 }

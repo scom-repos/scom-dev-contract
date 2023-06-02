@@ -17,9 +17,14 @@ export interface IDeployOptions {
         admins: string[];
     };
     audit: {
-        quorum: number | BigNumber;
+        warningThreshold: number | BigNumber;
+        passedThreshold: number | BigNumber;
         auditDuration: number | BigNumber;
         minAuditRequired: number | BigNumber;
+    };
+    vault: {
+        foundation: string;
+        amm: string;
     };
 }
 export interface IDeployResult {
@@ -28,6 +33,7 @@ export interface IDeployResult {
     auditor: string;
     project: string;
     audit: string;
+    vault: string;
 }
 export declare var DefaultDeployOptions: IDeployOptions;
 export declare function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
