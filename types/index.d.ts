@@ -16,13 +16,13 @@ export interface IDeployOptions {
     projectInfo: {
         admins: string[];
     };
-    audit: {
+    audit?: {
         warningThreshold: number | BigNumber;
         passedThreshold: number | BigNumber;
         auditDuration: number | BigNumber;
         minAuditRequired: number | BigNumber;
     };
-    vault: {
+    vault?: {
         foundation: string;
         amm: string;
     };

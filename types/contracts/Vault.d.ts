@@ -6,6 +6,7 @@ export interface IDeployParams {
 }
 export interface IBuyParams {
     salesId: number | BigNumber;
+    to: string;
     allocation: number | BigNumber;
     proof: string[];
 }
@@ -25,6 +26,8 @@ export declare class Vault extends _Contract {
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[];
     decodeAuthorizeEvent(event: Event): Vault.AuthorizeEvent;
+    parseBuyEvent(receipt: TransactionReceipt): Vault.BuyEvent[];
+    decodeBuyEvent(event: Event): Vault.BuyEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): Vault.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): Vault.DeauthorizeEvent;
     parseNewSaleEvent(receipt: TransactionReceipt): Vault.NewSaleEvent[];
@@ -165,6 +168,9 @@ export declare class Vault extends _Contract {
         (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdateReleaseSchduleParams, options?: TransactionOptions) => Promise<void>;
     };
+    usedAllocation: {
+        (param1: string, options?: TransactionOptions): Promise<BigNumber>;
+    };
     weth: {
         (options?: TransactionOptions): Promise<string>;
     };
@@ -173,6 +179,13 @@ export declare class Vault extends _Contract {
 export declare module Vault {
     interface AuthorizeEvent {
         user: string;
+        _event: Event;
+    }
+    interface BuyEvent {
+        buyer: string;
+        to: string;
+        amountScom: BigNumber;
+        amountEth: BigNumber;
         _event: Event;
     }
     interface DeauthorizeEvent {

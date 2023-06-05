@@ -1915,6 +1915,7 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
     }
     export interface IBuyParams {
         salesId: number | BigNumber;
+        to: string;
         allocation: number | BigNumber;
         proof: string[];
     }
@@ -1934,6 +1935,8 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[];
         decodeAuthorizeEvent(event: Event): Vault.AuthorizeEvent;
+        parseBuyEvent(receipt: TransactionReceipt): Vault.BuyEvent[];
+        decodeBuyEvent(event: Event): Vault.BuyEvent;
         parseDeauthorizeEvent(receipt: TransactionReceipt): Vault.DeauthorizeEvent[];
         decodeDeauthorizeEvent(event: Event): Vault.DeauthorizeEvent;
         parseNewSaleEvent(receipt: TransactionReceipt): Vault.NewSaleEvent[];
@@ -2074,6 +2077,9 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
             (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IUpdateReleaseSchduleParams, options?: TransactionOptions) => Promise<void>;
         };
+        usedAllocation: {
+            (param1: string, options?: TransactionOptions): Promise<BigNumber>;
+        };
         weth: {
             (options?: TransactionOptions): Promise<string>;
         };
@@ -2082,6 +2088,13 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
     export module Vault {
         interface AuthorizeEvent {
             user: string;
+            _event: Event;
+        }
+        interface BuyEvent {
+            buyer: string;
+            to: string;
+            amountScom: BigNumber;
+            amountEth: BigNumber;
             _event: Event;
         }
         interface DeauthorizeEvent {
@@ -2134,13 +2147,13 @@ declare module "@scom/portal-contract" {
         projectInfo: {
             admins: string[];
         };
-        audit: {
+        audit?: {
             warningThreshold: number | BigNumber;
             passedThreshold: number | BigNumber;
             auditDuration: number | BigNumber;
             minAuditRequired: number | BigNumber;
         };
-        vault: {
+        vault?: {
             foundation: string;
             amm: string;
         };

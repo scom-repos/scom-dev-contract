@@ -17,13 +17,13 @@ export interface IDeployOptions{
     projectInfo: {
         admins: string[];
     };
-    audit: {
+    audit?: {
         warningThreshold: number|BigNumber;
         passedThreshold: number|BigNumber;
         auditDuration: number|BigNumber;
         minAuditRequired: number|BigNumber;
     };
-    vault: {
+    vault?: {
         foundation: string;
         amm: string;
     }
@@ -142,9 +142,11 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
     onProgress('4/6 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
     onProgress('5/6 Deploy audit contract')
-    result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config);
+    if (Config.audit)
+        result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config);
     onProgress('6/6 Deploy vault contract')
-    result.vault = await deployVault(wallet, result.token, Config);
+    if (Config.vault)
+        result.vault = await deployVault(wallet, result.token, Config);
     return result;
 }
 export default {

@@ -1,7 +1,7 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Vault.json";
 export interface IDeployParams {foundation:string;scom:string;amm:string}
-export interface IBuyParams {salesId:number|BigNumber;allocation:number|BigNumber;proof:string[]}
+export interface IBuyParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export interface IStartParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;initialReleaseAmount:number|BigNumber;decrementDecimal:number|BigNumber}
 export class Vault extends _Contract{
@@ -20,6 +20,19 @@ export class Vault extends _Contract{
         let result = event.data;
         return {
             user: result.user,
+            _event: event
+        };
+    }
+    parseBuyEvent(receipt: TransactionReceipt): Vault.BuyEvent[]{
+        return this.parseEvents(receipt, "Buy").map(e=>this.decodeBuyEvent(e));
+    }
+    decodeBuyEvent(event: Event): Vault.BuyEvent{
+        let result = event.data;
+        return {
+            buyer: result.buyer,
+            to: result.to,
+            amountScom: new BigNumber(result.amountScom),
+            amountEth: new BigNumber(result.amountEth),
             _event: event
         };
     }
@@ -174,6 +187,9 @@ export class Vault extends _Contract{
         (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdateReleaseSchduleParams, options?: TransactionOptions) => Promise<void>;
     }
+    usedAllocation: {
+        (param1:string, options?: TransactionOptions): Promise<BigNumber>;
+    }
     weth: {
         (options?: TransactionOptions): Promise<string>;
     }
@@ -290,12 +306,17 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.totalSuppyAt = totalSuppyAt_call
+        let usedAllocation_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('usedAllocation',[this.wallet.utils.stringToBytes32(param1)],options);
+            return new BigNumber(result);
+        }
+        this.usedAllocation = usedAllocation_call
         let weth_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('weth',[],options);
             return result;
         }
         this.weth = weth_call
-        let buyParams = (params: IBuyParams) => [this.wallet.utils.toString(params.salesId),this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let buyParams = (params: IBuyParams) => [this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
         let buy_send = async (params: IBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('buy',buyParams(params),options);
             return result;
@@ -434,6 +455,7 @@ export class Vault extends _Contract{
 }
 export module Vault{
     export interface AuthorizeEvent {user:string,_event:Event}
+    export interface BuyEvent {buyer:string,to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface NewSaleEvent {salesId:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
