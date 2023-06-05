@@ -2,6 +2,7 @@ import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumb
 import Bin from "./Vault.json";
 export interface IDeployParams {foundation:string;scom:string;amm:string}
 export interface IBuyParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
+export interface IBuyWithWETHParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export interface IStartParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;initialReleaseAmount:number|BigNumber;decrementDecimal:number|BigNumber}
 export class Vault extends _Contract{
@@ -89,6 +90,10 @@ export class Vault extends _Contract{
         (params: IBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IBuyParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
     }
+    buyWithWETH: {
+        (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
+    }
     currReleaseAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
@@ -121,8 +126,8 @@ export class Vault extends _Contract{
         (options?: TransactionOptions): Promise<string>;
     }
     newSale: {
-        (sale:{startTime:number|BigNumber,privateSaleEndTime:number|BigNumber,semiPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (sale:{startTime:number|BigNumber,privateSaleEndTime:number|BigNumber,semiPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions) => Promise<void>;
+        (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions) => Promise<void>;
     }
     oneMinusDecrement: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -154,7 +159,7 @@ export class Vault extends _Contract{
         call: (salesIds:(number|BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
     }
     sales: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,privateSaleEndTime:BigNumber,semiPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}>;
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedPrivateSaleEndTime:BigNumber,unlimitedPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}>;
     }
     scom: {
         (options?: TransactionOptions): Promise<string>;
@@ -269,12 +274,12 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.publicSaleAmount = publicSaleAmount_call
-        let sales_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,privateSaleEndTime:BigNumber,semiPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
+        let sales_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedPrivateSaleEndTime:BigNumber,unlimitedPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
             let result = await this.call('sales',[this.wallet.utils.toString(param1)],options);
             return {
                 startTime: new BigNumber(result.startTime),
-                privateSaleEndTime: new BigNumber(result.privateSaleEndTime),
-                semiPrivateSaleEndTime: new BigNumber(result.semiPrivateSaleEndTime),
+                limitedPrivateSaleEndTime: new BigNumber(result.limitedPrivateSaleEndTime),
+                unlimitedPrivateSaleEndTime: new BigNumber(result.unlimitedPrivateSaleEndTime),
                 amount: new BigNumber(result.amount),
                 merkleRoot: result.merkleRoot,
                 ipfsCid: result.ipfsCid
@@ -328,6 +333,18 @@ export class Vault extends _Contract{
         this.buy = Object.assign(buy_send, {
             call:buy_call
         });
+        let buyWithWETHParams = (params: IBuyWithWETHParams) => [this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let buyWithWETH_send = async (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('buyWithWETH',buyWithWETHParams(params),options);
+            return result;
+        }
+        let buyWithWETH_call = async (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('buyWithWETH',buyWithWETHParams(params),options);
+            return new BigNumber(result);
+        }
+        this.buyWithWETH = Object.assign(buyWithWETH_send, {
+            call:buyWithWETH_call
+        });
         let deny_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('deny',[user],options);
             return result;
@@ -339,12 +356,12 @@ export class Vault extends _Contract{
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
-        let newSale_send = async (sale:{startTime:number|BigNumber,privateSaleEndTime:number|BigNumber,semiPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.privateSaleEndTime),this.wallet.utils.toString(sale.semiPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
+        let newSale_send = async (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.limitedPrivateSaleEndTime),this.wallet.utils.toString(sale.unlimitedPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
             return result;
         }
-        let newSale_call = async (sale:{startTime:number|BigNumber,privateSaleEndTime:number|BigNumber,semiPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.privateSaleEndTime),this.wallet.utils.toString(sale.semiPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
+        let newSale_call = async (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.limitedPrivateSaleEndTime),this.wallet.utils.toString(sale.unlimitedPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
             return;
         }
         this.newSale = Object.assign(newSale_send, {

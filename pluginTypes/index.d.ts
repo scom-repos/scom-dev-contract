@@ -1686,8 +1686,8 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         }
     }
 }
-/// <amd-module name="@scom/portal-contract/contracts/Scom.json.ts" />
-declare module "@scom/portal-contract/contracts/Scom.json.ts" {
+/// <amd-module name="@scom/portal-contract/contracts/RouterVaultWrapper.json.ts" />
+declare module "@scom/portal-contract/contracts/RouterVaultWrapper.json.ts" {
     const _default_7: {
         abi: ({
             inputs: {
@@ -1731,6 +1731,173 @@ declare module "@scom/portal-contract/contracts/Scom.json.ts" {
         bytecode: string;
     };
     export default _default_7;
+}
+/// <amd-module name="@scom/portal-contract/contracts/RouterVaultWrapper.ts" />
+declare module "@scom/portal-contract/contracts/RouterVaultWrapper.ts" {
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export interface IDeployParams {
+        vault: string;
+        router: string;
+    }
+    export interface ISwapExactTokensForTokensParams {
+        pair: string[];
+        amountIn: number | BigNumber;
+        amountOutMin: number | BigNumber;
+        deadline: number | BigNumber;
+        salesId: number | BigNumber;
+        to: string;
+        allocation: number | BigNumber;
+        proof: string[];
+    }
+    export interface ISwapTokensForExactTokensParams {
+        pair: string[];
+        amountOut: number | BigNumber;
+        amountInMax: number | BigNumber;
+        deadline: number | BigNumber;
+        salesId: number | BigNumber;
+        to: string;
+        allocation: number | BigNumber;
+        proof: string[];
+    }
+    export class RouterVaultWrapper extends _Contract {
+        static _abi: any;
+        constructor(wallet: IWallet, address?: string);
+        deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
+        parseAuthorizeEvent(receipt: TransactionReceipt): RouterVaultWrapper.AuthorizeEvent[];
+        decodeAuthorizeEvent(event: Event): RouterVaultWrapper.AuthorizeEvent;
+        parseDeauthorizeEvent(receipt: TransactionReceipt): RouterVaultWrapper.DeauthorizeEvent[];
+        decodeDeauthorizeEvent(event: Event): RouterVaultWrapper.DeauthorizeEvent;
+        parseStartOwnershipTransferEvent(receipt: TransactionReceipt): RouterVaultWrapper.StartOwnershipTransferEvent[];
+        decodeStartOwnershipTransferEvent(event: Event): RouterVaultWrapper.StartOwnershipTransferEvent;
+        parseSwapEvent(receipt: TransactionReceipt): RouterVaultWrapper.SwapEvent[];
+        decodeSwapEvent(event: Event): RouterVaultWrapper.SwapEvent;
+        parseTransferOwnershipEvent(receipt: TransactionReceipt): RouterVaultWrapper.TransferOwnershipEvent[];
+        decodeTransferOwnershipEvent(event: Event): RouterVaultWrapper.TransferOwnershipEvent;
+        parseUpdateRouterEvent(receipt: TransactionReceipt): RouterVaultWrapper.UpdateRouterEvent[];
+        decodeUpdateRouterEvent(event: Event): RouterVaultWrapper.UpdateRouterEvent;
+        deny: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        isPermitted: {
+            (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        newOwner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        owner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        permit: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        router: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        swapExactTokensForTokens: {
+            (params: ISwapExactTokensForTokensParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ISwapExactTokensForTokensParams, options?: TransactionOptions) => Promise<void>;
+        };
+        swapTokensForExactTokens: {
+            (params: ISwapTokensForExactTokensParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ISwapTokensForExactTokensParams, options?: TransactionOptions) => Promise<void>;
+        };
+        takeOwnership: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        transferOwnership: {
+            (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        updateRouter: {
+            (router: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (router: string, options?: TransactionOptions) => Promise<void>;
+        };
+        vault: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        weth: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        private assign;
+    }
+    export module RouterVaultWrapper {
+        interface AuthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface DeauthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
+            _event: Event;
+        }
+        interface SwapEvent {
+            salesId: BigNumber;
+            sender: string;
+            inToken: string;
+            inAmount: BigNumber;
+            _event: Event;
+        }
+        interface TransferOwnershipEvent {
+            user: string;
+            _event: Event;
+        }
+        interface UpdateRouterEvent {
+            router: string;
+            _event: Event;
+        }
+    }
+}
+/// <amd-module name="@scom/portal-contract/contracts/Scom.json.ts" />
+declare module "@scom/portal-contract/contracts/Scom.json.ts" {
+    const _default_8: {
+        abi: ({
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
+        } | {
+            anonymous: boolean;
+            inputs: {
+                indexed: boolean;
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            type: string;
+            stateMutability?: undefined;
+            outputs?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        })[];
+        bytecode: string;
+    };
+    export default _default_8;
 }
 /// <amd-module name="@scom/portal-contract/contracts/Scom.ts" />
 declare module "@scom/portal-contract/contracts/Scom.ts" {
@@ -1845,7 +2012,7 @@ declare module "@scom/portal-contract/contracts/Scom.ts" {
 }
 /// <amd-module name="@scom/portal-contract/contracts/Vault.json.ts" />
 declare module "@scom/portal-contract/contracts/Vault.json.ts" {
-    const _default_8: {
+    const _default_9: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -1903,7 +2070,7 @@ declare module "@scom/portal-contract/contracts/Vault.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_8;
+    export default _default_9;
 }
 /// <amd-module name="@scom/portal-contract/contracts/Vault.ts" />
 declare module "@scom/portal-contract/contracts/Vault.ts" {
@@ -1914,6 +2081,12 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
         amm: string;
     }
     export interface IBuyParams {
+        salesId: number | BigNumber;
+        to: string;
+        allocation: number | BigNumber;
+        proof: string[];
+    }
+    export interface IBuyWithWETHParams {
         salesId: number | BigNumber;
         to: string;
         allocation: number | BigNumber;
@@ -1958,6 +2131,10 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
             (params: IBuyParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IBuyParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
         };
+        buyWithWETH: {
+            (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
+        };
         currReleaseAmount: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
@@ -1992,16 +2169,16 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
         newSale: {
             (sale: {
                 startTime: number | BigNumber;
-                privateSaleEndTime: number | BigNumber;
-                semiPrivateSaleEndTime: number | BigNumber;
+                limitedPrivateSaleEndTime: number | BigNumber;
+                unlimitedPrivateSaleEndTime: number | BigNumber;
                 amount: number | BigNumber;
                 merkleRoot: string;
                 ipfsCid: string;
             }, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (sale: {
                 startTime: number | BigNumber;
-                privateSaleEndTime: number | BigNumber;
-                semiPrivateSaleEndTime: number | BigNumber;
+                limitedPrivateSaleEndTime: number | BigNumber;
+                unlimitedPrivateSaleEndTime: number | BigNumber;
                 amount: number | BigNumber;
                 merkleRoot: string;
                 ipfsCid: string;
@@ -2039,8 +2216,8 @@ declare module "@scom/portal-contract/contracts/Vault.ts" {
         sales: {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<{
                 startTime: BigNumber;
-                privateSaleEndTime: BigNumber;
-                semiPrivateSaleEndTime: BigNumber;
+                limitedPrivateSaleEndTime: BigNumber;
+                unlimitedPrivateSaleEndTime: BigNumber;
                 amount: BigNumber;
                 merkleRoot: string;
                 ipfsCid: string;
@@ -2124,6 +2301,7 @@ declare module "@scom/portal-contract/contracts/index.ts" {
     export { DomainInfo } from "@scom/portal-contract/contracts/DomainInfo.ts";
     export { ModuleInfo } from "@scom/portal-contract/contracts/ModuleInfo.ts";
     export { ProjectInfo } from "@scom/portal-contract/contracts/ProjectInfo.ts";
+    export { RouterVaultWrapper } from "@scom/portal-contract/contracts/RouterVaultWrapper.ts";
     export { Scom } from "@scom/portal-contract/contracts/Scom.ts";
     export { Vault } from "@scom/portal-contract/contracts/Vault.ts";
 }
@@ -2168,10 +2346,10 @@ declare module "@scom/portal-contract" {
     }
     export var DefaultDeployOptions: IDeployOptions;
     export function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
-    const _default_9: {
+    const _default_10: {
         Contracts: typeof Contracts;
         deploy: typeof deploy;
         DefaultDeployOptions: IDeployOptions;
     };
-    export default _default_9;
+    export default _default_10;
 }

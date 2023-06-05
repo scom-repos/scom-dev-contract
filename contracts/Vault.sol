@@ -38,8 +38,8 @@ contract Vault is Authorization, ReentrancyGuard {
 
     struct Sale {
         uint256 startTime;
-        uint256 privateSaleEndTime;
-        uint256 semiPrivateSaleEndTime;
+        uint256 limitedPrivateSaleEndTime;
+        uint256 unlimitedPrivateSaleEndTime;
         uint256 amount;
         bytes32 merkleRoot;
         bytes ipfsCid;
@@ -162,7 +162,7 @@ contract Vault is Authorization, ReentrancyGuard {
 
     function newSale(Sale calldata sale) external auth {
         release();
-        require(startTime < sale.privateSaleEndTime && sale.privateSaleEndTime <= sale.semiPrivateSaleEndTime, "invalid start / end time ");
+        require(startTime < sale.limitedPrivateSaleEndTime && sale.limitedPrivateSaleEndTime <= sale.unlimitedPrivateSaleEndTime, "invalid start / end time ");
         require((sale.amount * 2) < availableAmount, "invalid amount"); // an equal amount goes to foundation
         uint256 salesId = sales.length;
         sales.push(sale);
@@ -171,6 +171,14 @@ contract Vault is Authorization, ReentrancyGuard {
     }
 
     function buy(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external payable nonReentrant returns (uint256 amountScom) {
+        weth.deposit{value: msg.value}();
+        return _buy(salesId, to, allocation, proof);
+    }
+    function buyWithWETH(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external nonReentrant returns (uint256 amountScom) {
+        return _buy(salesId, to, allocation, proof);
+    }
+
+    function _buy(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) internal returns (uint256 amountScom) {
         Sale storage sale = sales[salesId];
         require(sale.amount > 0, "invalid sales");
         require(sale.startTime < block.timestamp, "not started");
@@ -189,7 +197,7 @@ contract Vault is Authorization, ReentrancyGuard {
 
         amountScom = (msg.value * reserveScom) / reserveEth;
 
-        if (sale.privateSaleEndTime < block.timestamp) {
+        if (sale.limitedPrivateSaleEndTime < block.timestamp) {
             require(amountScom <= allocation, "invalid amount");
         } else {
             require(amountUsedInSale[salesId] + amountScom <= sale.amount, "invalid amount");
@@ -197,15 +205,15 @@ contract Vault is Authorization, ReentrancyGuard {
 
         amountUsedInSale[salesId] += amountScom;
 
+        uint256 amountEth = IERC20(weth).balanceOf(address(this));
         // add liquidity to amm pool
         IERC20(scom).safeTransfer(address(amm), amountScom);
-        weth.deposit{value: msg.value}();
-        IERC20(weth).safeTransfer(address(amm), msg.value);
+        IERC20(weth).safeTransfer(address(amm), amountEth);
         amm.mint(foundation);
 
         IERC20(scom).safeTransfer(to, amountScom);
 
-        emit Buy(msg.sender, to, amountScom, msg.value);
+        emit Buy(msg.sender, to, amountScom, amountEth);
     }
     function _releaseToPublic(uint256[] calldata salesIds) internal returns (uint256 amount) {
         uint256 i;
@@ -214,7 +222,7 @@ contract Vault is Authorization, ReentrancyGuard {
         while (i < length) {
             uint256 salesId = salesIds[i];
             Sale storage sale = sales[salesId];
-            if (sale.semiPrivateSaleEndTime < block.timestamp) {
+            if (sale.unlimitedPrivateSaleEndTime < block.timestamp) {
                 amount += sale.amount - amountUsedInSale[salesId];
                 amountUsedInSale[salesId] = sale.amount;
             }

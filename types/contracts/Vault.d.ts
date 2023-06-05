@@ -10,6 +10,12 @@ export interface IBuyParams {
     allocation: number | BigNumber;
     proof: string[];
 }
+export interface IBuyWithWETHParams {
+    salesId: number | BigNumber;
+    to: string;
+    allocation: number | BigNumber;
+    proof: string[];
+}
 export interface IStartParams {
     startTime: number | BigNumber;
     endTime: number | BigNumber;
@@ -49,6 +55,10 @@ export declare class Vault extends _Contract {
         (params: IBuyParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IBuyParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
     };
+    buyWithWETH: {
+        (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
+    };
     currReleaseAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
@@ -83,16 +93,16 @@ export declare class Vault extends _Contract {
     newSale: {
         (sale: {
             startTime: number | BigNumber;
-            privateSaleEndTime: number | BigNumber;
-            semiPrivateSaleEndTime: number | BigNumber;
+            limitedPrivateSaleEndTime: number | BigNumber;
+            unlimitedPrivateSaleEndTime: number | BigNumber;
             amount: number | BigNumber;
             merkleRoot: string;
             ipfsCid: string;
         }, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (sale: {
             startTime: number | BigNumber;
-            privateSaleEndTime: number | BigNumber;
-            semiPrivateSaleEndTime: number | BigNumber;
+            limitedPrivateSaleEndTime: number | BigNumber;
+            unlimitedPrivateSaleEndTime: number | BigNumber;
             amount: number | BigNumber;
             merkleRoot: string;
             ipfsCid: string;
@@ -130,8 +140,8 @@ export declare class Vault extends _Contract {
     sales: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<{
             startTime: BigNumber;
-            privateSaleEndTime: BigNumber;
-            semiPrivateSaleEndTime: BigNumber;
+            limitedPrivateSaleEndTime: BigNumber;
+            unlimitedPrivateSaleEndTime: BigNumber;
             amount: BigNumber;
             merkleRoot: string;
             ipfsCid: string;
