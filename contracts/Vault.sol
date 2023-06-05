@@ -33,7 +33,7 @@ Similary, for the 3rd interval, the release amount will be x*r*r or x*r^2 and th
 For the nth interval, the release amount will be x*r^n and the total amount released will be x + x*r + x*r^2 + ... + x*r^n.
 The geometric sum can be represented by x * ((1 - r^(n+1)) / (1 - r)).
 */
-contract Vault is Authorization, ReentrancyGuard{
+contract Vault is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     struct Sale {
@@ -67,9 +67,11 @@ contract Vault is Authorization, ReentrancyGuard{
 
     Sale[] public sales;
     mapping(uint256 => uint256) public amountUsedInSale;
+    mapping(bytes32 => uint256) public usedAllocation;
     uint256 public publicSaleAmount;
 
     event NewSale(uint256 salesId);
+    event Buy(address indexed buyer, address indexed to, uint256 amountScom, uint256 amountEth);
 
     constructor(address _foundation, Scom _scom, AMM _amm) {
         foundation = _foundation;
@@ -127,7 +129,7 @@ contract Vault is Authorization, ReentrancyGuard{
         decrementDecimal = _decrementDecimal;
         oneMinusDecrement = WEI - _decrementDecimal;
         // total
-        initialReleaseAmount = totalAmount * WEI / geometricSum(decrementDecimal, (endTime - startTime) / (1 days), WEI);
+        initialReleaseAmount = totalAmount * WEI / geometricSum(decrementDecimal, (endTime - startTime) /*/ (1 days)*/, WEI);
     }
     function updateReleaseSchdule(uint256 _endTime, uint256 _initialReleaseAmount, uint256 _decrementDecimal) external onlyOwner {
         release();
@@ -142,7 +144,7 @@ contract Vault is Authorization, ReentrancyGuard{
         if (timestamp > endTime) {
             amount = totalAmount;
         } else {
-            uint256 period = (timestamp - startTime) / (1 days);
+            uint256 period = (timestamp - startTime) /*/ (1 days)*/;
             amount = initialReleaseAmount * geometricSum(decrementDecimal, period, WEI) / WEI;
         }
     }
@@ -168,13 +170,17 @@ contract Vault is Authorization, ReentrancyGuard{
         emit NewSale(salesId);
     }
 
-    function buy(uint256 salesId, uint256 allocation, bytes32[] calldata proof) external payable nonReentrant returns (uint256 amountScom) {
+    function buy(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external payable nonReentrant returns (uint256 amountScom) {
         Sale storage sale = sales[salesId];
         require(sale.amount > 0, "invalid sales");
         require(sale.startTime < block.timestamp, "not started");
+        bytes32 hash = keccak256(abi.encodePacked(msg.sender, allocation));
         require(
-            MerkleProof.verifyCalldata(proof, sale.merkleRoot, keccak256(abi.encodePacked(msg.sender, allocation)))
+            MerkleProof.verifyCalldata(proof, sale.merkleRoot, hash)
         , "merkle proof failed");
+        uint256 newAllocation = usedAllocation[hash] + msg.value;
+        require(newAllocation <= allocation, "excceed allocation");
+        usedAllocation[hash] = newAllocation;
 
         // find scom amount from amm
         (uint112 reserveScom, uint112 reserveEth, /*uint32 blockTimestampLast*/) = amm.getReserves();
@@ -197,9 +203,9 @@ contract Vault is Authorization, ReentrancyGuard{
         IERC20(weth).safeTransfer(address(amm), msg.value);
         amm.mint(foundation);
 
-        IERC20(scom).safeTransfer(address(amm), amountScom);
+        IERC20(scom).safeTransfer(to, amountScom);
 
-        // emit Buy();
+        emit Buy(msg.sender, to, amountScom, msg.value);
     }
     function _releaseToPublic(uint256[] calldata salesIds) internal returns (uint256 amount) {
         uint256 i;
