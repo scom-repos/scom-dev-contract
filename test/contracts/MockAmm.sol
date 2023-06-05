@@ -5,6 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface AMM {
+    event Mint(address indexed sender, uint amount0, uint amount1);
+    event Burn(address indexed sender, uint amount0, uint amount1, address indexed to);
+    event Swap(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        address indexed to
+    );
     function token0() external view returns (address);
     function token1() external view returns (address);
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
@@ -33,10 +43,13 @@ contract MockAmmPair is AMM, ERC20 {
     function mint(address to) public returns (uint256 liquidity) {
         uint256 balance0 = IERC20(token0).balanceOf(address(this));
         uint256 balance1 = IERC20(token1).balanceOf(address(this));
-        liquidity = min(balance0 - reserve0, balance1 - reserve1);
+        uint256 amount0 = balance0 - reserve0;
+        uint256 amount1 = balance1 - reserve1;
+        liquidity = min(amount0, amount1);
         _mint(to, liquidity);
         reserve0 = balance0;
         reserve1 = balance1;
+        emit Mint(msg.sender, amount0, amount1);
     }
     function burn(address to) external override returns (uint256 amount0, uint256 amount1) {
         uint256 liquidity = balanceOf(address(this));
@@ -46,10 +59,19 @@ contract MockAmmPair is AMM, ERC20 {
         _burn(address(this), liquidity);
         reserve0 = IERC20(token0).balanceOf(address(this));
         reserve1 = IERC20(token1).balanceOf(address(this));
+        emit Burn(msg.sender, amount0, amount1, to);
     }
     function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata /*data*/) external {
         IERC20(token0).transfer(to, amount0Out);
         IERC20(token1).transfer(to, amount1Out);
+        uint256 balance0 = IERC20(token0).balanceOf(address(this));
+        uint256 balance1 = IERC20(token1).balanceOf(address(this));
+        uint256 amount0In = balance0 - reserve0;
+        uint256 amount1In = balance1 - reserve1;
+        require((balance0 * balance1) >= (uint256(reserve0) * reserve1), 'K');
+        reserve0 = balance0;
+        reserve1 = balance1;
+        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
     function skim(address to) external {}
     function sync() external {

@@ -29,6 +29,46 @@ export class MockAmmPair extends _Contract{
             _event: event
         };
     }
+    parseBurnEvent(receipt: TransactionReceipt): MockAmmPair.BurnEvent[]{
+        return this.parseEvents(receipt, "Burn").map(e=>this.decodeBurnEvent(e));
+    }
+    decodeBurnEvent(event: Event): MockAmmPair.BurnEvent{
+        let result = event.data;
+        return {
+            sender: result.sender,
+            amount0: new BigNumber(result.amount0),
+            amount1: new BigNumber(result.amount1),
+            to: result.to,
+            _event: event
+        };
+    }
+    parseMintEvent(receipt: TransactionReceipt): MockAmmPair.MintEvent[]{
+        return this.parseEvents(receipt, "Mint").map(e=>this.decodeMintEvent(e));
+    }
+    decodeMintEvent(event: Event): MockAmmPair.MintEvent{
+        let result = event.data;
+        return {
+            sender: result.sender,
+            amount0: new BigNumber(result.amount0),
+            amount1: new BigNumber(result.amount1),
+            _event: event
+        };
+    }
+    parseSwapEvent(receipt: TransactionReceipt): MockAmmPair.SwapEvent[]{
+        return this.parseEvents(receipt, "Swap").map(e=>this.decodeSwapEvent(e));
+    }
+    decodeSwapEvent(event: Event): MockAmmPair.SwapEvent{
+        let result = event.data;
+        return {
+            sender: result.sender,
+            amount0In: new BigNumber(result.amount0In),
+            amount1In: new BigNumber(result.amount1In),
+            amount0Out: new BigNumber(result.amount0Out),
+            amount1Out: new BigNumber(result.amount1Out),
+            to: result.to,
+            _event: event
+        };
+    }
     parseTransferEvent(receipt: TransactionReceipt): MockAmmPair.TransferEvent[]{
         return this.parseEvents(receipt, "Transfer").map(e=>this.decodeTransferEvent(e));
     }
@@ -298,5 +338,8 @@ export class MockAmmPair extends _Contract{
 }
 export module MockAmmPair{
     export interface ApprovalEvent {owner:string,spender:string,value:BigNumber,_event:Event}
+    export interface BurnEvent {sender:string,amount0:BigNumber,amount1:BigNumber,to:string,_event:Event}
+    export interface MintEvent {sender:string,amount0:BigNumber,amount1:BigNumber,_event:Event}
+    export interface SwapEvent {sender:string,amount0In:BigNumber,amount1In:BigNumber,amount0Out:BigNumber,amount1Out:BigNumber,to:string,_event:Event}
     export interface TransferEvent {from:string,to:string,value:BigNumber,_event:Event}
 }
