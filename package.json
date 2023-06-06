@@ -4,7 +4,7 @@
   "description": "",
   "main": "lib/index.js",
   "plugin": "dist/index.js",
-  "pluginTypes": "pluginTypes/index.d.ts",  
+  "pluginTypes": "pluginTypes/index.d.ts",
   "types": "types/index.d.ts",
   "scripts": {
     "build": "npm run build:contracts && npm run build:lib && npm run build:dist && npm run build:deployer",
@@ -12,6 +12,7 @@
     "build:deployer": "rm -rf deployer && npx @ijstech/cli bundle deployer",
     "build:dist": "rm -rf dist && rm -rf pluginTypes && npx @ijstech/compiler",
     "build:lib": "rm -rf lib && rm -rf types && tsc",
+    "build:test-contracts": "sol2ts solidity-test.config.json",
     "deployer": "npx @ijstech/cli serve 8080 deployer",
     "test": "mocha --exit --require ts-node/register --timeout 1000000 ./test/*.spec.ts",
     "deploy": "ts-node tools/deploy.ts",

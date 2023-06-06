@@ -1,0 +1,11 @@
+{
+"version": "0.8.13",
+"optimizerRuns": 999999,
+"sourceDir": "test/contracts",
+"outputDir": "test/src/contracts",
+"libMap": {"@openswap":"../../","@openzeppelin":"../../node_modules/@openzeppelin"},
+"overrides": [{
+    "sources":["WETH9.sol"],
+    "version": "0.4.26"
+}]
+}
