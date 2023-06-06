@@ -71,7 +71,7 @@ contract Vault is Authorization, ReentrancyGuard {
     uint256 public publicSaleAmount;
 
     event NewSale(uint256 salesId);
-    event Buy(address indexed buyer, address indexed to, uint256 amountScom, uint256 amountEth);
+    event Buy(address indexed to, uint256 amountScom, uint256 amountEth);
 
     constructor(address _foundation, Scom _scom, AMM _amm) {
         foundation = _foundation;
@@ -170,23 +170,28 @@ contract Vault is Authorization, ReentrancyGuard {
         emit NewSale(salesId);
     }
 
+    // TODO: check from enduser only?
     function buy(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external payable nonReentrant returns (uint256 amountScom) {
         weth.deposit{value: msg.value}();
         return _buy(salesId, to, allocation, proof);
     }
+    // TODO: check from wrapper only?
     function buyWithWETH(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external nonReentrant returns (uint256 amountScom) {
         return _buy(salesId, to, allocation, proof);
     }
 
     function _buy(uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) internal returns (uint256 amountScom) {
+        uint256 amountEth = weth.balanceOf(address(this));
+        require(amountEth > 0, "no input amount");
+
         Sale storage sale = sales[salesId];
         require(sale.amount > 0, "invalid sales");
         require(sale.startTime < block.timestamp, "not started");
-        bytes32 hash = keccak256(abi.encodePacked(msg.sender, allocation));
+        bytes32 hash = keccak256(abi.encodePacked(to, allocation));
         require(
             MerkleProof.verifyCalldata(proof, sale.merkleRoot, hash)
         , "merkle proof failed");
-        uint256 newAllocation = usedAllocation[hash] + msg.value;
+        uint256 newAllocation = usedAllocation[hash] + amountEth;
         require(newAllocation <= allocation, "excceed allocation");
         usedAllocation[hash] = newAllocation;
 
@@ -194,18 +199,14 @@ contract Vault is Authorization, ReentrancyGuard {
         (uint112 reserveScom, uint112 reserveEth, /*uint32 blockTimestampLast*/) = amm.getReserves();
         if (!token0IsScom)
             (reserveScom, reserveEth) = (reserveEth, reserveScom);
-
-        amountScom = (msg.value * reserveScom) / reserveEth;
-
+        amountScom = (amountEth * reserveScom) / reserveEth;
         if (sale.limitedPrivateSaleEndTime < block.timestamp) {
             require(amountScom <= allocation, "invalid amount");
         } else {
             require(amountUsedInSale[salesId] + amountScom <= sale.amount, "invalid amount");
         }
-
         amountUsedInSale[salesId] += amountScom;
 
-        uint256 amountEth = IERC20(weth).balanceOf(address(this));
         // add liquidity to amm pool
         IERC20(scom).safeTransfer(address(amm), amountScom);
         IERC20(weth).safeTransfer(address(amm), amountEth);
@@ -213,7 +214,7 @@ contract Vault is Authorization, ReentrancyGuard {
 
         IERC20(scom).safeTransfer(to, amountScom);
 
-        emit Buy(msg.sender, to, amountScom, amountEth);
+        emit Buy(to, amountScom, amountEth);
     }
     function _releaseToPublic(uint256[] calldata salesIds) internal returns (uint256 amount) {
         uint256 i;
@@ -230,35 +231,45 @@ contract Vault is Authorization, ReentrancyGuard {
         }
         publicSaleAmount = amount;
     }
-    function _publicBuy() internal returns (uint256 amountScom) {
+    function _publicBuy(address to) internal returns (uint256 amountScom) {
+        uint256 amountEth = weth.balanceOf(address(this));
+        require(amountEth > 0, "no input amount");
+
         // find scom amount from amm
         (uint112 reserveScom, uint112 reserveEth, /*uint32 blockTimestampLast*/) = amm.getReserves();
         if (!token0IsScom)
             (reserveScom, reserveEth) = (reserveEth, reserveScom);
-
-        amountScom = (msg.value * reserveScom) / reserveEth;
+        amountScom = (amountEth * reserveScom) / reserveEth;
         require((amountScom * 2) <= publicSaleAmount, "insufficient amount");
         publicSaleAmount -= amountScom * 2;
 
         // add liquidity to amm pool
         IERC20(scom).safeTransfer(address(amm), amountScom);
-        weth.deposit{value: msg.value}();
-        IERC20(weth).safeTransfer(address(amm), msg.value);
+        IERC20(weth).safeTransfer(address(amm), amountEth);
         amm.mint(foundation);
 
-        IERC20(scom).safeTransfer(address(amm), amountScom);
+        IERC20(scom).safeTransfer(to, amountScom);
 
-        // emit Buy();
+        emit Buy(to, amountScom, amountEth);
     }
     function releaseToPublic(uint256[] calldata salesIds) external nonReentrant returns (uint256 amount) {
         amount = _releaseToPublic(salesIds);
     }
-    function publicBuy() external payable returns (uint256 amountScom) {
-        amountScom = _publicBuy();
+    function publicBuy() external payable returns (uint256 amountScom, address to) {
+        weth.deposit{value: msg.value}();
+        amountScom = _publicBuy(to);
     }
-    function releaseAndBuy(uint256[] calldata salesIds) external nonReentrant returns (uint256 amountScom) {
+    function releaseAndBuy(uint256[] calldata salesIds, address to) external payable nonReentrant returns (uint256 amountScom) {
         _releaseToPublic(salesIds);
-        amountScom = _publicBuy();
+        weth.deposit{value: msg.value}();
+        amountScom = _publicBuy(to);
+    }
+    function publicBuyWithWETH(address to) external returns (uint256 amountScom) {
+        amountScom = _publicBuy(to);
+    }
+    function releaseAndBuyWithWETH(uint256[] calldata salesIds, address to) external nonReentrant returns (uint256 amountScom) {
+        _releaseToPublic(salesIds);
+        amountScom = _publicBuy(to);
     }
 
 }
