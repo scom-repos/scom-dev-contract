@@ -3,12 +3,17 @@ export interface IDeployParams {
     token: string;
     auditorInfo: string;
 }
+export interface IAddPackageAdminParams {
+    packageId: number | BigNumber;
+    admin: string;
+}
 export interface IAddProjectAdminParams {
     projectId: number | BigNumber;
     admin: string;
 }
 export interface INewPackageParams {
     projectId: number | BigNumber;
+    name: string;
     ipfsCid: string;
 }
 export interface INewPackageVersionParams {
@@ -21,8 +26,8 @@ export interface INewPackageVersionParams {
     };
     ipfsCid: string;
 }
-export interface INewProjectVersionParams {
-    projectId: number | BigNumber;
+export interface INewProjectParams {
+    name: string;
     ipfsCid: string;
 }
 export interface IOwnersProjectsParams {
@@ -32,6 +37,22 @@ export interface IOwnersProjectsParams {
 export interface IOwnersProjectsInvParams {
     param1: string;
     param2: number | BigNumber;
+}
+export interface IPackageAdminParams {
+    param1: number | BigNumber;
+    param2: number | BigNumber;
+}
+export interface IPackageAdminInvParams {
+    param1: number | BigNumber;
+    param2: string;
+}
+export interface IPackageNameParams {
+    param1: number | BigNumber;
+    param2: number | BigNumber;
+}
+export interface IPackageNameInvParams {
+    param1: number | BigNumber;
+    param2: string;
 }
 export interface IPackageVersionsListParams {
     param1: number | BigNumber;
@@ -57,17 +78,13 @@ export interface IProjectPackagesInvParams {
     param1: number | BigNumber;
     param2: number | BigNumber;
 }
-export interface IProjectVersionListParams {
-    param1: number | BigNumber;
-    param2: number | BigNumber;
+export interface IRemovePackageAdminParams {
+    packageId: number | BigNumber;
+    admin: string;
 }
 export interface IRemoveProjectAdminParams {
     projectId: number | BigNumber;
     admin: string;
-}
-export interface ISetProjectCurrentVersionParams {
-    projectId: number | BigNumber;
-    versionIdx: number | BigNumber;
 }
 export interface IStakeParams {
     projectId: number | BigNumber;
@@ -86,9 +103,22 @@ export interface IUpdatePackageIpfsCidParams {
     packageId: number | BigNumber;
     ipfsCid: string;
 }
-export interface IVoidProjectVersionParams {
+export interface IUpdatePackageNameParams {
     projectId: number | BigNumber;
-    versionIdx: number | BigNumber;
+    packageId: number | BigNumber;
+    name: string;
+}
+export interface IUpdatePackageVersionIpfsCidParams {
+    packageVersionId: number | BigNumber;
+    ipfsCid: string;
+}
+export interface IUpdateProjectIpfsCidParams {
+    projectId: number | BigNumber;
+    ipfsCid: string;
+}
+export interface IUpdateProjectNameParams {
+    projectId: number | BigNumber;
+    name: string;
 }
 export declare class ProjectInfo extends _Contract {
     static _abi: any;
@@ -96,6 +126,8 @@ export declare class ProjectInfo extends _Contract {
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddAdminEvent[];
     decodeAddAdminEvent(event: Event): ProjectInfo.AddAdminEvent;
+    parseAddPackageAdminEvent(receipt: TransactionReceipt): ProjectInfo.AddPackageAdminEvent[];
+    decodeAddPackageAdminEvent(event: Event): ProjectInfo.AddPackageAdminEvent;
     parseAuthorizeEvent(receipt: TransactionReceipt): ProjectInfo.AuthorizeEvent[];
     decodeAuthorizeEvent(event: Event): ProjectInfo.AuthorizeEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): ProjectInfo.DeauthorizeEvent[];
@@ -106,14 +138,12 @@ export declare class ProjectInfo extends _Contract {
     decodeNewPackageVersionEvent(event: Event): ProjectInfo.NewPackageVersionEvent;
     parseNewProjectEvent(receipt: TransactionReceipt): ProjectInfo.NewProjectEvent[];
     decodeNewProjectEvent(event: Event): ProjectInfo.NewProjectEvent;
-    parseNewProjectVersionEvent(receipt: TransactionReceipt): ProjectInfo.NewProjectVersionEvent[];
-    decodeNewProjectVersionEvent(event: Event): ProjectInfo.NewProjectVersionEvent;
     parseRemoveAdminEvent(receipt: TransactionReceipt): ProjectInfo.RemoveAdminEvent[];
     decodeRemoveAdminEvent(event: Event): ProjectInfo.RemoveAdminEvent;
+    parseRemovePackageAdminEvent(receipt: TransactionReceipt): ProjectInfo.RemovePackageAdminEvent[];
+    decodeRemovePackageAdminEvent(event: Event): ProjectInfo.RemovePackageAdminEvent;
     parseSetPackageVersionStatusEvent(receipt: TransactionReceipt): ProjectInfo.SetPackageVersionStatusEvent[];
     decodeSetPackageVersionStatusEvent(event: Event): ProjectInfo.SetPackageVersionStatusEvent;
-    parseSetProjectCurrentVersionEvent(receipt: TransactionReceipt): ProjectInfo.SetProjectCurrentVersionEvent[];
-    decodeSetProjectCurrentVersionEvent(event: Event): ProjectInfo.SetProjectCurrentVersionEvent;
     parseStakeEvent(receipt: TransactionReceipt): ProjectInfo.StakeEvent[];
     decodeStakeEvent(event: Event): ProjectInfo.StakeEvent;
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): ProjectInfo.StartOwnershipTransferEvent[];
@@ -126,8 +156,18 @@ export declare class ProjectInfo extends _Contract {
     decodeUnstakeEvent(event: Event): ProjectInfo.UnstakeEvent;
     parseUpdatePackageIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageIpfsCidEvent[];
     decodeUpdatePackageIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageIpfsCidEvent;
-    parseVoidProjectVersionEvent(receipt: TransactionReceipt): ProjectInfo.VoidProjectVersionEvent[];
-    decodeVoidProjectVersionEvent(event: Event): ProjectInfo.VoidProjectVersionEvent;
+    parseUpdatePackageNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageNameEvent[];
+    decodeUpdatePackageNameEvent(event: Event): ProjectInfo.UpdatePackageNameEvent;
+    parseUpdatePackageVersionIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdatePackageVersionIpfsCidEvent[];
+    decodeUpdatePackageVersionIpfsCidEvent(event: Event): ProjectInfo.UpdatePackageVersionIpfsCidEvent;
+    parseUpdateProjectIpfsCidEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectIpfsCidEvent[];
+    decodeUpdateProjectIpfsCidEvent(event: Event): ProjectInfo.UpdateProjectIpfsCidEvent;
+    parseUpdateProjectNameEvent(receipt: TransactionReceipt): ProjectInfo.UpdateProjectNameEvent[];
+    decodeUpdateProjectNameEvent(event: Event): ProjectInfo.UpdateProjectNameEvent;
+    addPackageAdmin: {
+        (params: IAddPackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IAddPackageAdminParams, options?: TransactionOptions) => Promise<void>;
+    };
     addProjectAdmin: {
         (params: IAddProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IAddProjectAdminParams, options?: TransactionOptions) => Promise<void>;
@@ -142,19 +182,6 @@ export declare class ProjectInfo extends _Contract {
     isPermitted: {
         (param1: string, options?: TransactionOptions): Promise<boolean>;
     };
-    latestAuditedPackageVersion: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-            packageId: BigNumber;
-            version: {
-                major: BigNumber;
-                minor: BigNumber;
-                patch: BigNumber;
-            };
-            status: BigNumber;
-            ipfsCid: string;
-            timestamp: BigNumber;
-        }>;
-    };
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
     };
@@ -167,12 +194,8 @@ export declare class ProjectInfo extends _Contract {
         call: (params: INewPackageVersionParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     newProject: {
-        (ipfsCid: string, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (ipfsCid: string, options?: TransactionOptions) => Promise<BigNumber>;
-    };
-    newProjectVersion: {
-        (params: INewProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: INewProjectVersionParams, options?: TransactionOptions) => Promise<BigNumber>;
+        (params: INewProjectParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: INewProjectParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     owner: {
         (options?: TransactionOptions): Promise<string>;
@@ -185,6 +208,21 @@ export declare class ProjectInfo extends _Contract {
     };
     ownersProjectsLength: {
         (owner: string, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    packageAdmin: {
+        (params: IPackageAdminParams, options?: TransactionOptions): Promise<string>;
+    };
+    packageAdminInv: {
+        (params: IPackageAdminInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    packageAdminLength: {
+        (packageId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    packageName: {
+        (params: IPackageNameParams, options?: TransactionOptions): Promise<string>;
+    };
+    packageNameInv: {
+        (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber>;
     };
     packageVersions: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<{
@@ -241,8 +279,14 @@ export declare class ProjectInfo extends _Contract {
     projectCount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
-    projectCurrentVersion: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    projectIpfsCid: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
+    projectName: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
+    projectNameInv: {
+        (param1: string, options?: TransactionOptions): Promise<BigNumber>;
     };
     projectNewOwner: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
@@ -259,34 +303,17 @@ export declare class ProjectInfo extends _Contract {
     projectPackagesLength: {
         (projectId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
-    projectVersionList: {
-        (params: IProjectVersionListParams, options?: TransactionOptions): Promise<BigNumber>;
-    };
-    projectVersionListLength: {
-        (projectId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    };
-    projectVersions: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-            projectId: BigNumber;
-            version: BigNumber;
-            ipfsCid: string;
-            status: BigNumber;
-            lastModifiedDate: BigNumber;
-        }>;
-    };
-    projectVersionsInv: {
-        (param1: string, options?: TransactionOptions): Promise<BigNumber>;
-    };
-    projectVersionsLength: {
-        (options?: TransactionOptions): Promise<BigNumber>;
+    removePackageAdmin: {
+        (params: IRemovePackageAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IRemovePackageAdminParams, options?: TransactionOptions) => Promise<void>;
     };
     removeProjectAdmin: {
         (params: IRemoveProjectAdminParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IRemoveProjectAdminParams, options?: TransactionOptions) => Promise<void>;
     };
-    setProjectCurrentVersion: {
-        (params: ISetProjectCurrentVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISetProjectCurrentVersionParams, options?: TransactionOptions) => Promise<void>;
+    setPackageVersionToAuditing: {
+        (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (packageVersionId: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     stake: {
         (params: IStakeParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -319,19 +346,36 @@ export declare class ProjectInfo extends _Contract {
         (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdatePackageIpfsCidParams, options?: TransactionOptions) => Promise<void>;
     };
+    updatePackageName: {
+        (params: IUpdatePackageNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdatePackageNameParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updatePackageVersionIpfsCid: {
+        (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdatePackageVersionIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updateProjectIpfsCid: {
+        (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateProjectIpfsCidParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updateProjectName: {
+        (params: IUpdateProjectNameParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUpdateProjectNameParams, options?: TransactionOptions) => Promise<void>;
+    };
     voidPackageVersion: {
         (packageVersionId: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (packageVersionId: number | BigNumber, options?: TransactionOptions) => Promise<void>;
-    };
-    voidProjectVersion: {
-        (params: IVoidProjectVersionParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IVoidProjectVersionParams, options?: TransactionOptions) => Promise<void>;
     };
     private assign;
 }
 export declare module ProjectInfo {
     interface AddAdminEvent {
         projectId: BigNumber;
+        admin: string;
+        _event: Event;
+    }
+    interface AddPackageAdminEvent {
+        packageId: BigNumber;
         admin: string;
         _event: Event;
     }
@@ -346,6 +390,7 @@ export declare module ProjectInfo {
     interface NewPackageEvent {
         projectId: BigNumber;
         packageId: BigNumber;
+        name: string;
         ipfsCid: string;
         _event: Event;
     }
@@ -362,11 +407,7 @@ export declare module ProjectInfo {
     interface NewProjectEvent {
         projectId: BigNumber;
         owner: string;
-        _event: Event;
-    }
-    interface NewProjectVersionEvent {
-        projectId: BigNumber;
-        projectVersionIdx: BigNumber;
+        name: string;
         ipfsCid: string;
         _event: Event;
     }
@@ -375,15 +416,15 @@ export declare module ProjectInfo {
         admin: string;
         _event: Event;
     }
+    interface RemovePackageAdminEvent {
+        packageId: BigNumber;
+        admin: string;
+        _event: Event;
+    }
     interface SetPackageVersionStatusEvent {
         packageId: BigNumber;
         packageVersionId: BigNumber;
         status: BigNumber;
-        _event: Event;
-    }
-    interface SetProjectCurrentVersionEvent {
-        projectId: BigNumber;
-        projectVersionIdx: BigNumber;
         _event: Event;
     }
     interface StakeEvent {
@@ -418,8 +459,25 @@ export declare module ProjectInfo {
         ipfsCid: string;
         _event: Event;
     }
-    interface VoidProjectVersionEvent {
-        projectVersionIdx: BigNumber;
+    interface UpdatePackageNameEvent {
+        packageId: BigNumber;
+        name: string;
+        _event: Event;
+    }
+    interface UpdatePackageVersionIpfsCidEvent {
+        packageId: BigNumber;
+        packageVersionId: BigNumber;
+        ipfsCid: string;
+        _event: Event;
+    }
+    interface UpdateProjectIpfsCidEvent {
+        projectId: BigNumber;
+        ipfsCid: string;
+        _event: Event;
+    }
+    interface UpdateProjectNameEvent {
+        projectId: BigNumber;
+        name: string;
         _event: Event;
     }
 }

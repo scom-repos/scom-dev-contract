@@ -34,31 +34,6 @@ declare const _default: {
         stateMutability?: undefined;
         outputs?: undefined;
     } | {
-        inputs: {
-            internalType: string;
-            name: string;
-            type: string;
-        }[];
-        name: string;
-        outputs: ({
-            internalType: string;
-            name: string;
-            type: string;
-            components?: undefined;
-        } | {
-            components: {
-                internalType: string;
-                name: string;
-                type: string;
-            }[];
-            internalType: string;
-            name: string;
-            type: string;
-        })[];
-        stateMutability: string;
-        type: string;
-        anonymous?: undefined;
-    } | {
         inputs: ({
             internalType: string;
             name: string;
@@ -80,6 +55,31 @@ declare const _default: {
             name: string;
             type: string;
         }[];
+        stateMutability: string;
+        type: string;
+        anonymous?: undefined;
+    } | {
+        inputs: {
+            internalType: string;
+            name: string;
+            type: string;
+        }[];
+        name: string;
+        outputs: ({
+            internalType: string;
+            name: string;
+            type: string;
+            components?: undefined;
+        } | {
+            components: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            internalType: string;
+            name: string;
+            type: string;
+        })[];
         stateMutability: string;
         type: string;
         anonymous?: undefined;
