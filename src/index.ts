@@ -57,10 +57,10 @@ export var DefaultDeployOptions: IDeployOptions = {
         auditDuration: 14 * 24*60*60,  // 14 days
         minAuditRequired: 3
     },
-    vault: {
-        foundation: '',
-        amm: ''
-    }
+    // vault: {
+    //     foundation: '',
+    //     amm: ''
+    // }
 };
 async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
     let scomOptions = Config.token;

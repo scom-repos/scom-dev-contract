@@ -3013,10 +3013,10 @@ define("@scom/portal-contract", ["require", "exports", "@scom/portal-contract/co
             auditDuration: 14 * 24 * 60 * 60,
             minAuditRequired: 3
         },
-        vault: {
-            foundation: '',
-            amm: ''
-        }
+        // vault: {
+        //     foundation: '',
+        //     amm: ''
+        // }
     };
     async function deployScom(wallet, Config) {
         let scomOptions = Config.token;

@@ -1,9 +1,5 @@
 import 'mocha';
-<<<<<<< HEAD
-import {Utils, Wallet} from "@ijstech/eth-wallet";
-=======
 import {BigNumber, Utils, Wallet} from "@ijstech/eth-wallet";
->>>>>>> upstream/main
 import {Contracts, deploy, DefaultDeployOptions} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
@@ -125,10 +121,6 @@ describe('## SC-Contract', async function() {
         before(async function(){
             wallet.defaultAccount = accounts[0]; 
         })
-<<<<<<< HEAD
-        it('New Project', async function(){
-            let newProjectReceipt = await projectContract.newProject('abc');
-=======
         it('New Invalid Project', async function() {
             try {
                 await projectContract.newProject({
@@ -146,19 +138,10 @@ describe('## SC-Contract', async function() {
                 name: 'abc',
                 ipfsCid: 'abc'
             });
->>>>>>> upstream/main
             let newProjectEvent = projectContract.parseNewProjectEvent(newProjectReceipt)[0];
             
             let projectCount = await projectContract.projectCount();
             assert.strictEqual(newProjectEvent.projectId.toNumber() + 1, projectCount.toNumber());
-<<<<<<< HEAD
-            let projectFirstVersion = await projectContract.projectVersionList({ 
-                param1: newProjectEvent.projectId.toNumber(),
-                param2: 0
-            });
-            let projectCurrentVersion = await projectContract.projectCurrentVersion(newProjectEvent.projectId.toNumber());
-            assert.strictEqual(projectFirstVersion.toNumber(), projectCurrentVersion.toNumber());
-=======
             let name = await projectContract.projectName(newProjectEvent.projectId);
             let ipfsCid = await projectContract.projectIpfsCid(newProjectEvent.projectId);
             assert.strictEqual(Utils.bytes32ToString(name), 'abc');
@@ -197,7 +180,8 @@ describe('## SC-Contract', async function() {
                 await projectContract.newPackage({
                     projectId: 0,
                     name: '???',
-                    ipfsCid: ''
+                    ipfsCid: '',
+                    category: 'widget'
                 });
             } catch (err) {
                 assert.strictEqual(err.data.reason, 'invalid package name');
@@ -209,7 +193,8 @@ describe('## SC-Contract', async function() {
             let newPackageReceipt = await projectContract.newPackage({
                 projectId: 0,
                 name: 'package',
-                ipfsCid: 'abc'
+                ipfsCid: 'abc',
+                category: 'widget'
             });
             let newPackageEvent = projectContract.parseNewPackageEvent(newPackageReceipt)[0];
             let packageInfo = await projectContract.packages(newPackageEvent.packageId);
@@ -221,7 +206,8 @@ describe('## SC-Contract', async function() {
                 await projectContract.newPackage({
                     projectId: 0,
                     name: 'package',
-                    ipfsCid: 'abc'
+                    ipfsCid: 'abc',
+                    category: 'widget'
                 });
             } catch (err) {
                 assert.strictEqual(err.data.reason, 'invalid package name');
@@ -239,7 +225,8 @@ describe('## SC-Contract', async function() {
             let newPackageReceipt = await projectContract.newPackage({
                 projectId: newProjectEvent.projectId,
                 name: 'package',
-                ipfsCid: 'abc'
+                ipfsCid: 'abc',
+                category: 'widget'
             });
             let newPackageEvent = projectContract.parseNewPackageEvent(newPackageReceipt)[0];
             let packageInfo = await projectContract.packages(newPackageEvent.packageId);
@@ -328,7 +315,6 @@ describe('## SC-Contract', async function() {
                 return;
             }
             throw new Error('Exception not catched');
->>>>>>> upstream/main
         })
     })
 })
