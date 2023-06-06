@@ -16,6 +16,14 @@ export interface IBuyWithWETHParams {
     allocation: number | BigNumber;
     proof: string[];
 }
+export interface IReleaseAndBuyParams {
+    salesIds: (number | BigNumber)[];
+    to: string;
+}
+export interface IReleaseAndBuyWithWETHParams {
+    salesIds: (number | BigNumber)[];
+    to: string;
+}
 export interface IStartParams {
     startTime: number | BigNumber;
     endTime: number | BigNumber;
@@ -120,7 +128,14 @@ export declare class Vault extends _Contract {
     };
     publicBuy: {
         (options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+        call: (options?: number | BigNumber | TransactionOptions) => Promise<{
+            amountScom: BigNumber;
+            to: string;
+        }>;
+    };
+    publicBuyWithWETH: {
+        (to: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (to: string, options?: TransactionOptions) => Promise<BigNumber>;
     };
     publicSaleAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -130,8 +145,12 @@ export declare class Vault extends _Contract {
         call: (options?: TransactionOptions) => Promise<BigNumber>;
     };
     releaseAndBuy: {
-        (salesIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (salesIds: (number | BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
+        (params: IReleaseAndBuyParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndBuyParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+    };
+    releaseAndBuyWithWETH: {
+        (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     releaseToPublic: {
         (salesIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -192,7 +211,6 @@ export declare module Vault {
         _event: Event;
     }
     interface BuyEvent {
-        buyer: string;
         to: string;
         amountScom: BigNumber;
         amountEth: BigNumber;

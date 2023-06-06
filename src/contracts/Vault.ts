@@ -3,6 +3,8 @@ import Bin from "./Vault.json";
 export interface IDeployParams {foundation:string;scom:string;amm:string}
 export interface IBuyParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export interface IBuyWithWETHParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
+export interface IReleaseAndBuyParams {salesIds:(number|BigNumber)[];to:string}
+export interface IReleaseAndBuyWithWETHParams {salesIds:(number|BigNumber)[];to:string}
 export interface IStartParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;initialReleaseAmount:number|BigNumber;decrementDecimal:number|BigNumber}
 export class Vault extends _Contract{
@@ -30,7 +32,6 @@ export class Vault extends _Contract{
     decodeBuyEvent(event: Event): Vault.BuyEvent{
         let result = event.data;
         return {
-            buyer: result.buyer,
             to: result.to,
             amountScom: new BigNumber(result.amountScom),
             amountEth: new BigNumber(result.amountEth),
@@ -141,7 +142,11 @@ export class Vault extends _Contract{
     }
     publicBuy: {
         (options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
+        call: (options?: number|BigNumber|TransactionOptions) => Promise<{amountScom:BigNumber,to:string}>;
+    }
+    publicBuyWithWETH: {
+        (to:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (to:string, options?: TransactionOptions) => Promise<BigNumber>;
     }
     publicSaleAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -151,8 +156,12 @@ export class Vault extends _Contract{
         call: (options?: TransactionOptions) => Promise<BigNumber>;
     }
     releaseAndBuy: {
-        (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (salesIds:(number|BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
+        (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
+    }
+    releaseAndBuyWithWETH: {
+        (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     }
     releaseToPublic: {
         (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -382,12 +391,26 @@ export class Vault extends _Contract{
             let result = await this.send('publicBuy',[],options);
             return result;
         }
-        let publicBuy_call = async (options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
+        let publicBuy_call = async (options?: number|BigNumber|TransactionOptions): Promise<{amountScom:BigNumber,to:string}> => {
             let result = await this.call('publicBuy',[],options);
-            return new BigNumber(result);
+            return {
+                amountScom: new BigNumber(result.amountScom),
+                to: result.to
+            };
         }
         this.publicBuy = Object.assign(publicBuy_send, {
             call:publicBuy_call
+        });
+        let publicBuyWithWETH_send = async (to:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('publicBuyWithWETH',[to],options);
+            return result;
+        }
+        let publicBuyWithWETH_call = async (to:string, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('publicBuyWithWETH',[to],options);
+            return new BigNumber(result);
+        }
+        this.publicBuyWithWETH = Object.assign(publicBuyWithWETH_send, {
+            call:publicBuyWithWETH_call
         });
         let release_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('release',[],options);
@@ -400,16 +423,29 @@ export class Vault extends _Contract{
         this.release = Object.assign(release_send, {
             call:release_call
         });
-        let releaseAndBuy_send = async (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('releaseAndBuy',[this.wallet.utils.toString(salesIds)],options);
+        let releaseAndBuyParams = (params: IReleaseAndBuyParams) => [this.wallet.utils.toString(params.salesIds),params.to];
+        let releaseAndBuy_send = async (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseAndBuy',releaseAndBuyParams(params),options);
             return result;
         }
-        let releaseAndBuy_call = async (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('releaseAndBuy',[this.wallet.utils.toString(salesIds)],options);
+        let releaseAndBuy_call = async (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releaseAndBuy',releaseAndBuyParams(params),options);
             return new BigNumber(result);
         }
         this.releaseAndBuy = Object.assign(releaseAndBuy_send, {
             call:releaseAndBuy_call
+        });
+        let releaseAndBuyWithWETHParams = (params: IReleaseAndBuyWithWETHParams) => [this.wallet.utils.toString(params.salesIds),params.to];
+        let releaseAndBuyWithWETH_send = async (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseAndBuyWithWETH',releaseAndBuyWithWETHParams(params),options);
+            return result;
+        }
+        let releaseAndBuyWithWETH_call = async (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releaseAndBuyWithWETH',releaseAndBuyWithWETHParams(params),options);
+            return new BigNumber(result);
+        }
+        this.releaseAndBuyWithWETH = Object.assign(releaseAndBuyWithWETH_send, {
+            call:releaseAndBuyWithWETH_call
         });
         let releaseToPublic_send = async (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('releaseToPublic',[this.wallet.utils.toString(salesIds)],options);
@@ -472,7 +508,7 @@ export class Vault extends _Contract{
 }
 export module Vault{
     export interface AuthorizeEvent {user:string,_event:Event}
-    export interface BuyEvent {buyer:string,to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
+    export interface BuyEvent {to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface NewSaleEvent {salesId:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
