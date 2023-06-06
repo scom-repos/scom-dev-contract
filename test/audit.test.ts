@@ -23,7 +23,7 @@ describe('## SC-Contract', async function() {
     let auditor2: string;
     let auditor3: string;
     before('deploy', async () => {
-        wallet = new Wallet(getProvider());   
+        wallet = new Wallet(getProvider());
         accounts = await wallet.accounts;
         deployer = accounts[0];
         minter = accounts[1];
@@ -49,10 +49,15 @@ describe('## SC-Contract', async function() {
                 admins: []
             },
             audit: {
-                quorum: 500, // base 10e3
+                warningThreshold: 300, // base 10e3
+                passedThreshold: 600, // base 10e3
                 auditDuration: 14 * 24*60*60,  // 14 days
                 minAuditRequired: 3
-            }
+            },
+            // vault: {
+            //     amm: '',
+            //     foundation: '',
+            // }
         }
         result = await deploy(wallet, deployOptions, (msg)=>{
             console.dir(msg);
@@ -61,23 +66,12 @@ describe('## SC-Contract', async function() {
         auditInfoContract = new Contracts.AuditInfo(wallet, result.audit);
     });
     
-    it('', async function(){
+    it('audit', async function(){
         wallet.defaultAccount = projectOwner;
-<<<<<<< HEAD
-        let newProjectReceipt = await projectInfoContract.newProject("ipfs1");
-        let newProjectEvent = projectInfoContract.parseNewProjectEvent(newProjectReceipt)[0];
-print(newProjectEvent);
-        let newProjectVersionEvent = projectInfoContract.parseNewProjectVersionEvent(newProjectReceipt)[0];
-print(newProjectVersionEvent);
-
-        let newPackageReceipt = await projectInfoContract.newPackage({projectId: 0, ipfsCid: 'ipfs2'});
-=======
         let newProjectReceipt = await projectInfoContract.newProject({name: "scom", ipfsCid: "ipfs1"});
         let newProjectEvent = projectInfoContract.parseNewProjectEvent(newProjectReceipt)[0];
 print(newProjectEvent);
-
         let newPackageReceipt = await projectInfoContract.newPackage({projectId: 0, name: 'portal', ipfsCid: 'ipfs2'});
->>>>>>> upstream/main
         let newPackageEvent = projectInfoContract.parseNewPackageEvent(newPackageReceipt)[0];
 print(newPackageEvent);
         let newPackageVersionReceipt = await projectInfoContract.newPackageVersion({projectId:newProjectEvent.projectId, packageId:newPackageEvent.packageId, version:{major:0,minor:1,patch:0}, ipfsCid:"ipfs3"})

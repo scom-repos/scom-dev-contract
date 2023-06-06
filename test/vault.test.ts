@@ -21,7 +21,8 @@ describe('## SC-Contract', async function() {
 
     let totalSuppy = Utils.toDecimals("10000000000");
     let period = 10 * 365 * 24 * 60 * 60; // 10 years
-    let derement = Utils.toDecimals("0.998");
+    let derement = Utils.toDecimals("0.998"); // day
+    // let derement = Utils.toDecimals("0.999999987"); // second
 
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
@@ -54,12 +55,12 @@ describe('## SC-Contract', async function() {
             projectInfo: {
                 admins: []
             },
-            audit: {
-                warningThreshold: 500, // base 10e3
-                passedThreshold: 900, // base 10e3
-                auditDuration: 14 * 24*60*60,  // 14 days
-                minAuditRequired: 3
-            },
+            // audit: {
+            //     warningThreshold: 500, // base 10e3
+            //     passedThreshold: 900, // base 10e3
+            //     auditDuration: 14 * 24*60*60,  // 14 days
+            //     minAuditRequired: 3
+            // },
             vault: {
                 amm: amm.address,
                 foundation: foundation,

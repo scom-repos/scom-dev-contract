@@ -34,14 +34,16 @@ describe('## SC-Contract', async function() {
         buyer1 =  accounts[2];
         buyer2 =  accounts[3];
 
-
         wallet.defaultAccount = deployer;
 
         scomContract = new Contracts.Scom(wallet);
         await scomContract.deploy({minter:Utils.nullAddress, initSupply:totalSuppy, initSupplyTo: foundation, totalSupply: totalSuppy});
+        console.log('scom', scomContract.address);
 
         weth = new WETH9(wallet);
         await weth.deploy();
+        console.log('weth', weth.address);
+
         amm = new MockAmmPair(wallet);
         await amm.deploy(
             new BigNumber(scomContract.address.toLowerCase()).lt(weth.address.toLowerCase()) ? 
@@ -81,8 +83,9 @@ describe('## SC-Contract', async function() {
         result = await deploy(wallet, deployOptions, (msg)=>{
             console.dir(msg);
         });
-        vaultContract = new Contracts.Vault(wallet, result.vault);
+        console.log('scom contracts', result);
 
+        vaultContract = new Contracts.Vault(wallet, result.vault);
     });
     it ('Vault', async () => {
 
@@ -130,8 +133,8 @@ describe('## SC-Contract', async function() {
         
         let sale = {
             startTime: now + day ,
-            privateSaleEndTime: now + 2 * day,
-            semiPrivateSaleEndTime: now + 4 * day,
+            limitedPrivateSaleEndTime: now + 2 * day,
+            unlimitedPrivateSaleEndTime: now + 4 * day,
             amount: Utils.toDecimals(10),
             merkleRoot: merkleTree.getHexRoot(),
             ipfsCid: ""
@@ -156,7 +159,6 @@ describe('## SC-Contract', async function() {
         let event2 = vaultContract.parseBuyEvent(receipt2);
         assertEqual(event2.length, 1);
         assertEqual(event2[0], {
-            buyer: buyer1,
             to: buyer1,
             amountScom: Utils.toDecimals(10),
             amountEth: Utils.toDecimals(10)
