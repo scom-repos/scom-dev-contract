@@ -2225,7 +2225,7 @@ declare module "@scom/portal-contract/contracts/index.ts" {
 }
 /// <amd-module name="@scom/portal-contract" />
 declare module "@scom/portal-contract" {
-    import { IWallet, BigNumber } from "@ijstech/eth-contract";
+    import { IWallet, BigNumber } from "@ijstech/eth-wallet";
     import * as Contracts from "@scom/portal-contract/contracts/index.ts";
     export { Contracts };
     export interface IDeployOptions {
