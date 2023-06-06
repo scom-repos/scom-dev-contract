@@ -10,9 +10,8 @@ import "./AuditorInfo.sol";
 contract ProjectInfo is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    enum ProjectStatus {INACTIVE, ACTIVE}
     enum PackageStatus {INACTIVE, ACTIVE}
-    enum PackageVersionStatus {WORKING, AUDITING, AUDIT_PASSED, AUDIT_FAILED, VOIDED}
+    enum PackageVersionStatus {WORKING, AUDITING, VOIDED}
 
     struct Package {
         uint256 projectId;
@@ -58,7 +57,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     Package[] public packages; // packages[packageId] = {projectId, currVersionIndex, status}
     PackageVersion[] public packageVersions; // packageVersions[packageVersionsId] = {packageId, version, status, ipfsCid}
     mapping(uint256 => uint256[]) public packageVersionsList; // packageVersionsList[packageId][idx] = packageVersionsId
-    mapping(uint256 => PackageVersion) public latestAuditedPackageVersion; // latestAuditedPackageVersion[packageId] = {packageId, version, status, ipfsCid}
     mapping(uint256 => mapping(uint256 => bytes)) public packageName; // packageName[projectId][packageId] = name;
     mapping(uint256 => mapping(bytes => uint256)) public packageNameInv; // packageNameInv[projectId][name] = packageId;
 

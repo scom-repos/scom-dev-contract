@@ -288,9 +288,6 @@ export class ProjectInfo extends _Contract{
     isPermitted: {
         (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
-    latestAuditedPackageVersion: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}>;
-    }
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
     }
@@ -471,23 +468,6 @@ export class ProjectInfo extends _Contract{
             return result;
         }
         this.isPermitted = isPermitted_call
-        let latestAuditedPackageVersion_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{packageId:BigNumber,version:{major:BigNumber,minor:BigNumber,patch:BigNumber},status:BigNumber,ipfsCid:string,timestamp:BigNumber}> => {
-            let result = await this.call('latestAuditedPackageVersion',[this.wallet.utils.toString(param1)],options);
-            return {
-                packageId: new BigNumber(result.packageId),
-                version: 
-                {
-                    major: new BigNumber(result.version.major),
-                    minor: new BigNumber(result.version.minor),
-                    patch: new BigNumber(result.version.patch)
-                }
-                ,
-                status: new BigNumber(result.status),
-                ipfsCid: result.ipfsCid,
-                timestamp: new BigNumber(result.timestamp)
-            };
-        }
-        this.latestAuditedPackageVersion = latestAuditedPackageVersion_call
         let newOwner_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('newOwner',[],options);
             return result;

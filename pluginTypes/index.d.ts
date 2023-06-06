@@ -1196,31 +1196,6 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.json.ts" {
             stateMutability?: undefined;
             outputs?: undefined;
         } | {
-            inputs: {
-                internalType: string;
-                name: string;
-                type: string;
-            }[];
-            name: string;
-            outputs: ({
-                internalType: string;
-                name: string;
-                type: string;
-                components?: undefined;
-            } | {
-                components: {
-                    internalType: string;
-                    name: string;
-                    type: string;
-                }[];
-                internalType: string;
-                name: string;
-                type: string;
-            })[];
-            stateMutability: string;
-            type: string;
-            anonymous?: undefined;
-        } | {
             inputs: ({
                 internalType: string;
                 name: string;
@@ -1242,6 +1217,31 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.json.ts" {
                 name: string;
                 type: string;
             }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: ({
+                internalType: string;
+                name: string;
+                type: string;
+                components?: undefined;
+            } | {
+                components: {
+                    internalType: string;
+                    name: string;
+                    type: string;
+                }[];
+                internalType: string;
+                name: string;
+                type: string;
+            })[];
             stateMutability: string;
             type: string;
             anonymous?: undefined;
@@ -1435,19 +1435,6 @@ declare module "@scom/portal-contract/contracts/ProjectInfo.ts" {
         };
         isPermitted: {
             (param1: string, options?: TransactionOptions): Promise<boolean>;
-        };
-        latestAuditedPackageVersion: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-                packageId: BigNumber;
-                version: {
-                    major: BigNumber;
-                    minor: BigNumber;
-                    patch: BigNumber;
-                };
-                status: BigNumber;
-                ipfsCid: string;
-                timestamp: BigNumber;
-            }>;
         };
         newOwner: {
             (options?: TransactionOptions): Promise<string>;

@@ -182,19 +182,6 @@ export declare class ProjectInfo extends _Contract {
     isPermitted: {
         (param1: string, options?: TransactionOptions): Promise<boolean>;
     };
-    latestAuditedPackageVersion: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-            packageId: BigNumber;
-            version: {
-                major: BigNumber;
-                minor: BigNumber;
-                patch: BigNumber;
-            };
-            status: BigNumber;
-            ipfsCid: string;
-            timestamp: BigNumber;
-        }>;
-    };
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
     };
