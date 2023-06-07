@@ -1,4 +1,4 @@
-import {IWallet, BigNumber} from "@ijstech/eth-contract";
+import {IWallet, BigNumber} from "@ijstech/eth-wallet";
 import * as Contracts from "./contracts/index";
 export {Contracts};
 
@@ -57,10 +57,10 @@ export var DefaultDeployOptions: IDeployOptions = {
         auditDuration: 14 * 24*60*60,  // 14 days
         minAuditRequired: 3
     },
-    vault: {
-        foundation: '',
-        amm: ''
-    }
+    // vault: {
+    //     foundation: '',
+    //     amm: ''
+    // }
 };
 async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
     let scomOptions = Config.token;
@@ -132,21 +132,31 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
             return;
         }
         result.token = await deployScom(wallet, Config);
+        onProgress(`token: ${result.token}`)
     }
     else
         result.token = Config.token.address;
     onProgress('2/6 Deploy domain contract')
     result.domain = await deployDomainInfo(wallet, result.token);
+    onProgress(`domain: ${result.domain}`)
     onProgress('3/6 Deploy auditor contract')
     result.auditor = await deployAuditorInfo(wallet, result.token, Config);
+    onProgress(`auditor: ${result.auditor}`)
     onProgress('4/6 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
+    onProgress(`project: ${result.project}`)
     onProgress('5/6 Deploy audit contract')
-    if (Config.audit)
+    if (Config.audit) {
         result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config);
+        onProgress(`audit: ${result.audit}`)
+    }
     onProgress('6/6 Deploy vault contract')
-    if (Config.vault)
+    if (Config.vault) {
         result.vault = await deployVault(wallet, result.token, Config);
+        onProgress(`vault: ${result.vault}`)
+    }
+
+    onProgress(JSON.stringify(result, null, 2))
     return result;
 }
 export default {
