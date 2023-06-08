@@ -1,8 +1,8 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./RouterVaultWrapper.json";
 export interface IDeployParams {vault:string;router:string}
-export interface ISwapExactTokensForTokensParams {pair:string[];amountIn:number|BigNumber;amountOutMin:number|BigNumber;deadline:number|BigNumber;salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
-export interface ISwapTokensForExactTokensParams {pair:string[];amountOut:number|BigNumber;amountInMax:number|BigNumber;deadline:number|BigNumber;salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
+export interface ISwapExactTokensForTokensParams {pair:string[];amountIn:number|BigNumber;amountOutMin:number|BigNumber;deadline:number|BigNumber;trancheId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
+export interface ISwapTokensForExactTokensParams {pair:string[];amountOut:number|BigNumber;amountInMax:number|BigNumber;deadline:number|BigNumber;trancheId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export class RouterVaultWrapper extends _Contract{
     static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
@@ -48,7 +48,7 @@ export class RouterVaultWrapper extends _Contract{
     decodeSwapEvent(event: Event): RouterVaultWrapper.SwapEvent{
         let result = event.data;
         return {
-            salesId: new BigNumber(result.salesId),
+            trancheId: new BigNumber(result.trancheId),
             sender: result.sender,
             inToken: result.inToken,
             inAmount: new BigNumber(result.inAmount),
@@ -174,7 +174,7 @@ export class RouterVaultWrapper extends _Contract{
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let swapExactTokensForTokensParams = (params: ISwapExactTokensForTokensParams) => [params.pair,this.wallet.utils.toString(params.amountIn),this.wallet.utils.toString(params.amountOutMin),this.wallet.utils.toString(params.deadline),this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let swapExactTokensForTokensParams = (params: ISwapExactTokensForTokensParams) => [params.pair,this.wallet.utils.toString(params.amountIn),this.wallet.utils.toString(params.amountOutMin),this.wallet.utils.toString(params.deadline),this.wallet.utils.toString(params.trancheId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
         let swapExactTokensForTokens_send = async (params: ISwapExactTokensForTokensParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('swapExactTokensForTokens',swapExactTokensForTokensParams(params),options);
             return result;
@@ -186,7 +186,7 @@ export class RouterVaultWrapper extends _Contract{
         this.swapExactTokensForTokens = Object.assign(swapExactTokensForTokens_send, {
             call:swapExactTokensForTokens_call
         });
-        let swapTokensForExactTokensParams = (params: ISwapTokensForExactTokensParams) => [params.pair,this.wallet.utils.toString(params.amountOut),this.wallet.utils.toString(params.amountInMax),this.wallet.utils.toString(params.deadline),this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let swapTokensForExactTokensParams = (params: ISwapTokensForExactTokensParams) => [params.pair,this.wallet.utils.toString(params.amountOut),this.wallet.utils.toString(params.amountInMax),this.wallet.utils.toString(params.deadline),this.wallet.utils.toString(params.trancheId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
         let swapTokensForExactTokens_send = async (params: ISwapTokensForExactTokensParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('swapTokensForExactTokens',swapTokensForExactTokensParams(params),options);
             return result;
@@ -237,7 +237,7 @@ export module RouterVaultWrapper{
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
-    export interface SwapEvent {salesId:BigNumber,sender:string,inToken:string,inAmount:BigNumber,_event:Event}
+    export interface SwapEvent {trancheId:BigNumber,sender:string,inToken:string,inAmount:BigNumber,_event:Event}
     export interface TransferOwnershipEvent {user:string,_event:Event}
     export interface UpdateRouterEvent {router:string,_event:Event}
 }

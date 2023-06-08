@@ -1,10 +1,11 @@
+// buy with wrapper
 import 'mocha';
 import {Utils, Wallet, BigNumber, Erc20, Contract, TransactionReceipt} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
-import { MockAmmPair, WETH9, MockErc20, MockOracleAdaptor3 } from './src'
+import { WETH9, MockErc20, MockOracleAdaptor3 } from '../packages/mock-contracts/src'
 import * as OSWAP from '@openswap/sdk';
 
 
@@ -117,6 +118,7 @@ describe('## SC-Contract', async function() {
         let oswapAmount = 200;
 
         let now = await wallet.getBlockTimestamp();
+
         // amm
         wallet.defaultAccount = deployer;
         await usdt.mint({address: lp, amount: usdtAmount});
@@ -167,8 +169,6 @@ describe('## SC-Contract', async function() {
             deadline: now + 100000
         }, 0);
 
-        // await voteToPass(wallet, oswapContracts, oswapContracts.executor, "setVotingExecutor", "1000000", [Utils.addressToBytes32Right(oswapContracts.hybridRouterRegistry.address, true), Utils.numberToBytes32(1, true)]);
-
         // hybrid router
         wallet.defaultAccount = oswapAdmin;
         let name = Utils.stringToBytes32("AMM") as string;
@@ -189,6 +189,7 @@ describe('## SC-Contract', async function() {
 
         return oswapContracts;
     }
+
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
         accounts = await wallet.accounts;
@@ -275,7 +276,7 @@ describe('## SC-Contract', async function() {
 
         wallet.defaultAccount = deployer;
         await vaultContract.permit(deployer);
-        await vaultContract.start({
+        await vaultContract.lock({
             decrementDecimal: derement,
             startTime,
             endTime 
@@ -308,64 +309,50 @@ describe('## SC-Contract', async function() {
         
         let sale = {
             startTime: now + day ,
-            limitedPrivateSaleEndTime: now + 2 * day,
-            unlimitedPrivateSaleEndTime: now + 4 * day,
+            limitedClaimEndTime: now + 2 * day,
+            unlimitedClaimEndTime: now + 4 * day,
             amount: Utils.toDecimals(10),
             merkleRoot: merkleTree.getHexRoot(),
             ipfsCid: ""
         }
         // print(await vaultContract.currReleaseAmount());
 
-        let receipt = await vaultContract.newSale(sale);
-        let event = vaultContract.parseNewSaleEvent(receipt);
+        let receipt = await vaultContract.newTranche(sale);
+        let event = vaultContract.parseNewTrancheEvent(receipt);
         assertEqual(event.length, 1);
         assertEqual(event[0], {
-            salesId: 0
+            trancheId: 0
         }, true);
-        let salesId = event[0].salesId;
+        let trancheId = event[0].trancheId;
 
         await wallet.setBlockTime(now + day + 10);
 
         let proof = merkleTree.getHexProofsByKey(buyer1);
-// console.log({salesId:event.salesId, allocation:10, proof[0]});
-        // let receipt2 = await vaultContract.buy({salesId:salesId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
+// console.log({trancheId:event.trancheId, allocation:10, proof[0]});
+        // let receipt2 = await vaultContract.buy({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
         wallet.defaultAccount = deployer;
         await usdt.mint({address: buyer1, amount: ETH_PRICE_USD*20});
         wallet.defaultAccount = buyer1;
         await usdt.approve({spender: wrapperContract.address, amount: ETH_PRICE_USD*20});
         await usdt.approve({spender: oswapContracts.hybridRouter.address, amount: ETH_PRICE_USD*20});
-// console.log('getAmountOut',(await oswapContracts.oracleRouter.getAmountOut({tokenIn:usdt.address,tokenOut:weth.address,amountIn:Utils.toDecimals(ETH_PRICE_USD*20, await usdt.decimals),data:"0x"})).toFixed());
-// let pair = await oswapContracts.oracleFactory.getPair({param1: usdt.address, param2: weth.address});
-// console.log(pair);
-// print(await new OSWAP.Contracts.OSWAP_OraclePair(wallet,pair).getBalances());
-// console.log(await oswapContracts.hybridRouter.swapExactTokensForTokens.call({
-//     pair:[await oswapContracts.oracleFactory.getPair({param1: usdt.address, param2: weth.address})],
-//     amountIn: Utils.toDecimals(2000,6),
-//     amountOutMin: 0,
-// tokenIn: usdt.address,
-//     deadline: now + 100000,
-//     to: buyer1,
-//     data: "0x"
-// }));
-// console.log(new OSWAP.Contracts.OSWAP_OraclePair(wallet,pair).swap({
 
-// }))
         console.log('swapTokensForExactTokens');
         let receipt2 = await wrapperContract.swapTokensForExactTokens({
             pair: [await oswapContracts.factory.getPair({param1: usdt.address, param2: weth.address})], 
             amountOut: Utils.toDecimals(10), 
             amountInMax: Utils.toDecimals(ETH_PRICE_USD*20, await usdt.decimals), 
             deadline: (await wallet.getBlockTimestamp()) + 1000, 
-            salesId: salesId, 
+            trancheId: trancheId, 
             to: buyer1, 
             allocation: Utils.toDecimals(10), 
             proof: proof[0]
         });
         console.log(receipt2);
 
-        let event2 = vaultContract.parseBuyEvent(receipt2);
+        let event2 = vaultContract.parseClaimEvent(receipt2);
         assertEqual(event2.length, 1);
         assertEqual(event2[0], {
+            from: buyer1,
             to: buyer1,
             amountScom: Utils.toDecimals(10),
             amountEth: Utils.toDecimals(10)

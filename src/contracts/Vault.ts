@@ -1,12 +1,14 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Vault.json";
 export interface IDeployParams {foundation:string;scom:string;amm:string}
-export interface IBuyParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
-export interface IBuyWithWETHParams {salesId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
-export interface IReleaseAndBuyParams {salesIds:(number|BigNumber)[];to:string}
-export interface IReleaseAndBuyWithWETHParams {salesIds:(number|BigNumber)[];to:string}
-export interface IStartParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
-export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;initialReleaseAmount:number|BigNumber;decrementDecimal:number|BigNumber}
+export interface IClaimParams {trancheId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
+export interface IClaimWithWETHParams {trancheId:number|BigNumber;from:string;to:string;allocation:number|BigNumber;proof:string[]}
+export interface ILockParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
+export interface IPublicSwapWithWETHParams {from:string;to:string}
+export interface IReleaseAndSwapParams {trancheIds:(number|BigNumber)[];to:string}
+export interface IReleaseAndSwapWithWETHParams {trancheIds:(number|BigNumber)[];from:string;to:string}
+export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;startingAmount:number|BigNumber;decrementDecimal:number|BigNumber}
+export interface IWithdrawScomFromTrancheParams {trancheIds:(number|BigNumber)[];amountScom:(number|BigNumber)[]}
 export class Vault extends _Contract{
     static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
@@ -26,12 +28,14 @@ export class Vault extends _Contract{
             _event: event
         };
     }
-    parseBuyEvent(receipt: TransactionReceipt): Vault.BuyEvent[]{
-        return this.parseEvents(receipt, "Buy").map(e=>this.decodeBuyEvent(e));
+    parseClaimEvent(receipt: TransactionReceipt): Vault.ClaimEvent[]{
+        return this.parseEvents(receipt, "Claim").map(e=>this.decodeClaimEvent(e));
     }
-    decodeBuyEvent(event: Event): Vault.BuyEvent{
+    decodeClaimEvent(event: Event): Vault.ClaimEvent{
         let result = event.data;
         return {
+            trancheId: new BigNumber(result.trancheId),
+            from: result.from,
             to: result.to,
             amountScom: new BigNumber(result.amountScom),
             amountEth: new BigNumber(result.amountEth),
@@ -48,13 +52,37 @@ export class Vault extends _Contract{
             _event: event
         };
     }
-    parseNewSaleEvent(receipt: TransactionReceipt): Vault.NewSaleEvent[]{
-        return this.parseEvents(receipt, "NewSale").map(e=>this.decodeNewSaleEvent(e));
+    parseLockEvent(receipt: TransactionReceipt): Vault.LockEvent[]{
+        return this.parseEvents(receipt, "Lock").map(e=>this.decodeLockEvent(e));
     }
-    decodeNewSaleEvent(event: Event): Vault.NewSaleEvent{
+    decodeLockEvent(event: Event): Vault.LockEvent{
         let result = event.data;
         return {
-            salesId: new BigNumber(result.salesId),
+            start: new BigNumber(result.start),
+            end: new BigNumber(result.end),
+            rate: new BigNumber(result.rate),
+            initAmount: new BigNumber(result.initAmount),
+            _event: event
+        };
+    }
+    parseNewTrancheEvent(receipt: TransactionReceipt): Vault.NewTrancheEvent[]{
+        return this.parseEvents(receipt, "NewTranche").map(e=>this.decodeNewTrancheEvent(e));
+    }
+    decodeNewTrancheEvent(event: Event): Vault.NewTrancheEvent{
+        let result = event.data;
+        return {
+            trancheId: new BigNumber(result.trancheId),
+            _event: event
+        };
+    }
+    parseReleaseEvent(receipt: TransactionReceipt): Vault.ReleaseEvent[]{
+        return this.parseEvents(receipt, "Release").map(e=>this.decodeReleaseEvent(e));
+    }
+    decodeReleaseEvent(event: Event): Vault.ReleaseEvent{
+        let result = event.data;
+        return {
+            amount: new BigNumber(result.amount),
+            balance: new BigNumber(result.balance),
             _event: event
         };
     }
@@ -68,6 +96,19 @@ export class Vault extends _Contract{
             _event: event
         };
     }
+    parseSwapEvent(receipt: TransactionReceipt): Vault.SwapEvent[]{
+        return this.parseEvents(receipt, "Swap").map(e=>this.decodeSwapEvent(e));
+    }
+    decodeSwapEvent(event: Event): Vault.SwapEvent{
+        let result = event.data;
+        return {
+            from: result.from,
+            to: result.to,
+            amountScom: new BigNumber(result.amountScom),
+            amountEth: new BigNumber(result.amountEth),
+            _event: event
+        };
+    }
     parseTransferOwnershipEvent(receipt: TransactionReceipt): Vault.TransferOwnershipEvent[]{
         return this.parseEvents(receipt, "TransferOwnership").map(e=>this.decodeTransferOwnershipEvent(e));
     }
@@ -78,24 +119,53 @@ export class Vault extends _Contract{
             _event: event
         };
     }
+    parseUnlockEvent(receipt: TransactionReceipt): Vault.UnlockEvent[]{
+        return this.parseEvents(receipt, "Unlock").map(e=>this.decodeUnlockEvent(e));
+    }
+    decodeUnlockEvent(event: Event): Vault.UnlockEvent{
+        let result = event.data;
+        return {
+            unlock: new BigNumber(result.unlock),
+            available: new BigNumber(result.available),
+            balance: new BigNumber(result.balance),
+            _event: event
+        };
+    }
+    parseWithdrawScomFromReleaseEvent(receipt: TransactionReceipt): Vault.WithdrawScomFromReleaseEvent[]{
+        return this.parseEvents(receipt, "WithdrawScomFromRelease").map(e=>this.decodeWithdrawScomFromReleaseEvent(e));
+    }
+    decodeWithdrawScomFromReleaseEvent(event: Event): Vault.WithdrawScomFromReleaseEvent{
+        let result = event.data;
+        return {
+            amount: new BigNumber(result.amount),
+            _event: event
+        };
+    }
+    parseWithdrawScomFromTrancheEvent(receipt: TransactionReceipt): Vault.WithdrawScomFromTrancheEvent[]{
+        return this.parseEvents(receipt, "WithdrawScomFromTranche").map(e=>this.decodeWithdrawScomFromTrancheEvent(e));
+    }
+    decodeWithdrawScomFromTrancheEvent(event: Event): Vault.WithdrawScomFromTrancheEvent{
+        let result = event.data;
+        return {
+            amount: new BigNumber(result.amount),
+            _event: event
+        };
+    }
     amm: {
         (options?: TransactionOptions): Promise<string>;
     }
-    amountUsedInSale: {
+    amountUsedInTranche: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
-    availableAmount: {
-        (options?: TransactionOptions): Promise<BigNumber>;
+    claim: {
+        (params: IClaimParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IClaimParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
     }
-    buy: {
-        (params: IBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IBuyParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
+    claimWithWETH: {
+        (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IClaimWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     }
-    buyWithWETH: {
-        (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
-    }
-    currReleaseAmount: {
+    currTotalSupply: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
     decrementDecimal: {
@@ -111,27 +181,25 @@ export class Vault extends _Contract{
     foundation: {
         (options?: TransactionOptions): Promise<string>;
     }
-    initialReleaseAmount: {
-        (options?: TransactionOptions): Promise<BigNumber>;
-    }
     isPermitted: {
         (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
-    lasReleaseAmount: {
+    lastUnlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
     lastUpdate: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
+    lock: {
+        (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+    }
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
     }
-    newSale: {
-        (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions) => Promise<void>;
-    }
-    oneMinusDecrement: {
-        (options?: TransactionOptions): Promise<BigNumber>;
+    newTranche: {
+        (tranche:{startTime:number|BigNumber,limitedClaimEndTime:number|BigNumber,unlimitedClaimEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (tranche:{startTime:number|BigNumber,limitedClaimEndTime:number|BigNumber,unlimitedClaimEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions) => Promise<void>;
     }
     owner: {
         (options?: TransactionOptions): Promise<string>;
@@ -140,45 +208,45 @@ export class Vault extends _Contract{
         (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
-    publicBuy: {
-        (options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: number|BigNumber|TransactionOptions) => Promise<{amountScom:BigNumber,to:string}>;
+    publicSwapWithWETH: {
+        (params: IPublicSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IPublicSwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     }
-    publicBuyWithWETH: {
-        (to:string, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (to:string, options?: TransactionOptions) => Promise<BigNumber>;
+    releaseAndSwap: {
+        (params: IReleaseAndSwapParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndSwapParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
     }
-    publicSaleAmount: {
+    releaseAndSwapWithWETH: {
+        (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
+    }
+    releaseFromLocked: {
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
+    }
+    releaseFromUnlocked: {
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
+    }
+    releaseTranche: {
+        (trancheIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (trancheIds:(number|BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
+    }
+    releasedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
-    }
-    release: {
-        (options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: TransactionOptions) => Promise<BigNumber>;
-    }
-    releaseAndBuy: {
-        (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions) => Promise<BigNumber>;
-    }
-    releaseAndBuyWithWETH: {
-        (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
-    }
-    releaseToPublic: {
-        (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (salesIds:(number|BigNumber)[], options?: TransactionOptions) => Promise<BigNumber>;
-    }
-    sales: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedPrivateSaleEndTime:BigNumber,unlimitedPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}>;
     }
     scom: {
         (options?: TransactionOptions): Promise<string>;
     }
-    start: {
-        (params: IStartParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IStartParams, options?: TransactionOptions) => Promise<void>;
-    }
     startTime: {
         (options?: TransactionOptions): Promise<BigNumber>;
+    }
+    startingAmount: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    }
+    swap: {
+        (options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt>;
+        call: (options?: number|BigNumber|TransactionOptions) => Promise<{amountScom:BigNumber,to:string}>;
     }
     takeOwnership: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -193,9 +261,19 @@ export class Vault extends _Contract{
     totalSuppyAt: {
         (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
+    trancheInfo: {
+        (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedClaimEndTime:BigNumber,unlimitedClaimEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}>;
+    }
     transferOwnership: {
         (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (newOwner:string, options?: TransactionOptions) => Promise<void>;
+    }
+    unlock: {
+        (options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (options?: TransactionOptions) => Promise<BigNumber>;
+    }
+    unlockedAmount: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     updateReleaseSchdule: {
         (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -207,27 +285,30 @@ export class Vault extends _Contract{
     weth: {
         (options?: TransactionOptions): Promise<string>;
     }
+    withdrawScomFromRelease: {
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
+    }
+    withdrawScomFromTranche: {
+        (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions) => Promise<void>;
+    }
     private assign(){
         let amm_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('amm',[],options);
             return result;
         }
         this.amm = amm_call
-        let amountUsedInSale_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('amountUsedInSale',[this.wallet.utils.toString(param1)],options);
+        let amountUsedInTranche_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('amountUsedInTranche',[this.wallet.utils.toString(param1)],options);
             return new BigNumber(result);
         }
-        this.amountUsedInSale = amountUsedInSale_call
-        let availableAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('availableAmount',[],options);
+        this.amountUsedInTranche = amountUsedInTranche_call
+        let currTotalSupply_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('currTotalSupply',[],options);
             return new BigNumber(result);
         }
-        this.availableAmount = availableAmount_call
-        let currReleaseAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('currReleaseAmount',[],options);
-            return new BigNumber(result);
-        }
-        this.currReleaseAmount = currReleaseAmount_call
+        this.currTotalSupply = currTotalSupply_call
         let decrementDecimal_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('decrementDecimal',[],options);
             return new BigNumber(result);
@@ -243,21 +324,16 @@ export class Vault extends _Contract{
             return result;
         }
         this.foundation = foundation_call
-        let initialReleaseAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('initialReleaseAmount',[],options);
-            return new BigNumber(result);
-        }
-        this.initialReleaseAmount = initialReleaseAmount_call
         let isPermitted_call = async (param1:string, options?: TransactionOptions): Promise<boolean> => {
             let result = await this.call('isPermitted',[param1],options);
             return result;
         }
         this.isPermitted = isPermitted_call
-        let lasReleaseAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('lasReleaseAmount',[],options);
+        let lastUnlockedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('lastUnlockedAmount',[],options);
             return new BigNumber(result);
         }
-        this.lasReleaseAmount = lasReleaseAmount_call
+        this.lastUnlockedAmount = lastUnlockedAmount_call
         let lastUpdate_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('lastUpdate',[],options);
             return new BigNumber(result);
@@ -268,33 +344,16 @@ export class Vault extends _Contract{
             return result;
         }
         this.newOwner = newOwner_call
-        let oneMinusDecrement_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('oneMinusDecrement',[],options);
-            return new BigNumber(result);
-        }
-        this.oneMinusDecrement = oneMinusDecrement_call
         let owner_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('owner',[],options);
             return result;
         }
         this.owner = owner_call
-        let publicSaleAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('publicSaleAmount',[],options);
+        let releasedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releasedAmount',[],options);
             return new BigNumber(result);
         }
-        this.publicSaleAmount = publicSaleAmount_call
-        let sales_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedPrivateSaleEndTime:BigNumber,unlimitedPrivateSaleEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
-            let result = await this.call('sales',[this.wallet.utils.toString(param1)],options);
-            return {
-                startTime: new BigNumber(result.startTime),
-                limitedPrivateSaleEndTime: new BigNumber(result.limitedPrivateSaleEndTime),
-                unlimitedPrivateSaleEndTime: new BigNumber(result.unlimitedPrivateSaleEndTime),
-                amount: new BigNumber(result.amount),
-                merkleRoot: result.merkleRoot,
-                ipfsCid: result.ipfsCid
-            };
-        }
-        this.sales = sales_call
+        this.releasedAmount = releasedAmount_call
         let scom_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('scom',[],options);
             return result;
@@ -305,6 +364,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.startTime = startTime_call
+        let startingAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('startingAmount',[],options);
+            return new BigNumber(result);
+        }
+        this.startingAmount = startingAmount_call
         let token0IsScom_call = async (options?: TransactionOptions): Promise<boolean> => {
             let result = await this.call('token0IsScom',[],options);
             return result;
@@ -320,6 +384,23 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.totalSuppyAt = totalSuppyAt_call
+        let trancheInfo_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedClaimEndTime:BigNumber,unlimitedClaimEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
+            let result = await this.call('trancheInfo',[this.wallet.utils.toString(param1)],options);
+            return {
+                startTime: new BigNumber(result.startTime),
+                limitedClaimEndTime: new BigNumber(result.limitedClaimEndTime),
+                unlimitedClaimEndTime: new BigNumber(result.unlimitedClaimEndTime),
+                amount: new BigNumber(result.amount),
+                merkleRoot: result.merkleRoot,
+                ipfsCid: result.ipfsCid
+            };
+        }
+        this.trancheInfo = trancheInfo_call
+        let unlockedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('unlockedAmount',[],options);
+            return new BigNumber(result);
+        }
+        this.unlockedAmount = unlockedAmount_call
         let usedAllocation_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('usedAllocation',[this.wallet.utils.stringToBytes32(param1)],options);
             return new BigNumber(result);
@@ -330,29 +411,29 @@ export class Vault extends _Contract{
             return result;
         }
         this.weth = weth_call
-        let buyParams = (params: IBuyParams) => [this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
-        let buy_send = async (params: IBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('buy',buyParams(params),options);
+        let claimParams = (params: IClaimParams) => [this.wallet.utils.toString(params.trancheId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let claim_send = async (params: IClaimParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('claim',claimParams(params),options);
             return result;
         }
-        let buy_call = async (params: IBuyParams, options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('buy',buyParams(params),options);
+        let claim_call = async (params: IClaimParams, options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('claim',claimParams(params),options);
             return new BigNumber(result);
         }
-        this.buy = Object.assign(buy_send, {
-            call:buy_call
+        this.claim = Object.assign(claim_send, {
+            call:claim_call
         });
-        let buyWithWETHParams = (params: IBuyWithWETHParams) => [this.wallet.utils.toString(params.salesId),params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
-        let buyWithWETH_send = async (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('buyWithWETH',buyWithWETHParams(params),options);
+        let claimWithWETHParams = (params: IClaimWithWETHParams) => [this.wallet.utils.toString(params.trancheId),params.from,params.to,this.wallet.utils.toString(params.allocation),this.wallet.utils.stringToBytes32(params.proof)];
+        let claimWithWETH_send = async (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('claimWithWETH',claimWithWETHParams(params),options);
             return result;
         }
-        let buyWithWETH_call = async (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('buyWithWETH',buyWithWETHParams(params),options);
+        let claimWithWETH_call = async (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('claimWithWETH',claimWithWETHParams(params),options);
             return new BigNumber(result);
         }
-        this.buyWithWETH = Object.assign(buyWithWETH_send, {
-            call:buyWithWETH_call
+        this.claimWithWETH = Object.assign(claimWithWETH_send, {
+            call:claimWithWETH_call
         });
         let deny_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('deny',[user],options);
@@ -365,16 +446,28 @@ export class Vault extends _Contract{
         this.deny = Object.assign(deny_send, {
             call:deny_call
         });
-        let newSale_send = async (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.limitedPrivateSaleEndTime),this.wallet.utils.toString(sale.unlimitedPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
+        let lockParams = (params: ILockParams) => [this.wallet.utils.toString(params.startTime),this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.decrementDecimal)];
+        let lock_send = async (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('lock',lockParams(params),options);
             return result;
         }
-        let newSale_call = async (sale:{startTime:number|BigNumber,limitedPrivateSaleEndTime:number|BigNumber,unlimitedPrivateSaleEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('newSale',[[this.wallet.utils.toString(sale.startTime),this.wallet.utils.toString(sale.limitedPrivateSaleEndTime),this.wallet.utils.toString(sale.unlimitedPrivateSaleEndTime),this.wallet.utils.toString(sale.amount),this.wallet.utils.stringToBytes32(sale.merkleRoot),this.wallet.utils.stringToBytes(sale.ipfsCid)]],options);
+        let lock_call = async (params: ILockParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('lock',lockParams(params),options);
             return;
         }
-        this.newSale = Object.assign(newSale_send, {
-            call:newSale_call
+        this.lock = Object.assign(lock_send, {
+            call:lock_call
+        });
+        let newTranche_send = async (tranche:{startTime:number|BigNumber,limitedClaimEndTime:number|BigNumber,unlimitedClaimEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('newTranche',[[this.wallet.utils.toString(tranche.startTime),this.wallet.utils.toString(tranche.limitedClaimEndTime),this.wallet.utils.toString(tranche.unlimitedClaimEndTime),this.wallet.utils.toString(tranche.amount),this.wallet.utils.stringToBytes32(tranche.merkleRoot),this.wallet.utils.stringToBytes(tranche.ipfsCid)]],options);
+            return result;
+        }
+        let newTranche_call = async (tranche:{startTime:number|BigNumber,limitedClaimEndTime:number|BigNumber,unlimitedClaimEndTime:number|BigNumber,amount:number|BigNumber,merkleRoot:string,ipfsCid:string}, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('newTranche',[[this.wallet.utils.toString(tranche.startTime),this.wallet.utils.toString(tranche.limitedClaimEndTime),this.wallet.utils.toString(tranche.unlimitedClaimEndTime),this.wallet.utils.toString(tranche.amount),this.wallet.utils.stringToBytes32(tranche.merkleRoot),this.wallet.utils.stringToBytes(tranche.ipfsCid)]],options);
+            return;
+        }
+        this.newTranche = Object.assign(newTranche_send, {
+            call:newTranche_call
         });
         let permit_send = async (user:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('permit',[user],options);
@@ -387,88 +480,88 @@ export class Vault extends _Contract{
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let publicBuy_send = async (options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('publicBuy',[],options);
+        let publicSwapWithWETHParams = (params: IPublicSwapWithWETHParams) => [params.from,params.to];
+        let publicSwapWithWETH_send = async (params: IPublicSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('publicSwapWithWETH',publicSwapWithWETHParams(params),options);
             return result;
         }
-        let publicBuy_call = async (options?: number|BigNumber|TransactionOptions): Promise<{amountScom:BigNumber,to:string}> => {
-            let result = await this.call('publicBuy',[],options);
+        let publicSwapWithWETH_call = async (params: IPublicSwapWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('publicSwapWithWETH',publicSwapWithWETHParams(params),options);
+            return new BigNumber(result);
+        }
+        this.publicSwapWithWETH = Object.assign(publicSwapWithWETH_send, {
+            call:publicSwapWithWETH_call
+        });
+        let releaseAndSwapParams = (params: IReleaseAndSwapParams) => [this.wallet.utils.toString(params.trancheIds),params.to];
+        let releaseAndSwap_send = async (params: IReleaseAndSwapParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseAndSwap',releaseAndSwapParams(params),options);
+            return result;
+        }
+        let releaseAndSwap_call = async (params: IReleaseAndSwapParams, options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releaseAndSwap',releaseAndSwapParams(params),options);
+            return new BigNumber(result);
+        }
+        this.releaseAndSwap = Object.assign(releaseAndSwap_send, {
+            call:releaseAndSwap_call
+        });
+        let releaseAndSwapWithWETHParams = (params: IReleaseAndSwapWithWETHParams) => [this.wallet.utils.toString(params.trancheIds),params.from,params.to];
+        let releaseAndSwapWithWETH_send = async (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseAndSwapWithWETH',releaseAndSwapWithWETHParams(params),options);
+            return result;
+        }
+        let releaseAndSwapWithWETH_call = async (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releaseAndSwapWithWETH',releaseAndSwapWithWETHParams(params),options);
+            return new BigNumber(result);
+        }
+        this.releaseAndSwapWithWETH = Object.assign(releaseAndSwapWithWETH_send, {
+            call:releaseAndSwapWithWETH_call
+        });
+        let releaseFromLocked_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseFromLocked',[this.wallet.utils.toString(amount)],options);
+            return result;
+        }
+        let releaseFromLocked_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('releaseFromLocked',[this.wallet.utils.toString(amount)],options);
+            return;
+        }
+        this.releaseFromLocked = Object.assign(releaseFromLocked_send, {
+            call:releaseFromLocked_call
+        });
+        let releaseFromUnlocked_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseFromUnlocked',[this.wallet.utils.toString(amount)],options);
+            return result;
+        }
+        let releaseFromUnlocked_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('releaseFromUnlocked',[this.wallet.utils.toString(amount)],options);
+            return;
+        }
+        this.releaseFromUnlocked = Object.assign(releaseFromUnlocked_send, {
+            call:releaseFromUnlocked_call
+        });
+        let releaseTranche_send = async (trancheIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('releaseTranche',[this.wallet.utils.toString(trancheIds)],options);
+            return result;
+        }
+        let releaseTranche_call = async (trancheIds:(number|BigNumber)[], options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('releaseTranche',[this.wallet.utils.toString(trancheIds)],options);
+            return new BigNumber(result);
+        }
+        this.releaseTranche = Object.assign(releaseTranche_send, {
+            call:releaseTranche_call
+        });
+        let swap_send = async (options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('swap',[],options);
+            return result;
+        }
+        let swap_call = async (options?: number|BigNumber|TransactionOptions): Promise<{amountScom:BigNumber,to:string}> => {
+            let result = await this.call('swap',[],options);
             return {
                 amountScom: new BigNumber(result.amountScom),
                 to: result.to
             };
         }
-        this.publicBuy = Object.assign(publicBuy_send, {
-            call:publicBuy_call
-        });
-        let publicBuyWithWETH_send = async (to:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('publicBuyWithWETH',[to],options);
-            return result;
-        }
-        let publicBuyWithWETH_call = async (to:string, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('publicBuyWithWETH',[to],options);
-            return new BigNumber(result);
-        }
-        this.publicBuyWithWETH = Object.assign(publicBuyWithWETH_send, {
-            call:publicBuyWithWETH_call
-        });
-        let release_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('release',[],options);
-            return result;
-        }
-        let release_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('release',[],options);
-            return new BigNumber(result);
-        }
-        this.release = Object.assign(release_send, {
-            call:release_call
-        });
-        let releaseAndBuyParams = (params: IReleaseAndBuyParams) => [this.wallet.utils.toString(params.salesIds),params.to];
-        let releaseAndBuy_send = async (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('releaseAndBuy',releaseAndBuyParams(params),options);
-            return result;
-        }
-        let releaseAndBuy_call = async (params: IReleaseAndBuyParams, options?: number|BigNumber|TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('releaseAndBuy',releaseAndBuyParams(params),options);
-            return new BigNumber(result);
-        }
-        this.releaseAndBuy = Object.assign(releaseAndBuy_send, {
-            call:releaseAndBuy_call
-        });
-        let releaseAndBuyWithWETHParams = (params: IReleaseAndBuyWithWETHParams) => [this.wallet.utils.toString(params.salesIds),params.to];
-        let releaseAndBuyWithWETH_send = async (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('releaseAndBuyWithWETH',releaseAndBuyWithWETHParams(params),options);
-            return result;
-        }
-        let releaseAndBuyWithWETH_call = async (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('releaseAndBuyWithWETH',releaseAndBuyWithWETHParams(params),options);
-            return new BigNumber(result);
-        }
-        this.releaseAndBuyWithWETH = Object.assign(releaseAndBuyWithWETH_send, {
-            call:releaseAndBuyWithWETH_call
-        });
-        let releaseToPublic_send = async (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('releaseToPublic',[this.wallet.utils.toString(salesIds)],options);
-            return result;
-        }
-        let releaseToPublic_call = async (salesIds:(number|BigNumber)[], options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('releaseToPublic',[this.wallet.utils.toString(salesIds)],options);
-            return new BigNumber(result);
-        }
-        this.releaseToPublic = Object.assign(releaseToPublic_send, {
-            call:releaseToPublic_call
-        });
-        let startParams = (params: IStartParams) => [this.wallet.utils.toString(params.startTime),this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.decrementDecimal)];
-        let start_send = async (params: IStartParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('start',startParams(params),options);
-            return result;
-        }
-        let start_call = async (params: IStartParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('start',startParams(params),options);
-            return;
-        }
-        this.start = Object.assign(start_send, {
-            call:start_call
+        this.swap = Object.assign(swap_send, {
+            call:swap_call
         });
         let takeOwnership_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('takeOwnership',[],options);
@@ -492,7 +585,18 @@ export class Vault extends _Contract{
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
-        let updateReleaseSchduleParams = (params: IUpdateReleaseSchduleParams) => [this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.initialReleaseAmount),this.wallet.utils.toString(params.decrementDecimal)];
+        let unlock_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('unlock',[],options);
+            return result;
+        }
+        let unlock_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('unlock',[],options);
+            return new BigNumber(result);
+        }
+        this.unlock = Object.assign(unlock_send, {
+            call:unlock_call
+        });
+        let updateReleaseSchduleParams = (params: IUpdateReleaseSchduleParams) => [this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.startingAmount),this.wallet.utils.toString(params.decrementDecimal)];
         let updateReleaseSchdule_send = async (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('updateReleaseSchdule',updateReleaseSchduleParams(params),options);
             return result;
@@ -504,13 +608,42 @@ export class Vault extends _Contract{
         this.updateReleaseSchdule = Object.assign(updateReleaseSchdule_send, {
             call:updateReleaseSchdule_call
         });
+        let withdrawScomFromRelease_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('withdrawScomFromRelease',[this.wallet.utils.toString(amount)],options);
+            return result;
+        }
+        let withdrawScomFromRelease_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('withdrawScomFromRelease',[this.wallet.utils.toString(amount)],options);
+            return;
+        }
+        this.withdrawScomFromRelease = Object.assign(withdrawScomFromRelease_send, {
+            call:withdrawScomFromRelease_call
+        });
+        let withdrawScomFromTrancheParams = (params: IWithdrawScomFromTrancheParams) => [this.wallet.utils.toString(params.trancheIds),this.wallet.utils.toString(params.amountScom)];
+        let withdrawScomFromTranche_send = async (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('withdrawScomFromTranche',withdrawScomFromTrancheParams(params),options);
+            return result;
+        }
+        let withdrawScomFromTranche_call = async (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('withdrawScomFromTranche',withdrawScomFromTrancheParams(params),options);
+            return;
+        }
+        this.withdrawScomFromTranche = Object.assign(withdrawScomFromTranche_send, {
+            call:withdrawScomFromTranche_call
+        });
     }
 }
 export module Vault{
     export interface AuthorizeEvent {user:string,_event:Event}
-    export interface BuyEvent {to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
+    export interface ClaimEvent {trancheId:BigNumber,from:string,to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
-    export interface NewSaleEvent {salesId:BigNumber,_event:Event}
+    export interface LockEvent {start:BigNumber,end:BigNumber,rate:BigNumber,initAmount:BigNumber,_event:Event}
+    export interface NewTrancheEvent {trancheId:BigNumber,_event:Event}
+    export interface ReleaseEvent {amount:BigNumber,balance:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
+    export interface SwapEvent {from:string,to:string,amountScom:BigNumber,amountEth:BigNumber,_event:Event}
     export interface TransferOwnershipEvent {user:string,_event:Event}
+    export interface UnlockEvent {unlock:BigNumber,available:BigNumber,balance:BigNumber,_event:Event}
+    export interface WithdrawScomFromReleaseEvent {amount:BigNumber,_event:Event}
+    export interface WithdrawScomFromTrancheEvent {amount:BigNumber,_event:Event}
 }
