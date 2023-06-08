@@ -24,7 +24,7 @@ contract RouterVaultWrapper is Authorization {
     }
 
     event UpdateRouter(IOSWAP_HybridRouter2 router);
-    event Swap(uint256 indexed salesId, address sender, address inToken, uint256 inAmount);
+    event Swap(uint256 indexed trancheId, address sender, address inToken, uint256 inAmount);
 
     Vault public vault;
     IOSWAP_HybridRouter2 public router;
@@ -40,7 +40,7 @@ contract RouterVaultWrapper is Authorization {
         emit UpdateRouter(router);
     }
 
-    function swapExactTokensForTokens(address[] calldata pair, uint256 amountIn, uint256 amountOutMin, uint256 deadline, uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external onlyEndUser {
+    function swapExactTokensForTokens(address[] calldata pair, uint256 amountIn, uint256 amountOutMin, uint256 deadline, uint256 trancheId, address to, uint256 allocation, bytes32[] calldata proof) external onlyEndUser {
 
         IERC20 inToken;
         {
@@ -52,10 +52,10 @@ contract RouterVaultWrapper is Authorization {
 
         (/*address[] memory path*/, uint256[] memory amounts) = router.swapExactTokensForTokens(amountIn, amountOutMin, pair, address(inToken), address(vault), deadline, new bytes(0));
 
-        vault.buy(salesId, to, allocation, proof);
-        emit Swap(salesId, msg.sender, address(inToken), amounts[0]);
+        vault.claimWithWETH(trancheId, msg.sender, to, allocation, proof);
+        emit Swap(trancheId, msg.sender, address(inToken), amounts[0]);
     }
-    function swapTokensForExactTokens(address[] calldata pair, uint256 amountOut, uint256 amountInMax, uint256 deadline, uint256 salesId, address to, uint256 allocation, bytes32[] calldata proof) external onlyEndUser {
+    function swapTokensForExactTokens(address[] calldata pair, uint256 amountOut, uint256 amountInMax, uint256 deadline, uint256 trancheId, address to, uint256 allocation, bytes32[] calldata proof) external onlyEndUser {
         IERC20 inToken;
         {
         address[] memory path = router.getPathOut(pair, weth);
@@ -66,8 +66,8 @@ contract RouterVaultWrapper is Authorization {
 
         (/*address[] memory path*/, uint256[] memory amounts) = router.swapTokensForExactTokens(amountOut, amountInMax, pair, weth, address(vault), deadline, new bytes(0));
 
-        vault.buy(salesId, to, allocation, proof);
-        emit Swap(salesId, msg.sender, address(inToken), amounts[0]);
+        vault.claimWithWETH(trancheId, msg.sender, to, allocation, proof);
+        emit Swap(trancheId, msg.sender, address(inToken), amounts[0]);
         // refund excessive amount back to user
         if (amountInMax > amounts[0]) {
             inToken.safeTransfer(msg.sender, amountInMax - amounts[0]);

@@ -1,10 +1,11 @@
+// release schedule over 10 years
 import 'mocha';
 import {Utils, Wallet, BigNumber} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
-import { MockAmmPair, WETH9 } from './src'
+import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
 
 describe('## SC-Contract', async function() {
     let accounts: string[];
@@ -21,7 +22,8 @@ describe('## SC-Contract', async function() {
 
     let totalSuppy = Utils.toDecimals("10000000000");
     let period = 10 * 365 * 24 * 60 * 60; // 10 years
-    let derement = Utils.toDecimals("0.998");
+    // let derement = Utils.toDecimals("0.998"); // day
+    let derement = Utils.toDecimals("0.999999987"); // 315,360,000 second (0.999999868573918853)
 
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
@@ -54,12 +56,12 @@ describe('## SC-Contract', async function() {
             projectInfo: {
                 admins: []
             },
-            audit: {
-                warningThreshold: 500, // base 10e3
-                passedThreshold: 900, // base 10e3
-                auditDuration: 14 * 24*60*60,  // 14 days
-                minAuditRequired: 3
-            },
+            // audit: {
+            //     warningThreshold: 500, // base 10e3
+            //     passedThreshold: 900, // base 10e3
+            //     auditDuration: 14 * 24*60*60,  // 14 days
+            //     minAuditRequired: 3
+            // },
             vault: {
                 amm: amm.address,
                 foundation: foundation,
@@ -82,7 +84,7 @@ describe('## SC-Contract', async function() {
         await scomContract.transfer({to: vaultContract.address, amount: await scomContract.balanceOf(foundation)});
 
         wallet.defaultAccount = deployer;
-        await vaultContract.start({
+        await vaultContract.lock({
             decrementDecimal: derement,
             startTime,
             endTime 
@@ -90,20 +92,25 @@ describe('## SC-Contract', async function() {
 
         console.log('day 1');
         await wallet.setBlockTime(now + 24 * 60 * 60 + 1001);
-        print(await vaultContract.currReleaseAmount());
+        print(await vaultContract.currTotalSupply());
 
         for (let i = 1 ; i < 11 ; i++) {
             console.log(`year ${i}`)
             await wallet.setBlockTime(now + (i * oneYear));
-            print(await vaultContract.currReleaseAmount());
+            print(await vaultContract.currTotalSupply());
+            let receipt = await vaultContract.unlock();
+            console.log(`gas used = ${receipt.gasUsed}`);
+            let event = vaultContract.parseUnlockEvent(receipt)[0];
+            delete event._event;
+            print(event);
         }
 
         console.log('year 10 + 1 day');
         await wallet.setBlockTime(now + (10 * oneYear) + 24 * 60 * 60 + 1001 );
-        print(await vaultContract.currReleaseAmount());
+        print(await vaultContract.currTotalSupply());
 
         console.log('endTime');
         await wallet.setBlockTime(now + endTime);
-        print(await vaultContract.currReleaseAmount());
+        print(await vaultContract.currTotalSupply());
     });
 });

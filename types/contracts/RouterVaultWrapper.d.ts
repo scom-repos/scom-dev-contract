@@ -8,7 +8,7 @@ export interface ISwapExactTokensForTokensParams {
     amountIn: number | BigNumber;
     amountOutMin: number | BigNumber;
     deadline: number | BigNumber;
-    salesId: number | BigNumber;
+    trancheId: number | BigNumber;
     to: string;
     allocation: number | BigNumber;
     proof: string[];
@@ -18,7 +18,7 @@ export interface ISwapTokensForExactTokensParams {
     amountOut: number | BigNumber;
     amountInMax: number | BigNumber;
     deadline: number | BigNumber;
-    salesId: number | BigNumber;
+    trancheId: number | BigNumber;
     to: string;
     allocation: number | BigNumber;
     proof: string[];
@@ -101,7 +101,7 @@ export declare module RouterVaultWrapper {
         _event: Event;
     }
     interface SwapEvent {
-        salesId: BigNumber;
+        trancheId: BigNumber;
         sender: string;
         inToken: string;
         inAmount: BigNumber;

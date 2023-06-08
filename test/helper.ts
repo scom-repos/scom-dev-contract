@@ -87,7 +87,9 @@ export const privateKeys = [
     }
 ];
 export function getProvider(url?: string) {
-    return url ? new HttpProvider(url) : Ganache.provider({logging: { quiet: true }});
+    return url ? new HttpProvider(url) : Ganache.provider({
+        accounts:privateKeys.map(e=>({secretKey: e.privateKey, balance: "0x"+Utils.toDecimals(10000).toString(16)})),
+        logging: { quiet: true }});
 }
 
 export function toWeiInv(n: any, unit?: any) {

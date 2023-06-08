@@ -1,14 +1,16 @@
+// direct buy with ETH
 import 'mocha';
 import {Utils, Wallet, BigNumber} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
-import { MockAmmPair, WETH9 } from './src'
+import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
 
 describe('## SC-Contract', async function() {
     let accounts: string[];
     let wallet: Wallet;
+
     let result: IDeployResult;
 
     let amm: MockAmmPair;
@@ -34,14 +36,16 @@ describe('## SC-Contract', async function() {
         buyer1 =  accounts[2];
         buyer2 =  accounts[3];
 
-
         wallet.defaultAccount = deployer;
 
         scomContract = new Contracts.Scom(wallet);
         await scomContract.deploy({minter:Utils.nullAddress, initSupply:totalSuppy, initSupplyTo: foundation, totalSupply: totalSuppy});
+        console.log('scom', scomContract.address);
 
         weth = new WETH9(wallet);
         await weth.deploy();
+        console.log('weth', weth.address);
+
         amm = new MockAmmPair(wallet);
         await amm.deploy(
             new BigNumber(scomContract.address.toLowerCase()).lt(weth.address.toLowerCase()) ? 
@@ -81,8 +85,9 @@ describe('## SC-Contract', async function() {
         result = await deploy(wallet, deployOptions, (msg)=>{
             console.dir(msg);
         });
-        vaultContract = new Contracts.Vault(wallet, result.vault);
+        console.log('scom contracts', result);
 
+        vaultContract = new Contracts.Vault(wallet, result.vault);
     });
     it ('Vault', async () => {
 
@@ -97,7 +102,7 @@ describe('## SC-Contract', async function() {
 
         wallet.defaultAccount = deployer;
         await vaultContract.permit(deployer);
-        await vaultContract.start({
+        await vaultContract.lock({
             decrementDecimal: derement,
             startTime,
             endTime 
@@ -130,33 +135,33 @@ describe('## SC-Contract', async function() {
         
         let sale = {
             startTime: now + day ,
-            privateSaleEndTime: now + 2 * day,
-            semiPrivateSaleEndTime: now + 4 * day,
+            limitedClaimEndTime: now + 2 * day,
+            unlimitedClaimEndTime: now + 4 * day,
             amount: Utils.toDecimals(10),
             merkleRoot: merkleTree.getHexRoot(),
             ipfsCid: ""
         }
         // print(await vaultContract.currReleaseAmount());
 
-        let receipt = await vaultContract.newSale(sale);
-        let event = vaultContract.parseNewSaleEvent(receipt);
+        let receipt = await vaultContract.newTranche(sale);
+        let event = vaultContract.parseNewTrancheEvent(receipt);
         assertEqual(event.length, 1);
         assertEqual(event[0], {
-            salesId: 0
+            trancheId: 0
         }, true);
-        let salesId = event[0].salesId;
+        let trancheId = event[0].trancheId;
 
         await wallet.setBlockTime(now + day + 10);
 
         let proof = merkleTree.getHexProofsByKey(buyer1);
-// console.log({salesId:event.salesId, allocation:10, proof[0]});
+// console.log({trancheId:event.trancheId, allocation:10, proof[0]});
         wallet.defaultAccount = buyer1;
-        let receipt2 = await vaultContract.buy({salesId:salesId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
+        let receipt2 = await vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
 
-        let event2 = vaultContract.parseBuyEvent(receipt2);
+        let event2 = vaultContract.parseClaimEvent(receipt2);
         assertEqual(event2.length, 1);
         assertEqual(event2[0], {
-            buyer: buyer1,
+            from: buyer1,
             to: buyer1,
             amountScom: Utils.toDecimals(10),
             amountEth: Utils.toDecimals(10)
