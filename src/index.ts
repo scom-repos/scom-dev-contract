@@ -88,7 +88,7 @@ async function deployAuditorInfo(wallet: IWallet, token: string, Config: IDeploy
         cooldownPeriod: auditorInfoOptions.cooldownPeriod
     });
     for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {
-        await auditorInfo.addAuditor(auditorInfoOptions.auditors[i]);
+        await auditorInfo.addAuditor({auditor:auditorInfoOptions.auditors[i], isSuperAuditor:true});
     }
     return address;
 }

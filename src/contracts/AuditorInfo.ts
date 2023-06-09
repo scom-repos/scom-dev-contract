@@ -1,14 +1,15 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./AuditorInfo.json";
 export interface IDeployParams {token:string;minStakes:number|BigNumber;minEndorsementsRequired:number|BigNumber;cooldownPeriod:number|BigNumber}
+export interface IAddAuditorParams {auditor:string;isSuperAuditor:boolean}
 export interface IEndorseAuditorParams {auditor:string;doUpdate:boolean}
 export interface IEndorsedByParams {param1:string;param2:number|BigNumber}
 export interface IEndorsedByInvParams {param1:string;param2:string}
 export interface IEndorsingParams {param1:string;param2:number|BigNumber}
 export interface IEndorsingInvParams {param1:string;param2:string}
 export interface IGetAuditorsParams {auditorIdStart:number|BigNumber;length:number|BigNumber}
-export interface IRemoveEndorsementParams {auditor:string;doUpdate:boolean}
 export interface IStakeBondParams {amount:number|BigNumber;doUpdate:boolean}
+export interface IWithdrawnEndorsementParams {auditor:string;doUpdate:boolean}
 export class AuditorInfo extends _Contract{
     static _abi: any = Bin.abi;
     constructor(wallet: IWallet, address?: string){
@@ -24,6 +25,7 @@ export class AuditorInfo extends _Contract{
     decodeAddAuditorEvent(event: Event): AuditorInfo.AddAuditorEvent{
         let result = event.data;
         return {
+            auditorId: new BigNumber(result.auditorId),
             auditor: result.auditor,
             _event: event
         };
@@ -154,12 +156,23 @@ export class AuditorInfo extends _Contract{
             _event: event
         };
     }
+    parseWithdrawnEndorsementEvent(receipt: TransactionReceipt): AuditorInfo.WithdrawnEndorsementEvent[]{
+        return this.parseEvents(receipt, "WithdrawnEndorsement").map(e=>this.decodeWithdrawnEndorsementEvent(e));
+    }
+    decodeWithdrawnEndorsementEvent(event: Event): AuditorInfo.WithdrawnEndorsementEvent{
+        let result = event.data;
+        return {
+            endorser: result.endorser,
+            endorsee: result.endorsee,
+            _event: event
+        };
+    }
     MAX_COOLDOWN_PERIOD: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
     addAuditor: {
-        (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (auditor:string, options?: TransactionOptions) => Promise<void>;
+        (params: IAddAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IAddAuditorParams, options?: TransactionOptions) => Promise<void>;
     }
     auditorIdCount: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -179,6 +192,10 @@ export class AuditorInfo extends _Contract{
     deny: {
         (user:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user:string, options?: TransactionOptions) => Promise<void>;
+    }
+    disableAuditor: {
+        (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (auditor:string, options?: TransactionOptions) => Promise<void>;
     }
     endorseAuditor: {
         (params: IEndorseAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -206,7 +223,7 @@ export class AuditorInfo extends _Contract{
         (params: IGetAuditorsParams, options?: TransactionOptions): Promise<{auditors:string[],auditorsData:{status:BigNumber,balance:BigNumber,endorsementCount:BigNumber}[]}>;
     }
     isActiveAuditor: {
-        (account:string, options?: TransactionOptions): Promise<boolean>;
+        (auditor:string, options?: TransactionOptions): Promise<boolean>;
     }
     isPermitted: {
         (param1:string, options?: TransactionOptions): Promise<boolean>;
@@ -231,12 +248,8 @@ export class AuditorInfo extends _Contract{
         call: (user:string, options?: TransactionOptions) => Promise<void>;
     }
     registerAuditor: {
-        (options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: TransactionOptions) => Promise<void>;
-    }
-    removeEndorsement: {
-        (params: IRemoveEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IRemoveEndorsementParams, options?: TransactionOptions) => Promise<void>;
+        (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     setCooldownPeriod: {
         (cooldownPeriod:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -269,7 +282,7 @@ export class AuditorInfo extends _Contract{
         (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (amount:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
-    updateAudtorState: {
+    updateAuditorState: {
         (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditor:string, options?: TransactionOptions) => Promise<void>;
     }
@@ -280,6 +293,10 @@ export class AuditorInfo extends _Contract{
     withdrawBond: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (options?: TransactionOptions) => Promise<void>;
+    }
+    withdrawnEndorsement: {
+        (params: IWithdrawnEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IWithdrawnEndorsementParams, options?: TransactionOptions) => Promise<void>;
     }
     private assign(){
         let MAX_COOLDOWN_PERIOD_call = async (options?: TransactionOptions): Promise<BigNumber> => {
@@ -365,8 +382,8 @@ export class AuditorInfo extends _Contract{
             };
         }
         this.getAuditors = getAuditors_call
-        let isActiveAuditor_call = async (account:string, options?: TransactionOptions): Promise<boolean> => {
-            let result = await this.call('isActiveAuditor',[account],options);
+        let isActiveAuditor_call = async (auditor:string, options?: TransactionOptions): Promise<boolean> => {
+            let result = await this.call('isActiveAuditor',[auditor],options);
             return result;
         }
         this.isActiveAuditor = isActiveAuditor_call
@@ -408,12 +425,13 @@ export class AuditorInfo extends _Contract{
             return result;
         }
         this.token = token_call
-        let addAuditor_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('addAuditor',[auditor],options);
+        let addAuditorParams = (params: IAddAuditorParams) => [params.auditor,params.isSuperAuditor];
+        let addAuditor_send = async (params: IAddAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('addAuditor',addAuditorParams(params),options);
             return result;
         }
-        let addAuditor_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('addAuditor',[auditor],options);
+        let addAuditor_call = async (params: IAddAuditorParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('addAuditor',addAuditorParams(params),options);
             return;
         }
         this.addAuditor = Object.assign(addAuditor_send, {
@@ -429,6 +447,17 @@ export class AuditorInfo extends _Contract{
         }
         this.deny = Object.assign(deny_send, {
             call:deny_call
+        });
+        let disableAuditor_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('disableAuditor',[auditor],options);
+            return result;
+        }
+        let disableAuditor_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('disableAuditor',[auditor],options);
+            return;
+        }
+        this.disableAuditor = Object.assign(disableAuditor_send, {
+            call:disableAuditor_call
         });
         let endorseAuditorParams = (params: IEndorseAuditorParams) => [params.auditor,params.doUpdate];
         let endorseAuditor_send = async (params: IEndorseAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
@@ -453,28 +482,16 @@ export class AuditorInfo extends _Contract{
         this.permit = Object.assign(permit_send, {
             call:permit_call
         });
-        let registerAuditor_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('registerAuditor',[],options);
+        let registerAuditor_send = async (amount:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('registerAuditor',[this.wallet.utils.toString(amount)],options);
             return result;
         }
-        let registerAuditor_call = async (options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('registerAuditor',[],options);
+        let registerAuditor_call = async (amount:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('registerAuditor',[this.wallet.utils.toString(amount)],options);
             return;
         }
         this.registerAuditor = Object.assign(registerAuditor_send, {
             call:registerAuditor_call
-        });
-        let removeEndorsementParams = (params: IRemoveEndorsementParams) => [params.auditor,params.doUpdate];
-        let removeEndorsement_send = async (params: IRemoveEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('removeEndorsement',removeEndorsementParams(params),options);
-            return result;
-        }
-        let removeEndorsement_call = async (params: IRemoveEndorsementParams, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('removeEndorsement',removeEndorsementParams(params),options);
-            return;
-        }
-        this.removeEndorsement = Object.assign(removeEndorsement_send, {
-            call:removeEndorsement_call
         });
         let setCooldownPeriod_send = async (cooldownPeriod:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('setCooldownPeriod',[this.wallet.utils.toString(cooldownPeriod)],options);
@@ -554,16 +571,16 @@ export class AuditorInfo extends _Contract{
         this.unstakeBondRequest = Object.assign(unstakeBondRequest_send, {
             call:unstakeBondRequest_call
         });
-        let updateAudtorState_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('updateAudtorState',[auditor],options);
+        let updateAuditorState_send = async (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('updateAuditorState',[auditor],options);
             return result;
         }
-        let updateAudtorState_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('updateAudtorState',[auditor],options);
+        let updateAuditorState_call = async (auditor:string, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('updateAuditorState',[auditor],options);
             return;
         }
-        this.updateAudtorState = Object.assign(updateAudtorState_send, {
-            call:updateAudtorState_call
+        this.updateAuditorState = Object.assign(updateAuditorState_send, {
+            call:updateAuditorState_call
         });
         let updateEndorsementCountBatch_send = async (auditors:string[], options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('updateEndorsementCountBatch',[auditors],options);
@@ -587,10 +604,22 @@ export class AuditorInfo extends _Contract{
         this.withdrawBond = Object.assign(withdrawBond_send, {
             call:withdrawBond_call
         });
+        let withdrawnEndorsementParams = (params: IWithdrawnEndorsementParams) => [params.auditor,params.doUpdate];
+        let withdrawnEndorsement_send = async (params: IWithdrawnEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('withdrawnEndorsement',withdrawnEndorsementParams(params),options);
+            return result;
+        }
+        let withdrawnEndorsement_call = async (params: IWithdrawnEndorsementParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('withdrawnEndorsement',withdrawnEndorsementParams(params),options);
+            return;
+        }
+        this.withdrawnEndorsement = Object.assign(withdrawnEndorsement_send, {
+            call:withdrawnEndorsement_call
+        });
     }
 }
 export module AuditorInfo{
-    export interface AddAuditorEvent {auditor:string,_event:Event}
+    export interface AddAuditorEvent {auditorId:BigNumber,auditor:string,_event:Event}
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface DisableAuditorEvent {auditor:string,_event:Event}
@@ -603,4 +632,5 @@ export module AuditorInfo{
     export interface TransferOwnershipEvent {user:string,_event:Event}
     export interface UnstakeBondRequestEvent {sender:string,amount:BigNumber,newBalance:BigNumber,_event:Event}
     export interface WithdrawBondEvent {sender:string,amount:BigNumber,_event:Event}
+    export interface WithdrawnEndorsementEvent {endorser:string,endorsee:string,_event:Event}
 }

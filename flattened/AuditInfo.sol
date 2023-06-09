@@ -588,7 +588,7 @@ pragma solidity 0.8.13;
 contract AuditorInfo is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    enum AuditorStatus {Active, Inactive}
+    enum AuditorStatus {Inactive, Active, Super}
     struct AuditorData {
         // address auditor;
         AuditorStatus status;
@@ -616,7 +616,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     mapping(address => address[]) public endorsedBy; //endorsedBy[to/endorsee][idx2] = from/endorser
     mapping(address => mapping(address => uint256)) public endorsedByInv; //endorsedBy[to/endorsee][from/endorser] = idx2
 
-    event AddAuditor(address indexed auditor);
+    event AddAuditor(uint256 indexed auditorId, address indexed auditor);
     event DisableAuditor(address indexed auditor);
     event SetMinStake(uint256 minStake);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
@@ -625,6 +625,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     event UnstakeBondRequest(address indexed sender, uint256 amount, uint256 newBalance);
     event WithdrawBond(address indexed sender, uint256 amount);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
+    event WithdrawnEndorsement(address indexed endorser, address indexed endorsee);
 
     constructor(IERC20 _token, uint256 _minStakes, uint256 _minEndorsementsRequired, uint256 _cooldownPeriod) {
         token = _token;
@@ -639,13 +640,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     function endorsedByLength(address endorsee) external view returns (uint256 length) {
         length = endorsedBy[endorsee].length;
     }
-    modifier onlyActiveAuditor {
-        require(auditorIds[msg.sender] > 0 && auditorsData[msg.sender].status == AuditorStatus.Active, "not from active auditor");
-        _;
-    }
-    function isActiveAuditor(address account) external view returns (bool) {
-        return auditorIds[account] > 0 && auditorsData[account].status == AuditorStatus.Active;
-    }
+    // modifier onlyActiveAuditor {
+    //     require(auditorIds[msg.sender] > 0 && auditorsData[msg.sender].status == AuditorStatus.Active, "not from active auditor");
+    //     _;
+    // }
+    // function isActiveAuditor(address account) external view returns (bool) {
+    //     return auditorIds[account] > 0 && ((auditorsData[account].status == AuditorStatus.Active && auditorsData[account].endorsementCount >= minEndorsementsRequired) || auditorsData[account].status == AuditorStatus.Super);
+    // }
 
     function setMinStakes(uint256 _minStakes) external onlyOwner {
         minStakes = _minStakes;
@@ -683,28 +684,43 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         }
     }
 
-    function registerAuditor() external {
-        _addAuditor(msg.sender);
+    function registerAuditor(uint256 amount) external {
+        _addAuditor(msg.sender, false);
+        if (amount > 0) {
+            stakeBond(amount, true);
+        }
     }
-    function addAuditor(address auditor) external onlyOwner {
-        _addAuditor(auditor);
+    function addAuditor(address auditor, bool isSuperAuditor) external onlyOwner {
+        _addAuditor(auditor, isSuperAuditor);
     }
-    function _addAuditor(address auditor) internal returns (uint256 auditorId) {
+    function _addAuditor(address auditor, bool isSuperAuditor) internal returns (uint256 auditorId) {
         auditorId = auditorIds[auditor];
         if (auditorId == 0) {
             auditorId = ++auditorIdCount;
             auditorsData[auditor] = AuditorData({
-                status: AuditorStatus.Inactive,
+                status: isSuperAuditor ? AuditorStatus.Super : AuditorStatus.Inactive,
                 balance: 0,
                 endorsementCount: 0
             });
             auditors[auditorId] = auditor;
             auditorIds[auditor] = auditorId;
+        }else{
+            if (isSuperAuditor){
+                auditorsData[auditor].status = AuditorStatus.Super;
+            }
         }
-        emit AddAuditor(auditor);
+        emit AddAuditor(auditorId, auditor);
+    }
+    // TODO: disable super auditor only?
+    function disableAuditor(address auditor) external onlyOwner {
+        uint256 auditorId = auditorIds[auditor];
+        require(auditorId > 0, "auditor not exist");
+        // require(auditorsData[auditor].status == AuditorStatus.Super, "not a super auditor");
+        auditorsData[auditor].status = AuditorStatus.Inactive;
+        emit DisableAuditor(auditor);
     }
 
-    function stakeBond(uint256 amount, bool doUpdate) external onlyActiveAuditor nonReentrant {
+    function stakeBond(uint256 amount, bool doUpdate) public /*onlyActiveAuditor*/ nonReentrant {
         require(auditorIds[msg.sender] > 0, "not a auditor");
         require(amount > 0, "amount = 0");
         amount = _transferTokenFrom(amount);
@@ -714,9 +730,9 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         emit StakeBond(msg.sender, amount, newBalance);
 
         if (doUpdate)
-            updateAudtorState(msg.sender);
+            updateAuditorState(msg.sender);
     }
-    function unstakeBondRequest(uint256 amount) external onlyActiveAuditor nonReentrant {
+    function unstakeBondRequest(uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
         uint256 auditorId = auditorIds[msg.sender];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
@@ -738,7 +754,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
         emit UnstakeBondRequest(msg.sender, amount, newBalance);
     }
-    function withdrawBond() external onlyActiveAuditor nonReentrant {
+    function withdrawBond() external /*onlyActiveAuditor*/ nonReentrant {
         // uint256 auditorId = auditorIds[msg.sender];
         WithdrawRequest storage withdrawRequest = pendingWithdrawal[msg.sender];
         require(block.timestamp >= withdrawRequest.releaseTime, "please wait");
@@ -754,24 +770,29 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         balance = token.balanceOf(address(this)) - balance;
     }
 
+    // endorser's functions
     function endorseAuditor(address auditor, bool doUpdate) external {
-        uint256 auditorId = auditorIds[msg.sender];
-        require(auditorId > 0, "endorser not an auditor");
-        require(auditorsData[auditor].endorsementCount >= minEndorsementsRequired, "min endorsement not met");
-        require(auditorIds[auditor] > 0, "endorsee not an auditor");
+        uint256 endorserId = auditorIds[msg.sender];
+        require(endorserId > 0, "endorser is not an auditor");
+        require((auditorsData[msg.sender].status == AuditorStatus.Active && auditorsData[msg.sender].endorsementCount >= minEndorsementsRequired) || auditorsData[msg.sender].status == AuditorStatus.Super, "endorser is not an active auditor");
+        require(auditorIds[auditor] > 0, "endorsee is not an auditor");
+
         uint256 length = endorsing[msg.sender].length;
         require(length == 0 || endorsing[msg.sender][endorsingInv[msg.sender][auditor]] != auditor, "already endorsed");
         endorsing[msg.sender].push(auditor);
         endorsingInv[msg.sender][auditor] = length;
+
         length = endorsedBy[auditor].length;
         endorsedBy[auditor].push(msg.sender);
         endorsedByInv[auditor][msg.sender] = length;
 
+        // endorser may choose not to update, endorsee may call updateAuditorState() to update
         if (doUpdate)
-            updateAudtorState(auditor);
+            updateAuditorState(auditor);
+
         emit EndorseAuditor(msg.sender, auditor);
     }
-    function removeEndorsement(address auditor, bool doUpdate) external {
+    function withdrawnEndorsement(address auditor, bool doUpdate) external {
         uint256 length = endorsing[msg.sender].length;
         uint256 idx = endorsingInv[msg.sender][auditor];
         require(length > 0 && endorsing[msg.sender][idx] == auditor, "not an endorser");
@@ -794,31 +815,45 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         delete endorsedByInv[auditor][msg.sender];
         endorsedBy[auditor].pop();
 
+        // TODO: endorser may choose not to update, others may call updateAuditorState() to disable the auditor
         if (doUpdate)
-            updateAudtorState(auditor);
+            updateAuditorState(auditor);
+
+        emit WithdrawnEndorsement(msg.sender, auditor);
     }
-    function updateAudtorState(address auditor) public {
+
+    // anyone can call
+    function updateAuditorState(address auditor) public {
+        (uint256 count, bool status) = getUpdatedStatus(auditor);
+        AuditorData storage auditorData = auditorsData[auditor];
+        auditorData.endorsementCount = count;
+        if (auditorData.status != AuditorStatus.Super) {
+             auditorData.status = status ? AuditorStatus.Active : AuditorStatus.Inactive;
+        }
+    }
+    function isActiveAuditor(address auditor) external view returns (bool active) {
+        (, active) = getUpdatedStatus(auditor);
+    }
+    function getUpdatedStatus(address auditor) internal view returns (uint256 count, bool status) {
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not an auditor");
-        uint256 length = endorsedBy[auditor].length;
-        uint256 count;
+        address[] storage array = endorsedBy[auditor];
+        uint256 length = array.length;
         for (uint256 i = 0 ; i < length ; i++) {
-            AuditorData storage endorser = auditorsData[endorsedBy[auditor][i]];
-            if (endorser.status == AuditorStatus.Active || endorser.endorsementCount >= minEndorsementsRequired ) {
+            AuditorData storage endorser = auditorsData[array[i]];
+            if ((endorser.status == AuditorStatus.Active && endorser.endorsementCount >= minEndorsementsRequired) || endorser.status == AuditorStatus.Super) {
                 count++;
             }
         }
-        
+
         AuditorData storage auditorData = auditorsData[auditor];
-        auditorData.endorsementCount = count;
-        if (count < minEndorsementsRequired && auditorsData[auditor].balance >= minStakes) {
-            auditorData.status = AuditorStatus.Inactive;
-        }
+        status = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
     }
+
     function updateEndorsementCountBatch(address[] calldata _auditors) external {
         uint256 length = _auditors.length;
         for (uint256 i = 0 ; i < length ; i++) {
-            updateAudtorState(_auditors[i]);
+            updateAuditorState(_auditors[i]);
         }
     }
 }
