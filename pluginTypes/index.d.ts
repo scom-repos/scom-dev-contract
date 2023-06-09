@@ -51,7 +51,7 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         projectInfo: string;
         auditorInfo: string;
         warningThreshold: number | BigNumber;
-        passedThreshold: number | BigNumber;
+        passingThreshold: number | BigNumber;
         auditDuration: number | BigNumber;
         minAuditRequired: number | BigNumber;
     }
@@ -151,7 +151,7 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         packageVersionsAuditorsInv: {
             (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
         };
-        passedThreshold: {
+        passingThreshold: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
         permit: {
@@ -169,9 +169,9 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
             (minAuditRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (minAuditRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
-        setPassedThreshold: {
-            (passedThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (passedThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        setPassingThreshold: {
+            (passingThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (passingThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
         setWarningThreshold: {
             (warningThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -249,22 +249,12 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.json.ts" {
                 type: string;
             }[];
             name: string;
-            outputs: {
+            outputs: ({
                 internalType: string;
                 name: string;
                 type: string;
-            }[];
-            stateMutability: string;
-            type: string;
-            anonymous?: undefined;
-        } | {
-            inputs: {
-                internalType: string;
-                name: string;
-                type: string;
-            }[];
-            name: string;
-            outputs: {
+                components?: undefined;
+            } | {
                 components: {
                     internalType: string;
                     name: string;
@@ -273,7 +263,7 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.json.ts" {
                 internalType: string;
                 name: string;
                 type: string;
-            }[];
+            })[];
             stateMutability: string;
             type: string;
             anonymous?: undefined;
@@ -287,11 +277,41 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         token: string;
+        minStakes: number | BigNumber;
+        minEndorsementsRequired: number | BigNumber;
         cooldownPeriod: number | BigNumber;
+    }
+    export interface IEndorseAuditorParams {
+        auditor: string;
+        doUpdate: boolean;
+    }
+    export interface IEndorsedByParams {
+        param1: string;
+        param2: number | BigNumber;
+    }
+    export interface IEndorsedByInvParams {
+        param1: string;
+        param2: string;
+    }
+    export interface IEndorsingParams {
+        param1: string;
+        param2: number | BigNumber;
+    }
+    export interface IEndorsingInvParams {
+        param1: string;
+        param2: string;
     }
     export interface IGetAuditorsParams {
         auditorIdStart: number | BigNumber;
         length: number | BigNumber;
+    }
+    export interface IRemoveEndorsementParams {
+        auditor: string;
+        doUpdate: boolean;
+    }
+    export interface IStakeBondParams {
+        amount: number | BigNumber;
+        doUpdate: boolean;
     }
     export class AuditorInfo extends _Contract {
         static _abi: any;
@@ -305,8 +325,14 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
         decodeDeauthorizeEvent(event: Event): AuditorInfo.DeauthorizeEvent;
         parseDisableAuditorEvent(receipt: TransactionReceipt): AuditorInfo.DisableAuditorEvent[];
         decodeDisableAuditorEvent(event: Event): AuditorInfo.DisableAuditorEvent;
+        parseEndorseAuditorEvent(receipt: TransactionReceipt): AuditorInfo.EndorseAuditorEvent[];
+        decodeEndorseAuditorEvent(event: Event): AuditorInfo.EndorseAuditorEvent;
         parseSetCooldownPeriodEvent(receipt: TransactionReceipt): AuditorInfo.SetCooldownPeriodEvent[];
         decodeSetCooldownPeriodEvent(event: Event): AuditorInfo.SetCooldownPeriodEvent;
+        parseSetMinEndorsementsRequiredEvent(receipt: TransactionReceipt): AuditorInfo.SetMinEndorsementsRequiredEvent[];
+        decodeSetMinEndorsementsRequiredEvent(event: Event): AuditorInfo.SetMinEndorsementsRequiredEvent;
+        parseSetMinStakeEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakeEvent[];
+        decodeSetMinStakeEvent(event: Event): AuditorInfo.SetMinStakeEvent;
         parseStakeBondEvent(receipt: TransactionReceipt): AuditorInfo.StakeBondEvent[];
         decodeStakeBondEvent(event: Event): AuditorInfo.StakeBondEvent;
         parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditorInfo.StartOwnershipTransferEvent[];
@@ -324,19 +350,20 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (auditor: string, options?: TransactionOptions) => Promise<void>;
         };
-        auditorBalance: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-        };
         auditorIdCount: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
         auditorIds: {
             (param1: string, options?: TransactionOptions): Promise<BigNumber>;
         };
+        auditors: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+        };
         auditorsData: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-                auditor: string;
+            (param1: string, options?: TransactionOptions): Promise<{
                 status: BigNumber;
+                balance: BigNumber;
+                endorsementCount: BigNumber;
             }>;
         };
         cooldownPeriod: {
@@ -346,21 +373,49 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (user: string, options?: TransactionOptions) => Promise<void>;
         };
-        disableAuditor: {
-            (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (auditor: string, options?: TransactionOptions) => Promise<void>;
+        endorseAuditor: {
+            (params: IEndorseAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IEndorseAuditorParams, options?: TransactionOptions) => Promise<void>;
+        };
+        endorsedBy: {
+            (params: IEndorsedByParams, options?: TransactionOptions): Promise<string>;
+        };
+        endorsedByInv: {
+            (params: IEndorsedByInvParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        endorsedByLength: {
+            (endorsee: string, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        endorsing: {
+            (params: IEndorsingParams, options?: TransactionOptions): Promise<string>;
+        };
+        endorsingInv: {
+            (params: IEndorsingInvParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        endorsingLength: {
+            (endorser: string, options?: TransactionOptions): Promise<BigNumber>;
         };
         getAuditors: {
             (params: IGetAuditorsParams, options?: TransactionOptions): Promise<{
-                auditor: string;
-                status: BigNumber;
-            }[]>;
+                auditors: string[];
+                auditorsData: {
+                    status: BigNumber;
+                    balance: BigNumber;
+                    endorsementCount: BigNumber;
+                }[];
+            }>;
         };
         isActiveAuditor: {
             (account: string, options?: TransactionOptions): Promise<boolean>;
         };
         isPermitted: {
             (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        minEndorsementsRequired: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        minStakes: {
+            (options?: TransactionOptions): Promise<BigNumber>;
         };
         newOwner: {
             (options?: TransactionOptions): Promise<string>;
@@ -369,7 +424,7 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             (options?: TransactionOptions): Promise<string>;
         };
         pendingWithdrawal: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<{
+            (param1: string, options?: TransactionOptions): Promise<{
                 amount: BigNumber;
                 releaseTime: BigNumber;
             }>;
@@ -378,13 +433,29 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (user: string, options?: TransactionOptions) => Promise<void>;
         };
+        registerAuditor: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        removeEndorsement: {
+            (params: IRemoveEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IRemoveEndorsementParams, options?: TransactionOptions) => Promise<void>;
+        };
         setCooldownPeriod: {
             (cooldownPeriod: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (cooldownPeriod: number | BigNumber, options?: TransactionOptions) => Promise<void>;
         };
+        setMinEndorsementsRequired: {
+            (minEndorsementsRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (minEndorsementsRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        setMinStakes: {
+            (minStakes: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (minStakes: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
         stakeBond: {
-            (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+            (params: IStakeBondParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IStakeBondParams, options?: TransactionOptions) => Promise<void>;
         };
         takeOwnership: {
             (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -400,6 +471,14 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
         unstakeBondRequest: {
             (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        updateAudtorState: {
+            (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (auditor: string, options?: TransactionOptions) => Promise<void>;
+        };
+        updateEndorsementCountBatch: {
+            (auditors: string[], options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (auditors: string[], options?: TransactionOptions) => Promise<void>;
         };
         withdrawBond: {
             (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -424,8 +503,21 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             auditor: string;
             _event: Event;
         }
+        interface EndorseAuditorEvent {
+            endorser: string;
+            endorsee: string;
+            _event: Event;
+        }
         interface SetCooldownPeriodEvent {
             cooldownPeriod: BigNumber;
+            _event: Event;
+        }
+        interface SetMinEndorsementsRequiredEvent {
+            minEndorsementsRequired: BigNumber;
+            _event: Event;
+        }
+        interface SetMinStakeEvent {
+            minStake: BigNumber;
             _event: Event;
         }
         interface StakeBondEvent {
@@ -2325,6 +2417,8 @@ declare module "@scom/portal-contract" {
             totalSupply?: string;
         };
         auditorInfo: {
+            minStakes: number | BigNumber;
+            minEndorsementsRequired: number;
             cooldownPeriod: number;
             auditors?: string[];
         };
@@ -2333,7 +2427,7 @@ declare module "@scom/portal-contract" {
         };
         audit?: {
             warningThreshold: number | BigNumber;
-            passedThreshold: number | BigNumber;
+            passingThreshold: number | BigNumber;
             auditDuration: number | BigNumber;
             minAuditRequired: number | BigNumber;
         };

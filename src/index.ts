@@ -11,6 +11,8 @@ export interface IDeployOptions{
         totalSupply?: string;
     };
     auditorInfo: {
+        minStakes: number|BigNumber;
+        minEndorsementsRequired: number;
         cooldownPeriod: number;
         auditors?: string[];
     };
@@ -19,7 +21,7 @@ export interface IDeployOptions{
     };
     audit?: {
         warningThreshold: number|BigNumber;
-        passedThreshold: number|BigNumber;
+        passingThreshold: number|BigNumber;
         auditDuration: number|BigNumber;
         minAuditRequired: number|BigNumber;
     };
@@ -45,6 +47,8 @@ export var DefaultDeployOptions: IDeployOptions = {
         totalSupply: '100000000'
     },
     auditorInfo: {
+        minStakes: 1,
+        minEndorsementsRequired: 2,
         cooldownPeriod: 60,
         auditors: []
     },
@@ -53,7 +57,7 @@ export var DefaultDeployOptions: IDeployOptions = {
     },
     audit: {
         warningThreshold: 600, // base 10e3
-        passedThreshold: 900, // base 10e3
+        passingThreshold: 900, // base 10e3
         auditDuration: 14 * 24*60*60,  // 14 days
         minAuditRequired: 3
     },
@@ -79,6 +83,8 @@ async function deployAuditorInfo(wallet: IWallet, token: string, Config: IDeploy
     let auditorInfo = new Contracts.AuditorInfo(wallet);
     let address = await auditorInfo.deploy({
         token,
+        minStakes: wallet.utils.toDecimals(auditorInfoOptions.minStakes),
+        minEndorsementsRequired: auditorInfoOptions.minEndorsementsRequired,
         cooldownPeriod: auditorInfoOptions.cooldownPeriod
     });
     for (let i = 0; i < auditorInfoOptions.auditors.length; i++) {

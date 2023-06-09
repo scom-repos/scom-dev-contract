@@ -1,6 +1,6 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./AuditInfo.json";
-export interface IDeployParams {projectInfo:string;auditorInfo:string;warningThreshold:number|BigNumber;passedThreshold:number|BigNumber;auditDuration:number|BigNumber;minAuditRequired:number|BigNumber}
+export interface IDeployParams {projectInfo:string;auditorInfo:string;warningThreshold:number|BigNumber;passingThreshold:number|BigNumber;auditDuration:number|BigNumber;minAuditRequired:number|BigNumber}
 export interface IAddAuditReportParams {packageVersionsId:number|BigNumber;auditResult:number|BigNumber;ipfsCid:string}
 export interface IAuditHistoryParams {param1:number|BigNumber;param2:number|BigNumber;param3:number|BigNumber}
 export interface IAuditHistoryLengthParams {packageVersionsId:number|BigNumber;auditor:string}
@@ -13,7 +13,7 @@ export class AuditInfo extends _Contract{
         this.assign()
     }
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>{
-        return this.__deploy([params.projectInfo,params.auditorInfo,this.wallet.utils.toString(params.warningThreshold),this.wallet.utils.toString(params.passedThreshold),this.wallet.utils.toString(params.auditDuration),this.wallet.utils.toString(params.minAuditRequired)], options);
+        return this.__deploy([params.projectInfo,params.auditorInfo,this.wallet.utils.toString(params.warningThreshold),this.wallet.utils.toString(params.passingThreshold),this.wallet.utils.toString(params.auditDuration),this.wallet.utils.toString(params.minAuditRequired)], options);
     }
     parseAddAuditReportEvent(receipt: TransactionReceipt): AuditInfo.AddAuditReportEvent[]{
         return this.parseEvents(receipt, "AddAuditReport").map(e=>this.decodeAddAuditReportEvent(e));
@@ -121,7 +121,7 @@ export class AuditInfo extends _Contract{
     packageVersionsAuditorsInv: {
         (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
     }
-    passedThreshold: {
+    passingThreshold: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
     permit: {
@@ -139,9 +139,9 @@ export class AuditInfo extends _Contract{
         (minAuditRequired:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (minAuditRequired:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
-    setPassedThreshold: {
-        (passedThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (passedThreshold:number|BigNumber, options?: TransactionOptions) => Promise<void>;
+    setPassingThreshold: {
+        (passingThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (passingThreshold:number|BigNumber, options?: TransactionOptions) => Promise<void>;
     }
     setWarningThreshold: {
         (warningThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -245,11 +245,11 @@ export class AuditInfo extends _Contract{
             return new BigNumber(result);
         }
         this.packageVersionsAuditorsInv = packageVersionsAuditorsInv_call
-        let passedThreshold_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('passedThreshold',[],options);
+        let passingThreshold_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('passingThreshold',[],options);
             return new BigNumber(result);
         }
-        this.passedThreshold = passedThreshold_call
+        this.passingThreshold = passingThreshold_call
         let projectInfo_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('projectInfo',[],options);
             return result;
@@ -316,16 +316,16 @@ export class AuditInfo extends _Contract{
         this.setMinAuditRequired = Object.assign(setMinAuditRequired_send, {
             call:setMinAuditRequired_call
         });
-        let setPassedThreshold_send = async (passedThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('setPassedThreshold',[this.wallet.utils.toString(passedThreshold)],options);
+        let setPassingThreshold_send = async (passingThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('setPassingThreshold',[this.wallet.utils.toString(passingThreshold)],options);
             return result;
         }
-        let setPassedThreshold_call = async (passedThreshold:number|BigNumber, options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('setPassedThreshold',[this.wallet.utils.toString(passedThreshold)],options);
+        let setPassingThreshold_call = async (passingThreshold:number|BigNumber, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('setPassingThreshold',[this.wallet.utils.toString(passingThreshold)],options);
             return;
         }
-        this.setPassedThreshold = Object.assign(setPassedThreshold_send, {
-            call:setPassedThreshold_call
+        this.setPassingThreshold = Object.assign(setPassingThreshold_send, {
+            call:setPassingThreshold_call
         });
         let setWarningThreshold_send = async (warningThreshold:number|BigNumber, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('setWarningThreshold',[this.wallet.utils.toString(warningThreshold)],options);
