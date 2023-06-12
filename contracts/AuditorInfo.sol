@@ -9,12 +9,16 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract AuditorInfo is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    enum AuditorStatus {Inactive, Active, Super}
+    enum AuditorStatus {Inactive, Active, Freezed, Super}
     struct AuditorData {
         // address auditor;
         AuditorStatus status;
         uint256 balance;
         uint256 endorsementCount;
+    }
+    struct StakeTo {
+        uint256 index;
+        uint256 balance;
     }
     struct WithdrawRequest {
         uint256 amount;
@@ -22,6 +26,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     }
 
     IERC20 public immutable token;
+    address public foundation;
     uint256 public auditorIdCount;
     uint256 public minStakes;
     uint256 public minEndorsementsRequired;
@@ -31,35 +36,73 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     mapping(address => AuditorData) public auditorsData; //auditorsData[auditor] = AuditorData
     mapping(uint256 => address) public auditors; //auditors[auditorId] = auditor
     mapping(address => uint256) public auditorIds; //auditorIds[address] = id
+
+    mapping(address => address[]) public stakerAuditor; //stakerAuditor[staker][idx] = auditor;
+    mapping(address => mapping(address => StakeTo)) public stakeTo; //stakeTo[staker][auditor] = {idx, balance};
+    mapping(address => address[]) public stakedBy; //stakedBy[auditor][idx2] = staker
+    mapping(address => mapping(address => uint256)) public stakedByInv; //stakeByInv[auditor][staker] = idx2;
     mapping(address => WithdrawRequest) public pendingWithdrawal; //pendingWithdrawal[auditor] = WithdrawRequest
+
     mapping(address => address[]) public endorsing; //endorsing[from/endorser][idx] = to/endorsee
     mapping(address => mapping(address => uint256)) public endorsingInv; //endorsingInv[from/endorser][to/endorsee] = idx
     mapping(address => address[]) public endorsedBy; //endorsedBy[to/endorsee][idx2] = from/endorser
     mapping(address => mapping(address => uint256)) public endorsedByInv; //endorsedBy[to/endorsee][from/endorser] = idx2
 
     event AddAuditor(uint256 indexed auditorId, address indexed auditor);
-    event DisableAuditor(address indexed auditor);
+    event FreezeAuditor(address indexed auditor);
     event SetMinStake(uint256 minStake);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
     event SetCooldownPeriod(uint256 cooldownPeriod);
-    event StakeBond(address indexed sender, uint256 amount, uint256 newBalance);
-    event UnstakeBondRequest(address indexed sender, uint256 amount, uint256 newBalance);
+    event StakeBond(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
+    event UnstakeBondRequest(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event WithdrawBond(address indexed sender, uint256 amount);
+    event Penalize(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
-    event WithdrawnEndorsement(address indexed endorser, address indexed endorsee);
+    event RevokeEndorsement(address indexed endorser, address indexed endorsee);
 
-    constructor(IERC20 _token, uint256 _minStakes, uint256 _minEndorsementsRequired, uint256 _cooldownPeriod) {
+    constructor(IERC20 _token, address _foundation, uint256 _minStakes, uint256 _minEndorsementsRequired, uint256 _cooldownPeriod) {
         token = _token;
+        foundation = _foundation;
         minStakes = _minStakes;
         minEndorsementsRequired = _minEndorsementsRequired;
         cooldownPeriod = _cooldownPeriod;
     }
 
+    function stakerAuditorLength(address staker) external view returns (uint256 length) {
+        length = stakerAuditor[staker].length;
+    }
+    function stakedByLength(address auditor) external view returns (uint256 length) {
+        length = stakedBy[auditor].length;
+    }
     function endorsingLength(address endorser) external view returns (uint256 length) {
         length = endorsing[endorser].length;
     }
     function endorsedByLength(address endorsee) external view returns (uint256 length) {
         length = endorsedBy[endorsee].length;
+    }
+    function getArray(address[] storage array, uint256 start, uint256 length) internal view returns (address[] memory addresses) {
+        uint256 arrLength = array.length;
+        if (length > arrLength) {
+            length = arrLength;
+        }
+        addresses = new address[](length);
+        uint256 i;
+        while (i < length) {
+            addresses[i] = array[start];
+            unchecked { i++; start++; }
+        }
+    }
+    function getStakerAuditor(address staker, uint256 start, uint256 length) external view returns (address[] memory _auditors) {
+        return getArray(stakerAuditor[staker], start, length);
+    }
+    function getStakedBy(address auditor, uint256 start, uint256 length) external view returns (address[] memory stakers) {
+        return getArray(stakedBy[auditor], start, length);
+    }
+    function getEndorsing(address endorser, uint256 start, uint256 length) external view returns (address[] memory endorsee) {
+        return getArray(endorsing[endorser], start, length);
+    }
+    function getEndorsedBy(address endorsee, uint256 start, uint256 length) external view returns (address[] memory endorser) {
+        return getArray(endorsedBy[endorsee], start, length);
     }
     // modifier onlyActiveAuditor {
     //     require(auditorIds[msg.sender] > 0 && auditorsData[msg.sender].status == AuditorStatus.Active, "not from active auditor");
@@ -108,7 +151,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     function registerAuditor(uint256 amount) external {
         _addAuditor(msg.sender, false);
         if (amount > 0) {
-            stakeBond(amount, true);
+            stakeBond(msg.sender, amount, true);
         }
     }
     function addAuditor(address auditor, bool isSuperAuditor) external onlyOwner {
@@ -133,32 +176,54 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         emit AddAuditor(auditorId, auditor);
     }
     // TODO: disable super auditor only?
-    function disableAuditor(address auditor) external onlyOwner {
+    function freezeAuditor(address auditor) external onlyOwner {
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "auditor not exist");
         // require(auditorsData[auditor].status == AuditorStatus.Super, "not a super auditor");
-        auditorsData[auditor].status = AuditorStatus.Inactive;
-        emit DisableAuditor(auditor);
+        auditorsData[auditor].status = AuditorStatus.Freezed;
+        emit FreezeAuditor(auditor);
     }
 
-    function stakeBond(uint256 amount, bool doUpdate) public /*onlyActiveAuditor*/ nonReentrant {
-        require(auditorIds[msg.sender] > 0, "not a auditor");
+    function stakeBond(address auditor, uint256 amount, bool doUpdate) public /*onlyActiveAuditor*/ nonReentrant {
+        require(auditorIds[auditor] > 0, "not a auditor");
         require(amount > 0, "amount = 0");
         amount = _transferTokenFrom(amount);
         // uint256 auditorId = auditorIds[msg.sender];
-        uint256 newBalance = auditorsData[msg.sender].balance + amount;
-        auditorsData[msg.sender].balance = newBalance;
-        emit StakeBond(msg.sender, amount, newBalance);
+
+        uint256 length = stakerAuditor[msg.sender].length;
+        StakeTo storage staking = stakeTo[msg.sender][auditor];
+        uint256 stakerAuditorBalance;
+        if (length == 0 || stakerAuditor[msg.sender][staking.index] != auditor) {
+            stakerAuditor[msg.sender].push(auditor);
+            stakeTo[msg.sender][auditor] = StakeTo({index: length, balance:amount});
+            stakedByInv[auditor][msg.sender] = stakedBy[auditor].length;
+            stakedBy[auditor].push(msg.sender);
+            stakerAuditorBalance = amount;
+        } else {
+            stakerAuditorBalance = staking.balance + amount;
+            staking.balance = stakerAuditorBalance;
+        }
+
+        uint256 auditorBalance = auditorsData[auditor].balance + amount;
+        auditorsData[auditor].balance = auditorBalance;
+        emit StakeBond(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
 
         if (doUpdate)
-            updateAuditorState(msg.sender);
+            updateAuditorState(auditor);
     }
-    function unstakeBondRequest(uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
+    function unstakeBondRequest(address auditor, uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
+        require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
         uint256 auditorId = auditorIds[msg.sender];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
-        uint256 newBalance = auditorsData[msg.sender].balance - amount;
-        auditorsData[msg.sender].balance = newBalance;
+        require(stakeTo[msg.sender][auditor].balance > 0, "no stakes");
+
+        uint256 stakerAuditorBalance = stakeTo[msg.sender][auditor].balance  - amount;
+        stakeTo[msg.sender][auditor].balance = stakerAuditorBalance;
+
+        uint256 auditorBalance = auditorsData[auditor].balance - amount;
+        auditorsData[auditor].balance = auditorBalance;
+
         if (cooldownPeriod == 0) {
             token.safeTransfer(msg.sender, amount);
             emit WithdrawBond(msg.sender, amount);
@@ -169,11 +234,11 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             request.releaseTime = block.timestamp + cooldownPeriod;
         }
 
-        if (newBalance < minStakes) {
-            auditorsData[msg.sender].status = AuditorStatus.Inactive;
+        if (auditorBalance < minStakes) {
+            auditorsData[auditor].status = AuditorStatus.Inactive;
         }
 
-        emit UnstakeBondRequest(msg.sender, amount, newBalance);
+        emit UnstakeBondRequest(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
     }
     function withdrawBond() external /*onlyActiveAuditor*/ nonReentrant {
         // uint256 auditorId = auditorIds[msg.sender];
@@ -183,6 +248,16 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         delete pendingWithdrawal[msg.sender];
         token.safeTransfer(msg.sender, amount);
         emit WithdrawBond(msg.sender, amount);
+    }
+    function penalize(address auditor, uint256 amount) external auth nonReentrant {
+        uint256 stakerAuditorBalance = stakeTo[msg.sender][auditor].balance  - amount;
+        stakeTo[msg.sender][auditor].balance = stakerAuditorBalance;
+        uint256 auditorBalance = auditorsData[msg.sender].balance - amount;
+        auditorsData[msg.sender].balance = auditorBalance;
+
+        token.safeTransfer(foundation, amount);
+
+        emit Penalize(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
     }
 
     function _transferTokenFrom(uint amount) internal returns (uint256 balance) {
@@ -194,6 +269,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     // endorser's functions
     function endorseAuditor(address auditor, bool doUpdate) external {
         uint256 endorserId = auditorIds[msg.sender];
+        require(msg.sender != auditor, "cannot self endorse");
         require(endorserId > 0, "endorser is not an auditor");
         require((auditorsData[msg.sender].status == AuditorStatus.Active && auditorsData[msg.sender].endorsementCount >= minEndorsementsRequired) || auditorsData[msg.sender].status == AuditorStatus.Super, "endorser is not an active auditor");
         require(auditorIds[auditor] > 0, "endorsee is not an auditor");
@@ -213,7 +289,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
         emit EndorseAuditor(msg.sender, auditor);
     }
-    function withdrawnEndorsement(address auditor, bool doUpdate) external {
+    function revokeEndorsement(address auditor, bool doUpdate) external {
         uint256 length = endorsing[msg.sender].length;
         uint256 idx = endorsingInv[msg.sender][auditor];
         require(length > 0 && endorsing[msg.sender][idx] == auditor, "not an endorser");
@@ -240,7 +316,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         if (doUpdate)
             updateAuditorState(auditor);
 
-        emit WithdrawnEndorsement(msg.sender, auditor);
+        emit RevokeEndorsement(msg.sender, auditor);
     }
 
     // anyone can call
