@@ -4,7 +4,7 @@ import {Utils, Wallet, BigNumber, Erc20, Contract, TransactionReceipt} from "@ij
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
-import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
+import { assertEqual, getProvider, expectToFail, print } from './helper';
 import { WETH9, MockErc20, MockOracleAdaptor3 } from '../packages/mock-contracts/src'
 import * as OSWAP from '@openswap/sdk';
 
@@ -236,6 +236,9 @@ describe('## SC-Contract', async function() {
                 address: scomContract.address
             },
             auditorInfo: {
+                foundation: foundation,
+                minStakes: 1,
+                minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
                 auditors: []
             },
