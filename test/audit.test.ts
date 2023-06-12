@@ -45,6 +45,8 @@ describe('## SC-Contract', async function() {
                 totalSupply: '100000000'
             },
             auditorInfo: {
+                minStakes: 1,
+                minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
                 auditors: [auditor1, auditor2, auditor3, auditor4]
             },
