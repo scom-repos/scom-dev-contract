@@ -21,39 +21,12 @@ describe('##Contracts', function() {
     let accounts: string[];   
     let projectVersionMap: {[key: number]: any[]} = {};
     async function createNewProject(ipfsCid: string) {
-        let newProjectReceipt = await projectInfo.newProject(ipfsCid);
+        let newProjectReceipt = await projectInfo.newProject({name:'test', ipfsCid:ipfsCid});
         let newProjectEvent = projectInfo.parseNewProjectEvent(newProjectReceipt)[0];
         
         let projectCount = await projectInfo.projectCount();
         assert.strictEqual(newProjectEvent.projectId.toNumber() + 1, projectCount.toNumber());
-        let projectFirstVersion = await projectInfo.projectVersionList({ 
-            param1: newProjectEvent.projectId.toNumber(),
-            param2: 0
-        });
-        let projectCurrentVersion = await projectInfo.projectCurrentVersion(newProjectEvent.projectId.toNumber());
-        assert.strictEqual(projectFirstVersion.toNumber(), projectCurrentVersion.toNumber());
         return newProjectEvent;
-    }
-    async function createNewVersion(projectId: number, ipfsCid: string) {
-        let newProjectVersionReceipt = await projectInfo.newProjectVersion({
-            projectId: projectId,
-            ipfsCid
-        })     
-        let newProjectVersionEvent = projectInfo.parseNewPackageVersionEvent(newProjectVersionReceipt)[0]; 
-        return newProjectVersionEvent;
-    }
-    async function getProjectVersionsByProjectId(projectId: number){
-        let projectVersions = [];
-        let projectVersionListLength = await projectInfo.projectVersionListLength(projectId);
-        for (let i = 0; i < projectVersionListLength.toNumber(); i++) {
-            let projectVersionIdx = await projectInfo.projectVersionList({
-                param1: projectId,
-                param2: i
-            })
-            let projectVersion = await projectInfo.projectVersions(projectVersionIdx);
-            projectVersions.push({...projectVersion, projectVersionIdx});
-        }   
-        return projectVersions;
     }
 
     before(async function(){
@@ -74,6 +47,9 @@ describe('##Contracts', function() {
         })
         auditorInfo = new AuditorInfo(wallet);
         await auditorInfo.deploy({
+            foundation: accounts[0],
+            minStakes: 1,
+            minEndorsementsRequired: 2,
             token: token.address,
             cooldownPeriod: 0
         });
@@ -85,10 +61,6 @@ describe('##Contracts', function() {
     })    
     it('Create a new project and a project version', async function() {    
         let newProjectEvent = await createNewProject('bay1');
-        // let newProjectVersionEvent = await createNewVersion(newProjectEvent.projectId.toNumber(), 'bay1');
-        let projectVersionList = await getProjectVersionsByProjectId(newProjectEvent.projectId.toNumber());
-        assert.strictEqual(projectVersionList.length, 1); 
-        projectVersionMap[0] = projectVersionList;
     })
     it('Add project admin and remove project admin', async function() {    
         wallet.defaultAccount = accounts[0]; 
@@ -105,25 +77,13 @@ describe('##Contracts', function() {
             projectId: 0,
             admin: accounts[1]
         });
-    })    
-    it('Create 2 more projects and a project version for each', async function() {    
-        let newProject2Event = await createNewProject('bay2');
-        // let newProject2VersionEvent = await createNewVersion(newProject2Event.projectId.toNumber(), 'bay2');
-        projectVersionMap[1] = await getProjectVersionsByProjectId(newProject2Event.projectId.toNumber());
-        let newProject3Event = await createNewProject('bay3');
-        // let newProject3VersionEvent = await createNewVersion(newProject3Event.projectId.toNumber(), 'bay3');
-        projectVersionMap[2] = await getProjectVersionsByProjectId(newProject3Event.projectId.toNumber());
-    })
-    it('Add more versions to Project Id 0', async function() { 
-        wallet.defaultAccount = accounts[0]; 
-        await createNewVersion(0, 'bay4');
-        await createNewVersion(0, 'bay5');
-        projectVersionMap[0] = await getProjectVersionsByProjectId(0);       
     })
     it('Create a new package', async function() { 
         wallet.defaultAccount = accounts[0]; 
         let newPackageReceipt = await projectInfo.newPackage({
             projectId: 0,
+            name: 'test',
+            category: '',
             ipfsCid: 'bbyy1'
         })
         await projectInfo.newPackageVersion({
@@ -183,19 +143,6 @@ describe('##Contracts', function() {
             },
             ipfsCid: 'baad1'
         })
-    })            
-    it('Add auditor', async function() {
-        wallet.defaultAccount = accounts[0]; 
-        await auditorInfo.addAuditor(accounts[0]);
-    })
-    it('Set package status to AUDIT_PASSED', async function() { 
-        wallet.defaultAccount = accounts[0]; 
-        await projectInfo.setPackageVersionToAuditPassed({
-            packageVersionId: 0,
-            reportUri: 'ber2342'
-        });
-        let packageVersion = await projectInfo.packageVersions(0);
-        assert.strictEqual(packageVersion.reportUri, 'ber2342');
     })
     it('Stake to Project Id 0', async function() { 
         wallet.defaultAccount = accounts[0]; 
