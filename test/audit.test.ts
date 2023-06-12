@@ -3,7 +3,7 @@ import {Utils, Wallet} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
-import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
+import { assertEqual, getProvider, expectToFail, print } from './helper';
 
 describe('## SC-Contract', async function() {
     let accounts: string[];
@@ -18,6 +18,7 @@ describe('## SC-Contract', async function() {
     
     let deployer: string;
     let minter: string;
+    let foundation: string;
     let projectOwner: string;
     let auditor1: string;
     let auditor2: string;
@@ -29,6 +30,7 @@ describe('## SC-Contract', async function() {
         accounts = await wallet.accounts;
         deployer = accounts[0];
         minter = accounts[1];
+        foundation = accounts[1];
         projectOwner = accounts[2];
 
         auditor1 = accounts[3];
@@ -45,6 +47,7 @@ describe('## SC-Contract', async function() {
                 totalSupply: '100000000'
             },
             auditorInfo: {
+                foundation: foundation,
                 minStakes: 1,
                 minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
