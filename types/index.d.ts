@@ -10,6 +10,7 @@ export interface IDeployOptions {
         totalSupply?: string;
     };
     auditorInfo: {
+        foundation: string;
         minStakes: number | BigNumber;
         minEndorsementsRequired: number;
         cooldownPeriod: number;

@@ -11,6 +11,7 @@ export interface IDeployOptions{
         totalSupply?: string;
     };
     auditorInfo: {
+        foundation: string;
         minStakes: number|BigNumber;
         minEndorsementsRequired: number;
         cooldownPeriod: number;
@@ -47,6 +48,7 @@ export var DefaultDeployOptions: IDeployOptions = {
         totalSupply: '100000000'
     },
     auditorInfo: {
+        foundation: '',
         minStakes: 1,
         minEndorsementsRequired: 2,
         cooldownPeriod: 60,
@@ -83,6 +85,7 @@ async function deployAuditorInfo(wallet: IWallet, token: string, Config: IDeploy
     let auditorInfo = new Contracts.AuditorInfo(wallet);
     let address = await auditorInfo.deploy({
         token,
+        foundation: auditorInfoOptions.foundation,
         minStakes: wallet.utils.toDecimals(auditorInfoOptions.minStakes),
         minEndorsementsRequired: auditorInfoOptions.minEndorsementsRequired,
         cooldownPeriod: auditorInfoOptions.cooldownPeriod
