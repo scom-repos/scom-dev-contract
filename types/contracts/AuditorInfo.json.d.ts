@@ -29,22 +29,12 @@ declare const _default: {
             type: string;
         }[];
         name: string;
-        outputs: {
+        outputs: ({
             internalType: string;
             name: string;
             type: string;
-        }[];
-        stateMutability: string;
-        type: string;
-        anonymous?: undefined;
-    } | {
-        inputs: {
-            internalType: string;
-            name: string;
-            type: string;
-        }[];
-        name: string;
-        outputs: {
+            components?: undefined;
+        } | {
             components: {
                 internalType: string;
                 name: string;
@@ -53,7 +43,7 @@ declare const _default: {
             internalType: string;
             name: string;
             type: string;
-        }[];
+        })[];
         stateMutability: string;
         type: string;
         anonymous?: undefined;

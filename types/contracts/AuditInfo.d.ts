@@ -3,7 +3,7 @@ export interface IDeployParams {
     projectInfo: string;
     auditorInfo: string;
     warningThreshold: number | BigNumber;
-    passedThreshold: number | BigNumber;
+    passingThreshold: number | BigNumber;
     auditDuration: number | BigNumber;
     minAuditRequired: number | BigNumber;
 }
@@ -103,7 +103,7 @@ export declare class AuditInfo extends _Contract {
     packageVersionsAuditorsInv: {
         (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
     };
-    passedThreshold: {
+    passingThreshold: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
     permit: {
@@ -121,9 +121,9 @@ export declare class AuditInfo extends _Contract {
         (minAuditRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (minAuditRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
-    setPassedThreshold: {
-        (passedThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (passedThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    setPassingThreshold: {
+        (passingThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (passingThreshold: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     setWarningThreshold: {
         (warningThreshold: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;

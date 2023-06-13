@@ -4,7 +4,7 @@ import {Utils, Wallet, BigNumber} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
-import { assertEqual, getProvider, expectToFail, print, privateKeys } from './helper';
+import { assertEqual, getProvider, expectToFail, print } from './helper';
 import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
 
 describe('## SC-Contract', async function() {
@@ -65,6 +65,9 @@ describe('## SC-Contract', async function() {
                 address: scomContract.address
             },
             auditorInfo: {
+                foundation: foundation,
+                minStakes: 1,
+                minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
                 auditors: []
             },

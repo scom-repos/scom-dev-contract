@@ -10,6 +10,9 @@ export interface IDeployOptions {
         totalSupply?: string;
     };
     auditorInfo: {
+        foundation: string;
+        minStakes: number | BigNumber;
+        minEndorsementsRequired: number;
         cooldownPeriod: number;
         auditors?: string[];
     };
@@ -18,7 +21,7 @@ export interface IDeployOptions {
     };
     audit?: {
         warningThreshold: number | BigNumber;
-        passedThreshold: number | BigNumber;
+        passingThreshold: number | BigNumber;
         auditDuration: number | BigNumber;
         minAuditRequired: number | BigNumber;
     };

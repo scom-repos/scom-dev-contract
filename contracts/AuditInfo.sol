@@ -24,7 +24,7 @@ contract AuditInfo is Authorization, ReentrancyGuard {
 
 
     uint256 public warningThreshold;
-    uint256 public passedThreshold;
+    uint256 public passingThreshold;
     uint256 public minAuditRequired;
     uint256 public auditDuration;
 
@@ -35,20 +35,20 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         _;
     }
 
-    constructor(ProjectInfo _projectInfo, AuditorInfo _auditorInfo, uint256 _warningThreshold, uint256 _passedThreshold, uint256 _auditDuration, uint256 _minAuditRequired) {
-        require(warningThreshold < _passedThreshold && _passedThreshold <= THRESHOLD_BASE, "invalid threshold");
+    constructor(ProjectInfo _projectInfo, AuditorInfo _auditorInfo, uint256 _warningThreshold, uint256 _passingThreshold, uint256 _auditDuration, uint256 _minAuditRequired) {
+        require(warningThreshold < _passingThreshold && _passingThreshold <= THRESHOLD_BASE, "invalid threshold");
         projectInfo = _projectInfo;
         auditorInfo = _auditorInfo;
         warningThreshold = _warningThreshold;
-        passedThreshold = _passedThreshold;
+        passingThreshold = _passingThreshold;
         auditDuration = _auditDuration;
         minAuditRequired = _minAuditRequired;
     }
     function setWarningThreshold(uint256 _warningThreshold) external onlyOwner {
         warningThreshold = _warningThreshold;
     }
-    function setPassedThreshold(uint256 _passedThreshold) external onlyOwner {
-        passedThreshold = _passedThreshold;
+    function setPassingThreshold(uint256 _passingThreshold) external onlyOwner {
+        passingThreshold = _passingThreshold;
     }
     function setAuditDuration(uint256 _auditDuration) external onlyOwner {
         auditDuration = _auditDuration;
@@ -104,14 +104,11 @@ contract AuditInfo is Authorization, ReentrancyGuard {
                 AuditReport[] storage array = auditHistory[packageVersionsId][i];
                 if (array[array.length - 1].auditResult == AuditResult.PASSED) {
                     count++;
-                    // if (count >= passed) {
-                    //     break;
-                    // }
                 }
             }
      
-            AuditResult finalResult = (count >= (length * passedThreshold / THRESHOLD_BASE)) ? AuditResult.PASSED : 
-                                      (count >= (length * warningThreshold / THRESHOLD_BASE)) ? AuditResult.WARNING : 
+            AuditResult finalResult = (count * THRESHOLD_BASE >= (length * passingThreshold )) ? AuditResult.PASSED : 
+                                      (count * THRESHOLD_BASE >= (length * warningThreshold )) ? AuditResult.WARNING : 
                                       AuditResult.FAILED;
 
             latestAuditResult[packageVersionsId] = finalResult;

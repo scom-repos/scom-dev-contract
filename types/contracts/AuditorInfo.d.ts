@@ -1,11 +1,91 @@
 import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IDeployParams {
     token: string;
+    foundation: string;
+    minStakes: number | BigNumber;
+    minEndorsementsRequired: number | BigNumber;
     cooldownPeriod: number | BigNumber;
+}
+export interface IAddAuditorParams {
+    auditor: string;
+    isSuperAuditor: boolean;
+}
+export interface IEndorseAuditorParams {
+    auditor: string;
+    doUpdate: boolean;
+}
+export interface IEndorsedByParams {
+    param1: string;
+    param2: number | BigNumber;
+}
+export interface IEndorsedByInvParams {
+    param1: string;
+    param2: string;
+}
+export interface IEndorsingParams {
+    param1: string;
+    param2: number | BigNumber;
+}
+export interface IEndorsingInvParams {
+    param1: string;
+    param2: string;
 }
 export interface IGetAuditorsParams {
     auditorIdStart: number | BigNumber;
     length: number | BigNumber;
+}
+export interface IGetEndorsedByParams {
+    endorsee: string;
+    start: number | BigNumber;
+    length: number | BigNumber;
+}
+export interface IGetEndorsingParams {
+    endorser: string;
+    start: number | BigNumber;
+    length: number | BigNumber;
+}
+export interface IGetStakedByParams {
+    auditor: string;
+    start: number | BigNumber;
+    length: number | BigNumber;
+}
+export interface IGetStakerAuditorParams {
+    staker: string;
+    start: number | BigNumber;
+    length: number | BigNumber;
+}
+export interface IPenalizeParams {
+    auditor: string;
+    amount: number | BigNumber;
+}
+export interface IRevokeEndorsementParams {
+    auditor: string;
+    doUpdate: boolean;
+}
+export interface IStakeBondParams {
+    auditor: string;
+    amount: number | BigNumber;
+    doUpdate: boolean;
+}
+export interface IStakeToParams {
+    param1: string;
+    param2: string;
+}
+export interface IStakedByParams {
+    param1: string;
+    param2: number | BigNumber;
+}
+export interface IStakedByInvParams {
+    param1: string;
+    param2: string;
+}
+export interface IStakerAuditorParams {
+    param1: string;
+    param2: number | BigNumber;
+}
+export interface IUnstakeBondRequestParams {
+    auditor: string;
+    amount: number | BigNumber;
 }
 export declare class AuditorInfo extends _Contract {
     static _abi: any;
@@ -17,10 +97,20 @@ export declare class AuditorInfo extends _Contract {
     decodeAuthorizeEvent(event: Event): AuditorInfo.AuthorizeEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): AuditorInfo.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): AuditorInfo.DeauthorizeEvent;
-    parseDisableAuditorEvent(receipt: TransactionReceipt): AuditorInfo.DisableAuditorEvent[];
-    decodeDisableAuditorEvent(event: Event): AuditorInfo.DisableAuditorEvent;
+    parseEndorseAuditorEvent(receipt: TransactionReceipt): AuditorInfo.EndorseAuditorEvent[];
+    decodeEndorseAuditorEvent(event: Event): AuditorInfo.EndorseAuditorEvent;
+    parseFreezeAuditorEvent(receipt: TransactionReceipt): AuditorInfo.FreezeAuditorEvent[];
+    decodeFreezeAuditorEvent(event: Event): AuditorInfo.FreezeAuditorEvent;
+    parsePenalizeEvent(receipt: TransactionReceipt): AuditorInfo.PenalizeEvent[];
+    decodePenalizeEvent(event: Event): AuditorInfo.PenalizeEvent;
+    parseRevokeEndorsementEvent(receipt: TransactionReceipt): AuditorInfo.RevokeEndorsementEvent[];
+    decodeRevokeEndorsementEvent(event: Event): AuditorInfo.RevokeEndorsementEvent;
     parseSetCooldownPeriodEvent(receipt: TransactionReceipt): AuditorInfo.SetCooldownPeriodEvent[];
     decodeSetCooldownPeriodEvent(event: Event): AuditorInfo.SetCooldownPeriodEvent;
+    parseSetMinEndorsementsRequiredEvent(receipt: TransactionReceipt): AuditorInfo.SetMinEndorsementsRequiredEvent[];
+    decodeSetMinEndorsementsRequiredEvent(event: Event): AuditorInfo.SetMinEndorsementsRequiredEvent;
+    parseSetMinStakeEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakeEvent[];
+    decodeSetMinStakeEvent(event: Event): AuditorInfo.SetMinStakeEvent;
     parseStakeBondEvent(receipt: TransactionReceipt): AuditorInfo.StakeBondEvent[];
     decodeStakeBondEvent(event: Event): AuditorInfo.StakeBondEvent;
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditorInfo.StartOwnershipTransferEvent[];
@@ -35,11 +125,8 @@ export declare class AuditorInfo extends _Contract {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
     addAuditor: {
-        (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (auditor: string, options?: TransactionOptions) => Promise<void>;
-    };
-    auditorBalance: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        (params: IAddAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IAddAuditorParams, options?: TransactionOptions) => Promise<void>;
     };
     auditorIdCount: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -47,10 +134,14 @@ export declare class AuditorInfo extends _Contract {
     auditorIds: {
         (param1: string, options?: TransactionOptions): Promise<BigNumber>;
     };
+    auditors: {
+        (param1: number | BigNumber, options?: TransactionOptions): Promise<string>;
+    };
     auditorsData: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<{
-            auditor: string;
+        (param1: string, options?: TransactionOptions): Promise<{
             status: BigNumber;
+            balance: BigNumber;
+            endorsementCount: BigNumber;
         }>;
     };
     cooldownPeriod: {
@@ -60,21 +151,68 @@ export declare class AuditorInfo extends _Contract {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
     };
-    disableAuditor: {
+    endorseAuditor: {
+        (params: IEndorseAuditorParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IEndorseAuditorParams, options?: TransactionOptions) => Promise<void>;
+    };
+    endorsedBy: {
+        (params: IEndorsedByParams, options?: TransactionOptions): Promise<string>;
+    };
+    endorsedByInv: {
+        (params: IEndorsedByInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    endorsedByLength: {
+        (endorsee: string, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    endorsing: {
+        (params: IEndorsingParams, options?: TransactionOptions): Promise<string>;
+    };
+    endorsingInv: {
+        (params: IEndorsingInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    endorsingLength: {
+        (endorser: string, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    foundation: {
+        (options?: TransactionOptions): Promise<string>;
+    };
+    freezeAuditor: {
         (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditor: string, options?: TransactionOptions) => Promise<void>;
     };
     getAuditors: {
         (params: IGetAuditorsParams, options?: TransactionOptions): Promise<{
-            auditor: string;
-            status: BigNumber;
-        }[]>;
+            auditors: string[];
+            auditorsData: {
+                status: BigNumber;
+                balance: BigNumber;
+                endorsementCount: BigNumber;
+            }[];
+        }>;
+    };
+    getEndorsedBy: {
+        (params: IGetEndorsedByParams, options?: TransactionOptions): Promise<string[]>;
+    };
+    getEndorsing: {
+        (params: IGetEndorsingParams, options?: TransactionOptions): Promise<string[]>;
+    };
+    getStakedBy: {
+        (params: IGetStakedByParams, options?: TransactionOptions): Promise<string[]>;
+    };
+    getStakerAuditor: {
+        (params: IGetStakerAuditorParams, options?: TransactionOptions): Promise<string[]>;
     };
     isActiveAuditor: {
-        (account: string, options?: TransactionOptions): Promise<boolean>;
+        (auditor: string, options?: TransactionOptions): Promise<boolean>;
     };
     isPermitted: {
         (param1: string, options?: TransactionOptions): Promise<boolean>;
+    };
+    minEndorsementsRequired: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
+    minStakes: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     };
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
@@ -82,8 +220,12 @@ export declare class AuditorInfo extends _Contract {
     owner: {
         (options?: TransactionOptions): Promise<string>;
     };
+    penalize: {
+        (params: IPenalizeParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IPenalizeParams, options?: TransactionOptions) => Promise<void>;
+    };
     pendingWithdrawal: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<{
+        (param1: string, options?: TransactionOptions): Promise<{
             amount: BigNumber;
             releaseTime: BigNumber;
         }>;
@@ -92,13 +234,50 @@ export declare class AuditorInfo extends _Contract {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
     };
+    registerAuditor: {
+        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    };
+    revokeEndorsement: {
+        (params: IRevokeEndorsementParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IRevokeEndorsementParams, options?: TransactionOptions) => Promise<void>;
+    };
     setCooldownPeriod: {
         (cooldownPeriod: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (cooldownPeriod: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
+    setMinEndorsementsRequired: {
+        (minEndorsementsRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (minEndorsementsRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    };
+    setMinStakes: {
+        (minStakes: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (minStakes: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    };
     stakeBond: {
-        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        (params: IStakeBondParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IStakeBondParams, options?: TransactionOptions) => Promise<void>;
+    };
+    stakeTo: {
+        (params: IStakeToParams, options?: TransactionOptions): Promise<{
+            index: BigNumber;
+            balance: BigNumber;
+        }>;
+    };
+    stakedBy: {
+        (params: IStakedByParams, options?: TransactionOptions): Promise<string>;
+    };
+    stakedByInv: {
+        (params: IStakedByInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    stakedByLength: {
+        (auditor: string, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    stakerAuditor: {
+        (params: IStakerAuditorParams, options?: TransactionOptions): Promise<string>;
+    };
+    stakerAuditorLength: {
+        (staker: string, options?: TransactionOptions): Promise<BigNumber>;
     };
     takeOwnership: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -112,8 +291,16 @@ export declare class AuditorInfo extends _Contract {
         call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
     };
     unstakeBondRequest: {
-        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        (params: IUnstakeBondRequestParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUnstakeBondRequestParams, options?: TransactionOptions) => Promise<void>;
+    };
+    updateAuditorState: {
+        (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (auditor: string, options?: TransactionOptions) => Promise<void>;
+    };
+    updateEndorsementCountBatch: {
+        (auditors: string[], options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (auditors: string[], options?: TransactionOptions) => Promise<void>;
     };
     withdrawBond: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -123,6 +310,7 @@ export declare class AuditorInfo extends _Contract {
 }
 export declare module AuditorInfo {
     interface AddAuditorEvent {
+        auditorId: BigNumber;
         auditor: string;
         _event: Event;
     }
@@ -134,18 +322,46 @@ export declare module AuditorInfo {
         user: string;
         _event: Event;
     }
-    interface DisableAuditorEvent {
+    interface EndorseAuditorEvent {
+        endorser: string;
+        endorsee: string;
+        _event: Event;
+    }
+    interface FreezeAuditorEvent {
         auditor: string;
+        _event: Event;
+    }
+    interface PenalizeEvent {
+        sender: string;
+        auditor: string;
+        amount: BigNumber;
+        auditorBalance: BigNumber;
+        stakerAuditorBalance: BigNumber;
+        _event: Event;
+    }
+    interface RevokeEndorsementEvent {
+        endorser: string;
+        endorsee: string;
         _event: Event;
     }
     interface SetCooldownPeriodEvent {
         cooldownPeriod: BigNumber;
         _event: Event;
     }
+    interface SetMinEndorsementsRequiredEvent {
+        minEndorsementsRequired: BigNumber;
+        _event: Event;
+    }
+    interface SetMinStakeEvent {
+        minStake: BigNumber;
+        _event: Event;
+    }
     interface StakeBondEvent {
         sender: string;
+        auditor: string;
         amount: BigNumber;
-        newBalance: BigNumber;
+        auditorBalance: BigNumber;
+        stakerAuditorBalance: BigNumber;
         _event: Event;
     }
     interface StartOwnershipTransferEvent {
@@ -158,8 +374,10 @@ export declare module AuditorInfo {
     }
     interface UnstakeBondRequestEvent {
         sender: string;
+        auditor: string;
         amount: BigNumber;
-        newBalance: BigNumber;
+        auditorBalance: BigNumber;
+        stakerAuditorBalance: BigNumber;
         _event: Event;
     }
     interface WithdrawBondEvent {
