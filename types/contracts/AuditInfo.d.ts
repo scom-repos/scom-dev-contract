@@ -39,6 +39,14 @@ export declare class AuditInfo extends _Contract {
     decodeAuthorizeEvent(event: Event): AuditInfo.AuthorizeEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): AuditInfo.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): AuditInfo.DeauthorizeEvent;
+    parseSetAuditDurationEvent(receipt: TransactionReceipt): AuditInfo.SetAuditDurationEvent[];
+    decodeSetAuditDurationEvent(event: Event): AuditInfo.SetAuditDurationEvent;
+    parseSetMinAuditRequiredEvent(receipt: TransactionReceipt): AuditInfo.SetMinAuditRequiredEvent[];
+    decodeSetMinAuditRequiredEvent(event: Event): AuditInfo.SetMinAuditRequiredEvent;
+    parseSetPassingThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetPassingThresholdEvent[];
+    decodeSetPassingThresholdEvent(event: Event): AuditInfo.SetPassingThresholdEvent;
+    parseSetWarningThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetWarningThresholdEvent[];
+    decodeSetWarningThresholdEvent(event: Event): AuditInfo.SetWarningThresholdEvent;
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditInfo.StartOwnershipTransferEvent[];
     decodeStartOwnershipTransferEvent(event: Event): AuditInfo.StartOwnershipTransferEvent;
     parseTransferOwnershipEvent(receipt: TransactionReceipt): AuditInfo.TransferOwnershipEvent[];
@@ -86,7 +94,7 @@ export declare class AuditInfo extends _Contract {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     latestAuditResult: {
-        (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     minAuditRequired: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -156,6 +164,22 @@ export declare module AuditInfo {
     }
     interface DeauthorizeEvent {
         user: string;
+        _event: Event;
+    }
+    interface SetAuditDurationEvent {
+        auditDuration: BigNumber;
+        _event: Event;
+    }
+    interface SetMinAuditRequiredEvent {
+        minAuditRequired: BigNumber;
+        _event: Event;
+    }
+    interface SetPassingThresholdEvent {
+        passingThreshold: BigNumber;
+        _event: Event;
+    }
+    interface SetWarningThresholdEvent {
+        warningThreshold: BigNumber;
         _event: Event;
     }
     interface StartOwnershipTransferEvent {

@@ -56,7 +56,9 @@ export interface IGetStakerAuditorParams {
 }
 export interface IPenalizeParams {
     auditor: string;
-    amount: number | BigNumber;
+    unfreezeAuditor: boolean;
+    staker: string[];
+    amount: (number | BigNumber)[];
 }
 export interface IRevokeEndorsementParams {
     auditor: string;
@@ -109,8 +111,8 @@ export declare class AuditorInfo extends _Contract {
     decodeSetCooldownPeriodEvent(event: Event): AuditorInfo.SetCooldownPeriodEvent;
     parseSetMinEndorsementsRequiredEvent(receipt: TransactionReceipt): AuditorInfo.SetMinEndorsementsRequiredEvent[];
     decodeSetMinEndorsementsRequiredEvent(event: Event): AuditorInfo.SetMinEndorsementsRequiredEvent;
-    parseSetMinStakeEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakeEvent[];
-    decodeSetMinStakeEvent(event: Event): AuditorInfo.SetMinStakeEvent;
+    parseSetMinStakesEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakesEvent[];
+    decodeSetMinStakesEvent(event: Event): AuditorInfo.SetMinStakesEvent;
     parseStakeBondEvent(receipt: TransactionReceipt): AuditorInfo.StakeBondEvent[];
     decodeStakeBondEvent(event: Event): AuditorInfo.StakeBondEvent;
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditorInfo.StartOwnershipTransferEvent[];
@@ -298,7 +300,7 @@ export declare class AuditorInfo extends _Contract {
         (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditor: string, options?: TransactionOptions) => Promise<void>;
     };
-    updateEndorsementCountBatch: {
+    updateAuditorStateInBatch: {
         (auditors: string[], options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditors: string[], options?: TransactionOptions) => Promise<void>;
     };
@@ -332,8 +334,8 @@ export declare module AuditorInfo {
         _event: Event;
     }
     interface PenalizeEvent {
-        sender: string;
         auditor: string;
+        staker: string;
         amount: BigNumber;
         auditorBalance: BigNumber;
         stakerAuditorBalance: BigNumber;
@@ -352,8 +354,8 @@ export declare module AuditorInfo {
         minEndorsementsRequired: BigNumber;
         _event: Event;
     }
-    interface SetMinStakeEvent {
-        minStake: BigNumber;
+    interface SetMinStakesEvent {
+        minStakes: BigNumber;
         _event: Event;
     }
     interface StakeBondEvent {

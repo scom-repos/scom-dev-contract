@@ -48,6 +48,46 @@ export class AuditInfo extends _Contract{
             _event: event
         };
     }
+    parseSetAuditDurationEvent(receipt: TransactionReceipt): AuditInfo.SetAuditDurationEvent[]{
+        return this.parseEvents(receipt, "SetAuditDuration").map(e=>this.decodeSetAuditDurationEvent(e));
+    }
+    decodeSetAuditDurationEvent(event: Event): AuditInfo.SetAuditDurationEvent{
+        let result = event.data;
+        return {
+            auditDuration: new BigNumber(result.auditDuration),
+            _event: event
+        };
+    }
+    parseSetMinAuditRequiredEvent(receipt: TransactionReceipt): AuditInfo.SetMinAuditRequiredEvent[]{
+        return this.parseEvents(receipt, "SetMinAuditRequired").map(e=>this.decodeSetMinAuditRequiredEvent(e));
+    }
+    decodeSetMinAuditRequiredEvent(event: Event): AuditInfo.SetMinAuditRequiredEvent{
+        let result = event.data;
+        return {
+            minAuditRequired: new BigNumber(result.minAuditRequired),
+            _event: event
+        };
+    }
+    parseSetPassingThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetPassingThresholdEvent[]{
+        return this.parseEvents(receipt, "SetPassingThreshold").map(e=>this.decodeSetPassingThresholdEvent(e));
+    }
+    decodeSetPassingThresholdEvent(event: Event): AuditInfo.SetPassingThresholdEvent{
+        let result = event.data;
+        return {
+            passingThreshold: new BigNumber(result.passingThreshold),
+            _event: event
+        };
+    }
+    parseSetWarningThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetWarningThresholdEvent[]{
+        return this.parseEvents(receipt, "SetWarningThreshold").map(e=>this.decodeSetWarningThresholdEvent(e));
+    }
+    decodeSetWarningThresholdEvent(event: Event): AuditInfo.SetWarningThresholdEvent{
+        let result = event.data;
+        return {
+            warningThreshold: new BigNumber(result.warningThreshold),
+            _event: event
+        };
+    }
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditInfo.StartOwnershipTransferEvent[]{
         return this.parseEvents(receipt, "StartOwnershipTransfer").map(e=>this.decodeStartOwnershipTransferEvent(e));
     }
@@ -104,7 +144,7 @@ export class AuditInfo extends _Contract{
         (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     latestAuditResult: {
-        (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     minAuditRequired: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -213,8 +253,8 @@ export class AuditInfo extends _Contract{
             return new BigNumber(result);
         }
         this.lastAuditResultBeforeAuditPeriod = lastAuditResultBeforeAuditPeriod_call
-        let latestAuditResult_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('latestAuditResult',[this.wallet.utils.toString(param1)],options);
+        let latestAuditResult_call = async (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('latestAuditResult',[this.wallet.utils.toString(packageVersionsId)],options);
             return new BigNumber(result);
         }
         this.latestAuditResult = latestAuditResult_call
@@ -366,6 +406,10 @@ export module AuditInfo{
     export interface AddAuditReportEvent {auditor:string,packageVersionsId:BigNumber,auditResult:BigNumber,ipfsCid:string,_event:Event}
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
+    export interface SetAuditDurationEvent {auditDuration:BigNumber,_event:Event}
+    export interface SetMinAuditRequiredEvent {minAuditRequired:BigNumber,_event:Event}
+    export interface SetPassingThresholdEvent {passingThreshold:BigNumber,_event:Event}
+    export interface SetWarningThresholdEvent {warningThreshold:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
     export interface TransferOwnershipEvent {user:string,_event:Event}
 }
