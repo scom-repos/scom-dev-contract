@@ -4,17 +4,12 @@ import {Utils, Wallet, Erc20, BigNumber} from "@ijstech/eth-wallet";
 import {AuditorInfo, ProjectInfo, Scom} from '../src/contracts/index';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
+import { assertEqual, getProvider, expectToFail, print } from './helper';
+
 
 describe('##Contracts', function() {  
     this.timeout(40000);
-    let provider = Ganache.provider({
-        logging: {
-            logger: {
-                log: () => { }
-            }
-        }
-    });        
-    let wallet = new Wallet(provider);
+    let wallet = new Wallet(getProvider());
     let token: Scom;   
     let auditorInfo: AuditorInfo;
     let projectInfo: ProjectInfo; 

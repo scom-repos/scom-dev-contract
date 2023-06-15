@@ -12,7 +12,7 @@ export interface IGetEndorsedByParams {endorsee:string;start:number|BigNumber;le
 export interface IGetEndorsingParams {endorser:string;start:number|BigNumber;length:number|BigNumber}
 export interface IGetStakedByParams {auditor:string;start:number|BigNumber;length:number|BigNumber}
 export interface IGetStakerAuditorParams {staker:string;start:number|BigNumber;length:number|BigNumber}
-export interface IPenalizeParams {auditor:string;amount:number|BigNumber}
+export interface IPenalizeParams {auditor:string;unfreezeAuditor:boolean;staker:string[];amount:(number|BigNumber)[]}
 export interface IRevokeEndorsementParams {auditor:string;doUpdate:boolean}
 export interface IStakeBondParams {auditor:string;amount:number|BigNumber;doUpdate:boolean}
 export interface IStakeToParams {param1:string;param2:string}
@@ -87,8 +87,8 @@ export class AuditorInfo extends _Contract{
     decodePenalizeEvent(event: Event): AuditorInfo.PenalizeEvent{
         let result = event.data;
         return {
-            sender: result.sender,
             auditor: result.auditor,
+            staker: result.staker,
             amount: new BigNumber(result.amount),
             auditorBalance: new BigNumber(result.auditorBalance),
             stakerAuditorBalance: new BigNumber(result.stakerAuditorBalance),
@@ -126,13 +126,13 @@ export class AuditorInfo extends _Contract{
             _event: event
         };
     }
-    parseSetMinStakeEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakeEvent[]{
-        return this.parseEvents(receipt, "SetMinStake").map(e=>this.decodeSetMinStakeEvent(e));
+    parseSetMinStakesEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakesEvent[]{
+        return this.parseEvents(receipt, "SetMinStakes").map(e=>this.decodeSetMinStakesEvent(e));
     }
-    decodeSetMinStakeEvent(event: Event): AuditorInfo.SetMinStakeEvent{
+    decodeSetMinStakesEvent(event: Event): AuditorInfo.SetMinStakesEvent{
         let result = event.data;
         return {
-            minStake: new BigNumber(result.minStake),
+            minStakes: new BigNumber(result.minStakes),
             _event: event
         };
     }
@@ -355,7 +355,7 @@ export class AuditorInfo extends _Contract{
         (auditor:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditor:string, options?: TransactionOptions) => Promise<void>;
     }
-    updateEndorsementCountBatch: {
+    updateAuditorStateInBatch: {
         (auditors:string[], options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (auditors:string[], options?: TransactionOptions) => Promise<void>;
     }
@@ -602,7 +602,7 @@ export class AuditorInfo extends _Contract{
         this.freezeAuditor = Object.assign(freezeAuditor_send, {
             call:freezeAuditor_call
         });
-        let penalizeParams = (params: IPenalizeParams) => [params.auditor,this.wallet.utils.toString(params.amount)];
+        let penalizeParams = (params: IPenalizeParams) => [params.auditor,params.unfreezeAuditor,params.staker,this.wallet.utils.toString(params.amount)];
         let penalize_send = async (params: IPenalizeParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('penalize',penalizeParams(params),options);
             return result;
@@ -738,16 +738,16 @@ export class AuditorInfo extends _Contract{
         this.updateAuditorState = Object.assign(updateAuditorState_send, {
             call:updateAuditorState_call
         });
-        let updateEndorsementCountBatch_send = async (auditors:string[], options?: TransactionOptions): Promise<TransactionReceipt> => {
-            let result = await this.send('updateEndorsementCountBatch',[auditors],options);
+        let updateAuditorStateInBatch_send = async (auditors:string[], options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('updateAuditorStateInBatch',[auditors],options);
             return result;
         }
-        let updateEndorsementCountBatch_call = async (auditors:string[], options?: TransactionOptions): Promise<void> => {
-            let result = await this.call('updateEndorsementCountBatch',[auditors],options);
+        let updateAuditorStateInBatch_call = async (auditors:string[], options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('updateAuditorStateInBatch',[auditors],options);
             return;
         }
-        this.updateEndorsementCountBatch = Object.assign(updateEndorsementCountBatch_send, {
-            call:updateEndorsementCountBatch_call
+        this.updateAuditorStateInBatch = Object.assign(updateAuditorStateInBatch_send, {
+            call:updateAuditorStateInBatch_call
         });
         let withdrawBond_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('withdrawBond',[],options);
@@ -768,11 +768,11 @@ export module AuditorInfo{
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface EndorseAuditorEvent {endorser:string,endorsee:string,_event:Event}
     export interface FreezeAuditorEvent {auditor:string,_event:Event}
-    export interface PenalizeEvent {sender:string,auditor:string,amount:BigNumber,auditorBalance:BigNumber,stakerAuditorBalance:BigNumber,_event:Event}
+    export interface PenalizeEvent {auditor:string,staker:string,amount:BigNumber,auditorBalance:BigNumber,stakerAuditorBalance:BigNumber,_event:Event}
     export interface RevokeEndorsementEvent {endorser:string,endorsee:string,_event:Event}
     export interface SetCooldownPeriodEvent {cooldownPeriod:BigNumber,_event:Event}
     export interface SetMinEndorsementsRequiredEvent {minEndorsementsRequired:BigNumber,_event:Event}
-    export interface SetMinStakeEvent {minStake:BigNumber,_event:Event}
+    export interface SetMinStakesEvent {minStakes:BigNumber,_event:Event}
     export interface StakeBondEvent {sender:string,auditor:string,amount:BigNumber,auditorBalance:BigNumber,stakerAuditorBalance:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
     export interface TransferOwnershipEvent {user:string,_event:Event}

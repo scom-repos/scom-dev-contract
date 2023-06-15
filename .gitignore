@@ -3,3 +3,9 @@ node_modules/
 package-lock.json
 deployer
 config.js
+/hardhat/artifacts/
+/hardhat/cache/
+/hardhat/coverage/
+/hardhat/coverage.json
+/hardhat/node_modules/
+/hardhat/openswap

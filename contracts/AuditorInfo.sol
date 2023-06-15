@@ -50,13 +50,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     event AddAuditor(uint256 indexed auditorId, address indexed auditor);
     event FreezeAuditor(address indexed auditor);
-    event SetMinStake(uint256 minStake);
+    event SetMinStakes(uint256 minStakes);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
     event SetCooldownPeriod(uint256 cooldownPeriod);
     event StakeBond(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event UnstakeBondRequest(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event WithdrawBond(address indexed sender, uint256 amount);
-    event Penalize(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
+    event Penalize(address indexed auditor, address indexed staker, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
     event RevokeEndorsement(address indexed endorser, address indexed endorsee);
 
@@ -114,7 +114,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     function setMinStakes(uint256 _minStakes) external onlyOwner {
         minStakes = _minStakes;
-        emit SetMinStake(_minStakes);
+        emit SetMinStakes(_minStakes);
     }
     function setMinEndorsementsRequired(uint256 _minEndorsementsRequired) external onlyOwner {
         minEndorsementsRequired = _minEndorsementsRequired;
@@ -213,7 +213,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     }
     function unstakeBondRequest(address auditor, uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
         require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
-        uint256 auditorId = auditorIds[msg.sender];
+        uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
         require(stakeTo[msg.sender][auditor].balance > 0, "no stakes");
@@ -234,7 +234,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             request.releaseTime = block.timestamp + cooldownPeriod;
         }
 
-        if (auditorBalance < minStakes) {
+        if (auditorsData[auditor].status != AuditorStatus.Super && auditorBalance < minStakes) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
         }
 
@@ -249,15 +249,26 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         token.safeTransfer(msg.sender, amount);
         emit WithdrawBond(msg.sender, amount);
     }
-    function penalize(address auditor, uint256 amount) external auth nonReentrant {
-        uint256 stakerAuditorBalance = stakeTo[msg.sender][auditor].balance  - amount;
-        stakeTo[msg.sender][auditor].balance = stakerAuditorBalance;
-        uint256 auditorBalance = auditorsData[msg.sender].balance - amount;
-        auditorsData[msg.sender].balance = auditorBalance;
+    function penalize(address auditor, bool unfreezeAuditor, address[] calldata staker, uint256[] calldata amount) external auth nonReentrant {
+        require(auditorsData[auditor].status == AuditorStatus.Freezed, "auditor not freezed");
+        uint256 length = staker.length;
+        require(length == amount.length, "length not matched");
+        uint256 i;
+        uint256 totalAmount;
+        for (; i < length ; i++) {
+            address _staker = staker[i];
+            uint256 _amount = amount[i];
+            uint256 stakerAuditorBalance = stakeTo[_staker][auditor].balance  - _amount;
+            stakeTo[_staker][auditor].balance = stakerAuditorBalance;
+            uint256 auditorBalance = auditorsData[auditor].balance - _amount;
+            auditorsData[auditor].balance = auditorBalance;
+            totalAmount += _amount;
 
-        token.safeTransfer(foundation, amount);
-
-        emit Penalize(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
+            emit Penalize(auditor, _staker, _amount, auditorBalance, stakerAuditorBalance);
+        }
+        if (unfreezeAuditor)
+            auditorsData[auditor].status = AuditorStatus.Inactive;
+        token.safeTransfer(foundation, totalAmount);
     }
 
     function _transferTokenFrom(uint amount) internal returns (uint256 balance) {
@@ -321,6 +332,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     // anyone can call
     function updateAuditorState(address auditor) public {
+        require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
         (uint256 count, bool status) = getUpdatedStatus(auditor);
         AuditorData storage auditorData = auditorsData[auditor];
         auditorData.endorsementCount = count;
@@ -347,7 +359,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         status = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
     }
 
-    function updateEndorsementCountBatch(address[] calldata _auditors) external {
+    function updateAuditorStateInBatch(address[] calldata _auditors) external {
         uint256 length = _auditors.length;
         for (uint256 i = 0 ; i < length ; i++) {
             updateAuditorState(_auditors[i]);

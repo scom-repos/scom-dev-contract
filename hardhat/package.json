@@ -1,0 +1,14 @@
+{
+    "scripts": {
+        "postinstall": "ln -s ../node_modules/@openswap/sdk/ openswap",
+        "compile": "npx hardhat compile",
+        "compile:openswap": "npx hardhat --config ./hardhat-openswap.config.ts compile",
+        "compile:test": "npx hardhat --config ./hardhat-test.config.ts compile",
+        "node": "npx hardhat node",
+        "coverage": "PROVIDER_URL=http://127.0.0.1:8545 npx hardhat coverage --solcoverjs ./hardhat/.solcover.js --testfiles ./coverage.ts && mv ../coverage.json ./"
+    },
+    "devDependencies": {
+        "hardhat": "^2.14.1",
+        "solidity-coverage": "^0.8.2"
+    }
+}

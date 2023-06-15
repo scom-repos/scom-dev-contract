@@ -87,6 +87,14 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         decodeAuthorizeEvent(event: Event): AuditInfo.AuthorizeEvent;
         parseDeauthorizeEvent(receipt: TransactionReceipt): AuditInfo.DeauthorizeEvent[];
         decodeDeauthorizeEvent(event: Event): AuditInfo.DeauthorizeEvent;
+        parseSetAuditDurationEvent(receipt: TransactionReceipt): AuditInfo.SetAuditDurationEvent[];
+        decodeSetAuditDurationEvent(event: Event): AuditInfo.SetAuditDurationEvent;
+        parseSetMinAuditRequiredEvent(receipt: TransactionReceipt): AuditInfo.SetMinAuditRequiredEvent[];
+        decodeSetMinAuditRequiredEvent(event: Event): AuditInfo.SetMinAuditRequiredEvent;
+        parseSetPassingThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetPassingThresholdEvent[];
+        decodeSetPassingThresholdEvent(event: Event): AuditInfo.SetPassingThresholdEvent;
+        parseSetWarningThresholdEvent(receipt: TransactionReceipt): AuditInfo.SetWarningThresholdEvent[];
+        decodeSetWarningThresholdEvent(event: Event): AuditInfo.SetWarningThresholdEvent;
         parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditInfo.StartOwnershipTransferEvent[];
         decodeStartOwnershipTransferEvent(event: Event): AuditInfo.StartOwnershipTransferEvent;
         parseTransferOwnershipEvent(receipt: TransactionReceipt): AuditInfo.TransferOwnershipEvent[];
@@ -134,7 +142,7 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
         };
         latestAuditResult: {
-            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+            (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
         };
         minAuditRequired: {
             (options?: TransactionOptions): Promise<BigNumber>;
@@ -204,6 +212,22 @@ declare module "@scom/portal-contract/contracts/AuditInfo.ts" {
         }
         interface DeauthorizeEvent {
             user: string;
+            _event: Event;
+        }
+        interface SetAuditDurationEvent {
+            auditDuration: BigNumber;
+            _event: Event;
+        }
+        interface SetMinAuditRequiredEvent {
+            minAuditRequired: BigNumber;
+            _event: Event;
+        }
+        interface SetPassingThresholdEvent {
+            passingThreshold: BigNumber;
+            _event: Event;
+        }
+        interface SetWarningThresholdEvent {
+            warningThreshold: BigNumber;
             _event: Event;
         }
         interface StartOwnershipTransferEvent {
@@ -332,7 +356,9 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
     }
     export interface IPenalizeParams {
         auditor: string;
-        amount: number | BigNumber;
+        unfreezeAuditor: boolean;
+        staker: string[];
+        amount: (number | BigNumber)[];
     }
     export interface IRevokeEndorsementParams {
         auditor: string;
@@ -385,8 +411,8 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
         decodeSetCooldownPeriodEvent(event: Event): AuditorInfo.SetCooldownPeriodEvent;
         parseSetMinEndorsementsRequiredEvent(receipt: TransactionReceipt): AuditorInfo.SetMinEndorsementsRequiredEvent[];
         decodeSetMinEndorsementsRequiredEvent(event: Event): AuditorInfo.SetMinEndorsementsRequiredEvent;
-        parseSetMinStakeEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakeEvent[];
-        decodeSetMinStakeEvent(event: Event): AuditorInfo.SetMinStakeEvent;
+        parseSetMinStakesEvent(receipt: TransactionReceipt): AuditorInfo.SetMinStakesEvent[];
+        decodeSetMinStakesEvent(event: Event): AuditorInfo.SetMinStakesEvent;
         parseStakeBondEvent(receipt: TransactionReceipt): AuditorInfo.StakeBondEvent[];
         decodeStakeBondEvent(event: Event): AuditorInfo.StakeBondEvent;
         parseStartOwnershipTransferEvent(receipt: TransactionReceipt): AuditorInfo.StartOwnershipTransferEvent[];
@@ -574,7 +600,7 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             (auditor: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (auditor: string, options?: TransactionOptions) => Promise<void>;
         };
-        updateEndorsementCountBatch: {
+        updateAuditorStateInBatch: {
             (auditors: string[], options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (auditors: string[], options?: TransactionOptions) => Promise<void>;
         };
@@ -608,8 +634,8 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             _event: Event;
         }
         interface PenalizeEvent {
-            sender: string;
             auditor: string;
+            staker: string;
             amount: BigNumber;
             auditorBalance: BigNumber;
             stakerAuditorBalance: BigNumber;
@@ -628,8 +654,8 @@ declare module "@scom/portal-contract/contracts/AuditorInfo.ts" {
             minEndorsementsRequired: BigNumber;
             _event: Event;
         }
-        interface SetMinStakeEvent {
-            minStake: BigNumber;
+        interface SetMinStakesEvent {
+            minStakes: BigNumber;
             _event: Event;
         }
         interface StakeBondEvent {

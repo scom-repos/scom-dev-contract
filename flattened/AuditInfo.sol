@@ -629,13 +629,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     event AddAuditor(uint256 indexed auditorId, address indexed auditor);
     event FreezeAuditor(address indexed auditor);
-    event SetMinStake(uint256 minStake);
+    event SetMinStakes(uint256 minStakes);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
     event SetCooldownPeriod(uint256 cooldownPeriod);
     event StakeBond(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event UnstakeBondRequest(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event WithdrawBond(address indexed sender, uint256 amount);
-    event Penalize(address indexed sender, address indexed auditor, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
+    event Penalize(address indexed auditor, address indexed staker, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
     event RevokeEndorsement(address indexed endorser, address indexed endorsee);
 
@@ -693,7 +693,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     function setMinStakes(uint256 _minStakes) external onlyOwner {
         minStakes = _minStakes;
-        emit SetMinStake(_minStakes);
+        emit SetMinStakes(_minStakes);
     }
     function setMinEndorsementsRequired(uint256 _minEndorsementsRequired) external onlyOwner {
         minEndorsementsRequired = _minEndorsementsRequired;
@@ -792,7 +792,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     }
     function unstakeBondRequest(address auditor, uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
         require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
-        uint256 auditorId = auditorIds[msg.sender];
+        uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
         require(stakeTo[msg.sender][auditor].balance > 0, "no stakes");
@@ -813,7 +813,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             request.releaseTime = block.timestamp + cooldownPeriod;
         }
 
-        if (auditorBalance < minStakes) {
+        if (auditorsData[auditor].status != AuditorStatus.Super && auditorBalance < minStakes) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
         }
 
@@ -828,15 +828,26 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         token.safeTransfer(msg.sender, amount);
         emit WithdrawBond(msg.sender, amount);
     }
-    function penalize(address auditor, uint256 amount) external auth nonReentrant {
-        uint256 stakerAuditorBalance = stakeTo[msg.sender][auditor].balance  - amount;
-        stakeTo[msg.sender][auditor].balance = stakerAuditorBalance;
-        uint256 auditorBalance = auditorsData[msg.sender].balance - amount;
-        auditorsData[msg.sender].balance = auditorBalance;
+    function penalize(address auditor, bool unfreezeAuditor, address[] calldata staker, uint256[] calldata amount) external auth nonReentrant {
+        require(auditorsData[auditor].status == AuditorStatus.Freezed, "auditor not freezed");
+        uint256 length = staker.length;
+        require(length == amount.length, "length not matched");
+        uint256 i;
+        uint256 totalAmount;
+        for (; i < length ; i++) {
+            address _staker = staker[i];
+            uint256 _amount = amount[i];
+            uint256 stakerAuditorBalance = stakeTo[_staker][auditor].balance  - _amount;
+            stakeTo[_staker][auditor].balance = stakerAuditorBalance;
+            uint256 auditorBalance = auditorsData[auditor].balance - _amount;
+            auditorsData[auditor].balance = auditorBalance;
+            totalAmount += _amount;
 
-        token.safeTransfer(foundation, amount);
-
-        emit Penalize(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
+            emit Penalize(auditor, _staker, _amount, auditorBalance, stakerAuditorBalance);
+        }
+        if (unfreezeAuditor)
+            auditorsData[auditor].status = AuditorStatus.Inactive;
+        token.safeTransfer(foundation, totalAmount);
     }
 
     function _transferTokenFrom(uint amount) internal returns (uint256 balance) {
@@ -900,6 +911,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
     // anyone can call
     function updateAuditorState(address auditor) public {
+        require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
         (uint256 count, bool status) = getUpdatedStatus(auditor);
         AuditorData storage auditorData = auditorsData[auditor];
         auditorData.endorsementCount = count;
@@ -926,7 +938,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         status = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
     }
 
-    function updateEndorsementCountBatch(address[] calldata _auditors) external {
+    function updateAuditorStateInBatch(address[] calldata _auditors) external {
         uint256 length = _auditors.length;
         for (uint256 i = 0 ; i < length ; i++) {
             updateAuditorState(_auditors[i]);
@@ -1382,8 +1394,7 @@ contract AuditInfo is Authorization, ReentrancyGuard {
     mapping (uint256 => address[]) public packageVersionsAuditors; // packageVersionsAuditors[packageVersionsId][auditorIdx] = auditor;
     mapping (uint256 => AuditReport[][]) public auditHistory; // auditHistory[packageVersionsId][auditorIdx][historyIndex] = AuditReport
     mapping (uint256 => mapping(address => uint256)) public packageVersionsAuditorsInv; // packageVersionsAuditorsInv[packageVersionsId][auditor] = auditorIdx;
-    mapping (uint256 => AuditResult) public latestAuditResult; // latestAuditResult[packageVersionsId] = auditResult
-    mapping (uint256 => AuditResult) public lastAuditResultBeforeAuditPeriod; // latestAuditResultBeforeAuditPeriod[packageVersionsId] = auditResult
+    mapping (uint256 => AuditResult) public lastAuditResultBeforeAuditPeriod; // lastAuditResultBeforeAuditPeriod[packageVersionsId] = auditResult
 
 
     uint256 public warningThreshold;
@@ -1392,6 +1403,10 @@ contract AuditInfo is Authorization, ReentrancyGuard {
     uint256 public auditDuration;
 
     event AddAuditReport(address indexed auditor, uint256 indexed packageVersionsId, AuditResult auditResult, string ipfsCid);
+    event SetWarningThreshold(uint256 warningThreshold);
+    event SetPassingThreshold(uint256 passingThreshold);
+    event SetAuditDuration(uint256 auditDuration);
+    event SetMinAuditRequired(uint256 minAuditRequired);
 
     modifier onlyActiveAuditor {
         require(auditorInfo.isActiveAuditor(msg.sender), "not from active auditor");
@@ -1399,7 +1414,8 @@ contract AuditInfo is Authorization, ReentrancyGuard {
     }
 
     constructor(ProjectInfo _projectInfo, AuditorInfo _auditorInfo, uint256 _warningThreshold, uint256 _passingThreshold, uint256 _auditDuration, uint256 _minAuditRequired) {
-        require(warningThreshold < _passingThreshold && _passingThreshold <= THRESHOLD_BASE, "invalid threshold");
+        require(_warningThreshold < _passingThreshold, "warningThreshold greater than passingThreshold");
+        require(_passingThreshold < THRESHOLD_BASE, "passingThreshold greater than 1");
         projectInfo = _projectInfo;
         auditorInfo = _auditorInfo;
         warningThreshold = _warningThreshold;
@@ -1408,16 +1424,23 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         minAuditRequired = _minAuditRequired;
     }
     function setWarningThreshold(uint256 _warningThreshold) external onlyOwner {
+        require(_warningThreshold < passingThreshold, "warningThreshold greater than passingThreshold");
         warningThreshold = _warningThreshold;
+        emit SetWarningThreshold(_warningThreshold);
     }
     function setPassingThreshold(uint256 _passingThreshold) external onlyOwner {
+        require(warningThreshold < _passingThreshold, "passingThreshold less than warningThreshold");
+        require(_passingThreshold < THRESHOLD_BASE, "passingThreshold greter than 1");
         passingThreshold = _passingThreshold;
+        emit SetPassingThreshold(_passingThreshold);
     }
     function setAuditDuration(uint256 _auditDuration) external onlyOwner {
         auditDuration = _auditDuration;
+        emit SetAuditDuration(_auditDuration);
     }
     function setMinAuditRequired(uint256 _minAuditRequired) external onlyOwner {
         minAuditRequired = _minAuditRequired;
+        emit SetMinAuditRequired(_minAuditRequired);
     }
 
     function auditHistoryAuditorLength(uint256 packageVersionsId) external view returns (uint256 length)  {
@@ -1460,25 +1483,31 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         );
         emit AddAuditReport(msg.sender, packageVersionsId, auditResult, ipfsCid);
 
+        AuditResult result = latestAuditResult(packageVersionsId);
+        (,,,,uint256 timestamp) = projectInfo.packageVersions(packageVersionsId);
+        if (block.timestamp < timestamp + auditDuration) {
+            lastAuditResultBeforeAuditPeriod[packageVersionsId] = result;
+        }
+    }
+    function latestAuditResult(uint256 packageVersionsId) public view returns (AuditResult result) {
         uint256 length = auditHistory[packageVersionsId].length;
         if (length >= minAuditRequired) {
             uint256 count;
-            for (uint256 i = 0 ; i < length ; i++) {
+            uint256 i;
+
+            while (i < length) {
                 AuditReport[] storage array = auditHistory[packageVersionsId][i];
                 if (array[array.length - 1].auditResult == AuditResult.PASSED) {
                     count++;
                 }
+                unchecked { i++; }
             }
      
-            AuditResult finalResult = (count * THRESHOLD_BASE >= (length * passingThreshold )) ? AuditResult.PASSED : 
-                                      (count * THRESHOLD_BASE >= (length * warningThreshold )) ? AuditResult.WARNING : 
-                                      AuditResult.FAILED;
-
-            latestAuditResult[packageVersionsId] = finalResult;
-            (,,,,uint256 timestamp) = projectInfo.packageVersions(packageVersionsId);
-            if (block.timestamp < timestamp + auditDuration) {
-                lastAuditResultBeforeAuditPeriod[packageVersionsId] = finalResult;
-            }
+            result = (count * THRESHOLD_BASE >= (length * passingThreshold )) ? AuditResult.PASSED : 
+                   ((count * THRESHOLD_BASE >= (length * warningThreshold )) ? AuditResult.WARNING : 
+                   AuditResult.FAILED);
+        } else {
+            result = AuditResult.FAILED;
         }
     }
     function getLastAuditResult(uint256 packageVersionsId) external view returns (address[] memory auditors, AuditResult[] memory results) {
