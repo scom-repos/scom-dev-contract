@@ -4,6 +4,7 @@ import {Wallet, Erc20, BigNumber, Utils, TransactionReceipt} from "@ijstech/eth-
 import assert from "assert";
 
 export function getProvider(url?: string) {
+    url = url || process.env.PROVIDER_URL;
     return url ? new HttpProvider(url) : Ganache.provider({
         wallet:{totalAccounts: 20, mnemonic: "test test test test test test test test test test test junk", defaultBalance: 10000},
         logging: { quiet: true }});
@@ -14,7 +15,7 @@ export function toWeiInv(n: any, unit?: any) {
     return new BigNumber("1").shiftedBy((unit || 18)*2).idiv(new BigNumber(n).shiftedBy(unit || 18));
 }
 
-export async function expectToFail(f:Promise<TransactionReceipt>, error:string): Promise<void> {
+export async function expectToFail(f:Promise<TransactionReceipt>, error=""): Promise<void> {
     try {
         await f;
         throw new Error("Exception not thrown");

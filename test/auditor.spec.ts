@@ -21,6 +21,7 @@ describe('## SC-Contract', async function() {
     let auditor2: string;
     let auditor3: string;
     let auditor4: string;
+    let auditor5: string;
     let staker1: string;
     let staker2: string;
     let nobody: string;
@@ -37,6 +38,7 @@ describe('## SC-Contract', async function() {
         auditor2 = accounts[4];
         auditor3 = accounts[5];
         auditor4 = accounts[6];
+        auditor5 = accounts[10];
 
         staker1 = accounts[7];
         staker2 = accounts[8];
@@ -75,10 +77,18 @@ describe('## SC-Contract', async function() {
         result = await deploy(wallet, deployOptions, (msg)=>{
             console.dir(msg);
         });
+
         tokenInfoContract = new Contracts.Scom(wallet, result.token);
         auditorInfoContract = new Contracts.AuditorInfo(wallet, result.auditor);
+
+        await auditorInfoContract.permit(deployer);
     });
-    
+    /*
+    auditor3 -> auditor3: 1
+    stkaer2 -> auditor4: 2
+    stkaer1 -> auditor3: 1
+    stkaer1 -> auditor4: 1
+    */
     it('generic audit 1', async function(){
         wallet.defaultAccount = minter;
         await tokenInfoContract.mint({account: auditor3, amount: Utils.toDecimals(1)});
@@ -118,7 +128,7 @@ describe('## SC-Contract', async function() {
             balance: Utils.toDecimals(1),
             endorsementCount: 1
         });
-
+        
         // auditor 2 endorses auditor 3
         wallet.defaultAccount = auditor2;
         receipt = await auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:false});
@@ -237,18 +247,52 @@ describe('## SC-Contract', async function() {
             balance: Utils.toDecimals(3),
             endorsementCount: 2
         });
-
+    });
+    it('check states', async function () {
+        assertEqual(await auditorInfoContract.stakerAuditorLength(staker1), 2);
+        assertEqual(await auditorInfoContract.stakerAuditorLength(auditor4), 0);
+        assertEqual(await auditorInfoContract.stakerAuditorLength(auditor3), 1);
+        assertEqual(await auditorInfoContract.stakedByLength(auditor3), 2);
+        assertEqual(await auditorInfoContract.endorsingLength(auditor3), 1);
+        assertEqual(await auditorInfoContract.endorsedByLength(auditor3), 2);
         assertEqual(await auditorInfoContract.getStakerAuditor({staker: staker1, start:0, length: 10}), [ auditor3, auditor4 ]);
         assertEqual(await auditorInfoContract.getStakedBy({auditor: auditor3, start:0, length: 10}), [ auditor3, staker1 ]);
         assertEqual(await auditorInfoContract.getEndorsing({endorser: auditor1, start:0, length: 10}), [ auditor3, auditor4 ]);
         assertEqual(await auditorInfoContract.getEndorsedBy({endorsee: auditor3, start:0, length: 10}), [ auditor1, auditor2 ]);
+
+        let auditors = await auditorInfoContract.getAuditors({auditorIdStart:1, length:10});
+        assertEqual(auditors, {
+            auditors: [
+                auditor1,
+                auditor2,
+                auditor3,
+                auditor4
+            ],
+            auditorsData: [
+                {status: 3, balance: Utils.toDecimals(0), endorsementCount: 0},
+                {status: 3, balance: Utils.toDecimals(0), endorsementCount: 0},
+                {status: 1, balance: Utils.toDecimals(2), endorsementCount: 2},
+                {status: 1, balance: Utils.toDecimals(3), endorsementCount: 2}
+            ]
+        });
     });
-    it('withdraw endorsement', async function(){
+    it('failed cases', async function () {
+        wallet.defaultAccount = auditor1;
+        await expectToFail(auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:true}), "already endorsed");
+        await expectToFail(auditorInfoContract.endorseAuditor({auditor:nobody, doUpdate:true}), "endorsee is not an auditor");
+        wallet.defaultAccount = auditor3;
+        await expectToFail(auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:true}), "cannot self endorse");
+        wallet.defaultAccount = nobody;
+        await expectToFail(auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:true}), "endorser is not an auditor");
+        await expectToFail(auditorInfoContract.revokeEndorsement({auditor:auditor3, doUpdate:true}), "not an endorser");
+    })
+    it('revoke endorsement', async function(){
         wallet.defaultAccount = auditor1;
         let receipt = await auditorInfoContract.revokeEndorsement({auditor: auditor3, doUpdate:false});
         let event = auditorInfoContract.parseRevokeEndorsementEvent(receipt);
         assertEqual(event.length, 1);
         assertEqual(event[0], {endorser: auditor1, endorsee:auditor3}, true);
+        await expectToFail(auditorInfoContract.revokeEndorsement({auditor:auditor3, doUpdate:true}), "not an endorser");
 
         // auditor3's isActiveAuditor() should show the updated state before calling updateAuditorState()
         assertEqual(await auditorInfoContract.isActiveAuditor(auditor3), false);
@@ -290,5 +334,138 @@ describe('## SC-Contract', async function() {
             balance: Utils.toDecimals(3),
             endorsementCount: 1
         });
+
+        wallet.defaultAccount = auditor3;
+        await expectToFail(auditorInfoContract.endorseAuditor({auditor:auditor4, doUpdate:true}), "endorser is not an active auditor");
+
+    });
+    /*
+    auditor3 -> auditor3: 1
+    stkaer2 -> auditor4: 2
+    stkaer1 -> auditor3: 1
+    stkaer1 -> auditor4: 1
+    */
+    it('unstake', async function(){
+        wallet.defaultAccount = staker2;
+        let receipt = await auditorInfoContract.unstakeBondRequest({auditor: auditor4, amount: Utils.toDecimals(1)});
+        let event = auditorInfoContract.parseUnstakeBondRequestEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            sender: staker2, 
+            auditor: auditor4, 
+            amount: Utils.toDecimals(1), 
+            auditorBalance: Utils.toDecimals(2),
+            stakerAuditorBalance: Utils.toDecimals(1)
+        }, true);
+
+        await auditorInfoContract.unstakeBondRequest({auditor: auditor4, amount: Utils.toDecimals(1)});
+
+        await wallet.setBlockTime(100);
+
+        receipt = await auditorInfoContract.withdrawBond();
+        let event2 = auditorInfoContract.parseWithdrawBondEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            sender: staker2, 
+            amount: Utils.toDecimals(2)
+        }, true);
+        let event3 = tokenInfoContract.parseTransferEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {
+            from: auditorInfoContract.address,
+            to: staker2,
+            value: Utils.toDecimals(2)
+        }, true);
+        assertEqual(await auditorInfoContract.auditorsData(auditor4), {
+            status: 0,
+            balance: Utils.toDecimals(1),
+            endorsementCount: 1
+        });
+    });
+    /*
+    auditor3 -> auditor3: 1
+    stkaer2 -> auditor4: 0
+    stkaer1 -> auditor3: 1
+    stkaer1 -> auditor4: 1
+    */
+    it('freeze', async function(){
+        wallet.defaultAccount = auditor1;
+        await auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:true});
+
+        wallet.defaultAccount = nobody;
+        await expectToFail(auditorInfoContract.freezeAuditor(auditor3));
+
+        wallet.defaultAccount = deployer;
+        await expectToFail(auditorInfoContract.freezeAuditor(nobody), 'auditor not exist');
+
+        let receipt = await auditorInfoContract.freezeAuditor(auditor3);
+        let event = auditorInfoContract.parseFreezeAuditorEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            auditor: auditor3
+        }, true);
+        assertEqual(await auditorInfoContract.auditorsData(auditor3), {
+            status: 2,
+            balance: Utils.toDecimals(2),
+            endorsementCount: 2
+        });
+
+        
+        receipt = await auditorInfoContract.penalize({auditor:auditor3, unfreezeAuditor:true, staker:[auditor3,staker1], amount:[Utils.toDecimals("0.75"),Utils.toDecimals("0.25")]});
+        let event2 = auditorInfoContract.parsePenalizeEvent(receipt);
+        assertEqual(event2.length, 2);
+        assertEqual(event2, [
+            {
+                auditor: auditor3, 
+                staker: auditor3, 
+                amount: Utils.toDecimals("0.75"), 
+                auditorBalance: Utils.toDecimals("1.25"), 
+                stakerAuditorBalance: Utils.toDecimals("0.25")
+            },{
+                auditor: auditor3, 
+                staker: staker1, 
+                amount: Utils.toDecimals("0.25"), 
+                auditorBalance: Utils.toDecimals("1"), 
+                stakerAuditorBalance: Utils.toDecimals("0.75")
+            }
+        ], true);
+        assertEqual(await auditorInfoContract.auditorsData(auditor3), {
+            status: 0,
+            balance: Utils.toDecimals(1),
+            endorsementCount: 2
+        });
+
+        await expectToFail(auditorInfoContract.penalize({auditor:auditor3, unfreezeAuditor:true, staker:[], amount:[]}), "auditor not freezed")
+
+        wallet.defaultAccount = nobody;
+        await auditorInfoContract.updateAuditorStateInBatch([auditor3]);
+        assertEqual(await auditorInfoContract.auditorsData(auditor3), {
+            status: 1,
+            balance: Utils.toDecimals(1),
+            endorsementCount: 2
+        });
+    });
+    it('set parameters', async function() {
+        wallet.defaultAccount = deployer;
+
+        let receipt = await auditorInfoContract.setMinStakes(1000);
+        let event1 = auditorInfoContract.parseSetMinStakesEvent(receipt);
+        assertEqual(event1.length, 1);
+        assertEqual(event1[0], {minStakes: 1000}, true);
+
+        receipt = await auditorInfoContract.setMinEndorsementsRequired(1000);
+        let event2 = auditorInfoContract.parseSetMinEndorsementsRequiredEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {minEndorsementsRequired: 1000}, true);
+
+        receipt = await auditorInfoContract.setCooldownPeriod(1000);
+        let event3 = auditorInfoContract.parseSetCooldownPeriodEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {cooldownPeriod: 1000}, true);
+
+        wallet.defaultAccount = deployer;
+        await expectToFail(auditorInfoContract.setMinStakes(0));
+        await expectToFail(auditorInfoContract.setMinEndorsementsRequired(0));
+        await expectToFail(auditorInfoContract.setCooldownPeriod(0));
     });
 });

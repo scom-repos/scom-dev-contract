@@ -3,23 +3,17 @@ import {BigNumber, Utils, Wallet} from "@ijstech/eth-wallet";
 import {Contracts, deploy, DefaultDeployOptions} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
+import { assertEqual, getProvider, expectToFail, print } from './helper';
 
 describe('## SC-Contract', async function() {
     this.timeout(20000);
     let accounts: string[];
-    let provider = Ganache.provider({
-        logging: {
-            logger: {
-                log: () => { }
-            }
-        }
-    });
 
     let domainContract: Contracts.DomainInfo;
     let tokenContract: Contracts.Scom;   
     let projectContract: Contracts.ProjectInfo;
     
-    const wallet = new Wallet(provider); 
+    const wallet = new Wallet(getProvider());
     before(async function(){
         accounts = await wallet.accounts; 
         wallet.defaultAccount = accounts[0];
@@ -122,16 +116,10 @@ describe('## SC-Contract', async function() {
             wallet.defaultAccount = accounts[0]; 
         })
         it('New Invalid Project', async function() {
-            try {
-                await projectContract.newProject({
-                    name: '_abc',
-                    ipfsCid: 'abc'
-                });
-            } catch (err) {
-                assert.strictEqual(err.data.reason, 'invalid project name');
-                return;
-            }  
-            throw new Error('Exception not catched');
+            await expectToFail(projectContract.newProject({
+                name: '_abc',
+                ipfsCid: 'abc'
+            }), 'invalid project name');
         })
         it('New Project', async function(){
             let newProjectReceipt = await projectContract.newProject({
@@ -148,16 +136,10 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(ipfsCid, 'abc');
         })
         it('Duplicate Project Name', async function() {
-            try {
-                await projectContract.newProject({
-                    name: 'abc',
-                    ipfsCid: 'abc'
-                });
-            } catch (err) {
-                assert.strictEqual(err.data.reason, 'invalid project name');
-                return;
-            }  
-            throw new Error('Exception not catched');
+            await expectToFail(projectContract.newProject({
+                name: 'abc',
+                ipfsCid: 'abc'
+            }), 'invalid project name');
         })
         it('Update Project Name', async function() {
             await projectContract.updateProjectName({
@@ -176,18 +158,12 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(ipfsCid, 'abcd');
         })
         it('New Invalid Package', async function() {
-            try {
-                await projectContract.newPackage({
-                    projectId: 0,
-                    name: '???',
-                    ipfsCid: '',
-                    category: 'widget'
-                });
-            } catch (err) {
-                assert.strictEqual(err.data.reason, 'invalid package name');
-                return;
-            }
-            throw new Error('Exception not catched');
+            await expectToFail(projectContract.newPackage({
+                projectId: 0,
+                name: '???',
+                ipfsCid: '',
+                category: 'widget'
+            }), 'invalid package name');
         })
         it('New Package', async function() {
             let newPackageReceipt = await projectContract.newPackage({
@@ -202,18 +178,12 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(packageInfo.ipfsCid, 'abc');
         })
         it('Duplicate Package Name', async function() {
-            try {
-                await projectContract.newPackage({
-                    projectId: 0,
-                    name: 'package',
-                    ipfsCid: 'abc',
-                    category: 'widget'
-                });
-            } catch (err) {
-                assert.strictEqual(err.data.reason, 'invalid package name');
-                return;
-            }  
-            throw new Error('Exception not catched');
+            await expectToFail(projectContract.newPackage({
+                projectId: 0,
+                name: 'package',
+                ipfsCid: 'abc',
+                category: 'widget'
+            }), 'invalid package name');
         })
         it('Duplicate Package Name (different project)', async function() {
             let newProjectReceipt = await projectContract.newProject({
@@ -305,16 +275,10 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(packageVersion.status.toNumber(), 1);
         })
         it('Update Package Version IpfsCid (not under working)', async function() {
-            try {
-                await projectContract.updatePackageVersionIpfsCid({
-                    packageVersionId: 0,
-                    ipfsCid: 'baf'
-                });
-            } catch (err) {
-                assert.strictEqual(err.data.reason, 'not under working');
-                return;
-            }
-            throw new Error('Exception not catched');
+            await expectToFail(projectContract.updatePackageVersionIpfsCid({
+                packageVersionId: 0,
+                ipfsCid: 'baf'
+            }), 'not under working');
         })
     })
 })
