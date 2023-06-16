@@ -1,5 +1,5 @@
 {
-  "name": "@scom/portal-contract",
+  "name": "@scom/scom-dev-contract",
   "version": "0.1.7",
   "description": "",
   "main": "lib/index.js",
