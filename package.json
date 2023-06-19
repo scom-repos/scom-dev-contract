@@ -6,7 +6,7 @@
   "plugin": "dist/index.js",
   "pluginTypes": "pluginTypes/index.d.ts",
   "types": "types/index.d.ts",
-"scripts": {
+  "scripts": {
     "build": "rm -rf lib && rm -rf dist && rm -rf types && rm -rf pluginTypes && rm -rf src/contracts && npx @ijstech/compiler && npm run build:deployer",
     "build:deployer": "rm -rf deployer && npx @ijstech/cli bundle deployer",
     "build:mock-contracts": "cd packages/mock-contracts && npm run build",

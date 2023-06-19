@@ -7,7 +7,7 @@ import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
 
 
-describe('##Contracts', function() {  
+describe('## Project', function() {  
     this.timeout(40000);
     let wallet = new Wallet(getProvider());
     let token: Scom;   
