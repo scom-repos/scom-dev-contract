@@ -40,6 +40,17 @@ export class AuditorInfo extends _Contract{
             _event: event
         };
     }
+    parseAuditorStateChangeEvent(receipt: TransactionReceipt): AuditorInfo.AuditorStateChangeEvent[]{
+        return this.parseEvents(receipt, "AuditorStateChange").map(e=>this.decodeAuditorStateChangeEvent(e));
+    }
+    decodeAuditorStateChangeEvent(event: Event): AuditorInfo.AuditorStateChangeEvent{
+        let result = event.data;
+        return {
+            auditor: result.auditor,
+            newState: new BigNumber(result.newState),
+            _event: event
+        };
+    }
     parseAuthorizeEvent(receipt: TransactionReceipt): AuditorInfo.AuthorizeEvent[]{
         return this.parseEvents(receipt, "Authorize").map(e=>this.decodeAuthorizeEvent(e));
     }
@@ -68,16 +79,6 @@ export class AuditorInfo extends _Contract{
         return {
             endorser: result.endorser,
             endorsee: result.endorsee,
-            _event: event
-        };
-    }
-    parseFreezeAuditorEvent(receipt: TransactionReceipt): AuditorInfo.FreezeAuditorEvent[]{
-        return this.parseEvents(receipt, "FreezeAuditor").map(e=>this.decodeFreezeAuditorEvent(e));
-    }
-    decodeFreezeAuditorEvent(event: Event): AuditorInfo.FreezeAuditorEvent{
-        let result = event.data;
-        return {
-            auditor: result.auditor,
             _event: event
         };
     }
@@ -764,10 +765,10 @@ export class AuditorInfo extends _Contract{
 }
 export module AuditorInfo{
     export interface AddAuditorEvent {auditorId:BigNumber,auditor:string,_event:Event}
+    export interface AuditorStateChangeEvent {auditor:string,newState:BigNumber,_event:Event}
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
     export interface EndorseAuditorEvent {endorser:string,endorsee:string,_event:Event}
-    export interface FreezeAuditorEvent {auditor:string,_event:Event}
     export interface PenalizeEvent {auditor:string,staker:string,amount:BigNumber,auditorBalance:BigNumber,stakerAuditorBalance:BigNumber,_event:Event}
     export interface RevokeEndorsementEvent {endorser:string,endorsee:string,_event:Event}
     export interface SetCooldownPeriodEvent {cooldownPeriod:BigNumber,_event:Event}

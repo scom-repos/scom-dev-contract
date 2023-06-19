@@ -22,10 +22,6 @@ export interface ILockParams {
     endTime: number | BigNumber;
     decrementDecimal: number | BigNumber;
 }
-export interface IPublicSwapWithWETHParams {
-    from: string;
-    to: string;
-}
 export interface IReleaseAndSwapParams {
     trancheIds: (number | BigNumber)[];
     to: string;
@@ -35,12 +31,16 @@ export interface IReleaseAndSwapWithWETHParams {
     from: string;
     to: string;
 }
+export interface ISwapWithWETHParams {
+    from: string;
+    to: string;
+}
 export interface IUpdateReleaseSchduleParams {
     endTime: number | BigNumber;
     startingAmount: number | BigNumber;
     decrementDecimal: number | BigNumber;
 }
-export interface IWithdrawScomFromTrancheParams {
+export interface IWithdrawFromTrancheParams {
     trancheIds: (number | BigNumber)[];
     amountScom: (number | BigNumber)[];
 }
@@ -64,6 +64,8 @@ export declare class Vault extends _Contract {
     decodeStartOwnershipTransferEvent(event: Event): Vault.StartOwnershipTransferEvent;
     parseSwapEvent(receipt: TransactionReceipt): Vault.SwapEvent[];
     decodeSwapEvent(event: Event): Vault.SwapEvent;
+    parseTrancheReleaseEvent(receipt: TransactionReceipt): Vault.TrancheReleaseEvent[];
+    decodeTrancheReleaseEvent(event: Event): Vault.TrancheReleaseEvent;
     parseTransferOwnershipEvent(receipt: TransactionReceipt): Vault.TransferOwnershipEvent[];
     decodeTransferOwnershipEvent(event: Event): Vault.TransferOwnershipEvent;
     parseUnlockEvent(receipt: TransactionReceipt): Vault.UnlockEvent[];
@@ -75,7 +77,7 @@ export declare class Vault extends _Contract {
     amm: {
         (options?: TransactionOptions): Promise<string>;
     };
-    amountUsedInTranche: {
+    availableBalanceInTranche: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     claim: {
@@ -95,6 +97,10 @@ export declare class Vault extends _Contract {
     deny: {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
+    };
+    directRelease: {
+        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     endTime: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -143,10 +149,6 @@ export declare class Vault extends _Contract {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
     };
-    publicSwapWithWETH: {
-        (params: IPublicSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IPublicSwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
-    };
     releaseAndSwap: {
         (params: IReleaseAndSwapParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IReleaseAndSwapParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
@@ -154,14 +156,6 @@ export declare class Vault extends _Contract {
     releaseAndSwapWithWETH: {
         (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
-    };
-    releaseFromLocked: {
-        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
-    };
-    releaseFromUnlocked: {
-        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
     releaseTranche: {
         (trancheIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -180,11 +174,12 @@ export declare class Vault extends _Contract {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
     swap: {
-        (options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
-        call: (options?: number | BigNumber | TransactionOptions) => Promise<{
-            amountScom: BigNumber;
-            to: string;
-        }>;
+        (to: string, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+        call: (to: string, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+    };
+    swapWithWETH: {
+        (params: ISwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: ISwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
     takeOwnership: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -217,6 +212,10 @@ export declare class Vault extends _Contract {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (options?: TransactionOptions) => Promise<BigNumber>;
     };
+    unlockAndRelease: {
+        (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+    };
     unlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
@@ -230,13 +229,13 @@ export declare class Vault extends _Contract {
     weth: {
         (options?: TransactionOptions): Promise<string>;
     };
-    withdrawScomFromRelease: {
+    withdrawFromRelease: {
         (amount: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (amount: number | BigNumber, options?: TransactionOptions) => Promise<void>;
     };
-    withdrawScomFromTranche: {
-        (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: IWithdrawScomFromTrancheParams, options?: TransactionOptions) => Promise<void>;
+    withdrawFromTranche: {
+        (params: IWithdrawFromTrancheParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IWithdrawFromTrancheParams, options?: TransactionOptions) => Promise<void>;
     };
     private assign;
 }
@@ -251,6 +250,7 @@ export declare module Vault {
         to: string;
         amountScom: BigNumber;
         amountEth: BigNumber;
+        remainingBalance: BigNumber;
         _event: Event;
     }
     interface DeauthorizeEvent {
@@ -270,7 +270,8 @@ export declare module Vault {
     }
     interface ReleaseEvent {
         amount: BigNumber;
-        balance: BigNumber;
+        unlockedAmount: BigNumber;
+        releasedAmount: BigNumber;
         _event: Event;
     }
     interface StartOwnershipTransferEvent {
@@ -282,6 +283,11 @@ export declare module Vault {
         to: string;
         amountScom: BigNumber;
         amountEth: BigNumber;
+        remainingBalance: BigNumber;
+        _event: Event;
+    }
+    interface TrancheReleaseEvent {
+        trancheId: BigNumber;
         _event: Event;
     }
     interface TransferOwnershipEvent {
@@ -296,10 +302,13 @@ export declare module Vault {
     }
     interface WithdrawScomFromReleaseEvent {
         amount: BigNumber;
+        balance: BigNumber;
         _event: Event;
     }
     interface WithdrawScomFromTrancheEvent {
+        trancheId: BigNumber;
         amount: BigNumber;
+        remainingBalance: BigNumber;
         _event: Event;
     }
 }

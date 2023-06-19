@@ -628,7 +628,6 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public endorsedByInv; //endorsedBy[to/endorsee][from/endorser] = idx2
 
     event AddAuditor(uint256 indexed auditorId, address indexed auditor);
-    event FreezeAuditor(address indexed auditor);
     event SetMinStakes(uint256 minStakes);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
     event SetCooldownPeriod(uint256 cooldownPeriod);
@@ -638,6 +637,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     event Penalize(address indexed auditor, address indexed staker, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
     event RevokeEndorsement(address indexed endorser, address indexed endorsee);
+    event AuditorStateChange(address indexed auditor, AuditorStatus newState);
 
     constructor(IERC20 _token, address _foundation, uint256 _minStakes, uint256 _minEndorsementsRequired, uint256 _cooldownPeriod) {
         token = _token;
@@ -660,15 +660,18 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         length = endorsedBy[endorsee].length;
     }
     function getArray(address[] storage array, uint256 start, uint256 length) internal view returns (address[] memory addresses) {
+        unchecked {
         uint256 arrLength = array.length;
+        if (start > arrLength) {
+            start = arrLength;
+        }
         if (length > arrLength) {
             length = arrLength;
         }
         addresses = new address[](length);
-        uint256 i;
-        while (i < length) {
-            addresses[i] = array[start];
-            unchecked { i++; start++; }
+        for (uint256 i; i < length; i++) {
+            addresses[i] = array[start++];
+        }
         }
     }
     function getStakerAuditor(address staker, uint256 start, uint256 length) external view returns (address[] memory _auditors) {
@@ -714,8 +717,15 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         address[] memory _auditors,
         AuditorData[] memory _auditorsData
     ) {
+        unchecked {
+        if (auditorIdStart == 0) {
+            auditorIdStart = 1;
+        }
+        else if (auditorIdStart >= auditorIdCount + 1) {
+            auditorIdStart = auditorIdCount + 1;
+        }
         if (auditorIdStart + length > auditorIdCount + 1) {
-            length = auditorIdCount - auditorIdStart + 1;
+            length = auditorIdCount + 1 - auditorIdStart;
         }
         _auditors = new address[](length);
         _auditorsData = new AuditorData[](length);
@@ -724,6 +734,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             _auditors[i] = auditor;
             _auditorsData[i] = auditorsData[auditor];
             auditorIdStart++;
+        }
         }
     }
 
@@ -747,12 +758,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             });
             auditors[auditorId] = auditor;
             auditorIds[auditor] = auditorId;
+            emit AddAuditor(auditorId, auditor);
         }else{
             if (isSuperAuditor){
                 auditorsData[auditor].status = AuditorStatus.Super;
+                emit AuditorStateChange(auditor, AuditorStatus.Super);
             }
         }
-        emit AddAuditor(auditorId, auditor);
     }
     // TODO: disable super auditor only?
     function freezeAuditor(address auditor) external onlyOwner {
@@ -760,7 +772,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         require(auditorId > 0, "auditor not exist");
         // require(auditorsData[auditor].status == AuditorStatus.Super, "not a super auditor");
         auditorsData[auditor].status = AuditorStatus.Freezed;
-        emit FreezeAuditor(auditor);
+        emit AuditorStateChange(auditor, AuditorStatus.Freezed);
     }
 
     function stakeBond(address auditor, uint256 amount, bool doUpdate) public /*onlyActiveAuditor*/ nonReentrant {
@@ -791,7 +803,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             updateAuditorState(auditor);
     }
     function unstakeBondRequest(address auditor, uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
-        require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
+        require(auditorsData[auditor].status != AuditorStatus.Freezed, "auditor freezed");
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
@@ -815,6 +827,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
         if (auditorsData[auditor].status != AuditorStatus.Super && auditorBalance < minStakes) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
+            emit AuditorStateChange(auditor, AuditorStatus.Inactive);
         }
 
         emit UnstakeBondRequest(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
@@ -834,7 +847,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         require(length == amount.length, "length not matched");
         uint256 i;
         uint256 totalAmount;
-        for (; i < length ; i++) {
+        while (i < length) {
             address _staker = staker[i];
             uint256 _amount = amount[i];
             uint256 stakerAuditorBalance = stakeTo[_staker][auditor].balance  - _amount;
@@ -844,9 +857,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             totalAmount += _amount;
 
             emit Penalize(auditor, _staker, _amount, auditorBalance, stakerAuditorBalance);
+
+            unchecked { i++; }
         }
-        if (unfreezeAuditor)
+        if (unfreezeAuditor) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
+            emit AuditorStateChange(auditor, AuditorStatus.Inactive);
+        }
         token.safeTransfer(foundation, totalAmount);
     }
 
@@ -912,17 +929,19 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     // anyone can call
     function updateAuditorState(address auditor) public {
         require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
-        (uint256 count, bool status) = getUpdatedStatus(auditor);
+        (uint256 count, bool isActive) = getUpdatedStatus(auditor);
         AuditorData storage auditorData = auditorsData[auditor];
         auditorData.endorsementCount = count;
         if (auditorData.status != AuditorStatus.Super) {
-             auditorData.status = status ? AuditorStatus.Active : AuditorStatus.Inactive;
+            AuditorStatus status = isActive ? AuditorStatus.Active : AuditorStatus.Inactive;
+            auditorData.status = status;
+            emit AuditorStateChange(auditor, status);
         }
     }
-    function isActiveAuditor(address auditor) external view returns (bool active) {
-        (, active) = getUpdatedStatus(auditor);
+    function isActiveAuditor(address auditor) external view returns (bool isActive) {
+        (, isActive) = getUpdatedStatus(auditor);
     }
-    function getUpdatedStatus(address auditor) internal view returns (uint256 count, bool status) {
+    function getUpdatedStatus(address auditor) internal view returns (uint256 count, bool isActive) {
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not an auditor");
         address[] storage array = endorsedBy[auditor];
@@ -935,13 +954,15 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         }
 
         AuditorData storage auditorData = auditorsData[auditor];
-        status = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
+        isActive = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
     }
 
     function updateAuditorStateInBatch(address[] calldata _auditors) external {
+        unchecked {
         uint256 length = _auditors.length;
         for (uint256 i = 0 ; i < length ; i++) {
             updateAuditorState(_auditors[i]);
+        }
         }
     }
 }
@@ -1490,17 +1511,15 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         }
     }
     function latestAuditResult(uint256 packageVersionsId) public view returns (AuditResult result) {
+        unchecked {
         uint256 length = auditHistory[packageVersionsId].length;
         if (length >= minAuditRequired) {
             uint256 count;
-            uint256 i;
-
-            while (i < length) {
+            for (uint256 i; i < length; i++) {
                 AuditReport[] storage array = auditHistory[packageVersionsId][i];
                 if (array[array.length - 1].auditResult == AuditResult.PASSED) {
                     count++;
                 }
-                unchecked { i++; }
             }
      
             result = (count * THRESHOLD_BASE >= (length * passingThreshold )) ? AuditResult.PASSED : 
@@ -1509,15 +1528,18 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         } else {
             result = AuditResult.FAILED;
         }
+        }
     }
     function getLastAuditResult(uint256 packageVersionsId) external view returns (address[] memory auditors, AuditResult[] memory results) {
         uint256 length = auditHistory[packageVersionsId].length;
         auditors = new address[](length);
         results = new AuditResult[](length);
+        unchecked {
         for (uint256 i = 0 ; i < length ; i++) {
             auditors[i] = packageVersionsAuditors[packageVersionsId][i];
             AuditReport[] storage array = auditHistory[packageVersionsId][i];
             results[i] = array[array.length - 1].auditResult;
+        }
         }
     }
 }

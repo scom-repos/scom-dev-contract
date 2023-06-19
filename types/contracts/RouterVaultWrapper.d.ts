@@ -3,7 +3,7 @@ export interface IDeployParams {
     vault: string;
     router: string;
 }
-export interface ISwapExactTokensForTokensParams {
+export interface IClaimExactInParams {
     pair: string[];
     amountIn: number | BigNumber;
     amountOutMin: number | BigNumber;
@@ -13,7 +13,7 @@ export interface ISwapExactTokensForTokensParams {
     allocation: number | BigNumber;
     proof: string[];
 }
-export interface ISwapTokensForExactTokensParams {
+export interface IClaimExactOutParams {
     pair: string[];
     amountOut: number | BigNumber;
     amountInMax: number | BigNumber;
@@ -23,12 +23,30 @@ export interface ISwapTokensForExactTokensParams {
     allocation: number | BigNumber;
     proof: string[];
 }
+export interface ISwapExactInParams {
+    pair: string[];
+    amountIn: number | BigNumber;
+    amountOutMin: number | BigNumber;
+    deadline: number | BigNumber;
+    trancheIds: (number | BigNumber)[];
+    to: string;
+}
+export interface ISwapExactOutParams {
+    pair: string[];
+    amountOut: number | BigNumber;
+    amountInMax: number | BigNumber;
+    deadline: number | BigNumber;
+    trancheIds: (number | BigNumber)[];
+    to: string;
+}
 export declare class RouterVaultWrapper extends _Contract {
     static _abi: any;
     constructor(wallet: IWallet, address?: string);
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAuthorizeEvent(receipt: TransactionReceipt): RouterVaultWrapper.AuthorizeEvent[];
     decodeAuthorizeEvent(event: Event): RouterVaultWrapper.AuthorizeEvent;
+    parseClaimEvent(receipt: TransactionReceipt): RouterVaultWrapper.ClaimEvent[];
+    decodeClaimEvent(event: Event): RouterVaultWrapper.ClaimEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): RouterVaultWrapper.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): RouterVaultWrapper.DeauthorizeEvent;
     parseStartOwnershipTransferEvent(receipt: TransactionReceipt): RouterVaultWrapper.StartOwnershipTransferEvent[];
@@ -39,6 +57,14 @@ export declare class RouterVaultWrapper extends _Contract {
     decodeTransferOwnershipEvent(event: Event): RouterVaultWrapper.TransferOwnershipEvent;
     parseUpdateRouterEvent(receipt: TransactionReceipt): RouterVaultWrapper.UpdateRouterEvent[];
     decodeUpdateRouterEvent(event: Event): RouterVaultWrapper.UpdateRouterEvent;
+    claimExactIn: {
+        (params: IClaimExactInParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IClaimExactInParams, options?: TransactionOptions) => Promise<void>;
+    };
+    claimExactOut: {
+        (params: IClaimExactOutParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IClaimExactOutParams, options?: TransactionOptions) => Promise<void>;
+    };
     deny: {
         (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (user: string, options?: TransactionOptions) => Promise<void>;
@@ -59,13 +85,13 @@ export declare class RouterVaultWrapper extends _Contract {
     router: {
         (options?: TransactionOptions): Promise<string>;
     };
-    swapExactTokensForTokens: {
-        (params: ISwapExactTokensForTokensParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISwapExactTokensForTokensParams, options?: TransactionOptions) => Promise<void>;
+    swapExactIn: {
+        (params: ISwapExactInParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: ISwapExactInParams, options?: TransactionOptions) => Promise<void>;
     };
-    swapTokensForExactTokens: {
-        (params: ISwapTokensForExactTokensParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-        call: (params: ISwapTokensForExactTokensParams, options?: TransactionOptions) => Promise<void>;
+    swapExactOut: {
+        (params: ISwapExactOutParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: ISwapExactOutParams, options?: TransactionOptions) => Promise<void>;
     };
     takeOwnership: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -92,6 +118,13 @@ export declare module RouterVaultWrapper {
         user: string;
         _event: Event;
     }
+    interface ClaimEvent {
+        trancheId: BigNumber;
+        sender: string;
+        inToken: string;
+        inAmount: BigNumber;
+        _event: Event;
+    }
     interface DeauthorizeEvent {
         user: string;
         _event: Event;
@@ -101,7 +134,7 @@ export declare module RouterVaultWrapper {
         _event: Event;
     }
     interface SwapEvent {
-        trancheId: BigNumber;
+        trancheId: BigNumber[];
         sender: string;
         inToken: string;
         inAmount: BigNumber;
