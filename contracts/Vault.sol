@@ -94,7 +94,7 @@ contract Vault is Authorization, ReentrancyGuard {
     event WithdrawScomFromTranche(uint256 indexed trancheId, uint256 amount, uint256 remainingBalance);
     event WithdrawScomFromRelease(uint256 amount, uint256 balance);
     event Release(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
-    event TrancheRelease(uint256 trancheId);
+    event TrancheRelease(uint256 indexed trancheId);
 
     constructor(address _foundation, Scom _scom, AMM _amm) {
         foundation = _foundation;
