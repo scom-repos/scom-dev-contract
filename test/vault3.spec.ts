@@ -320,7 +320,6 @@ describe('## Vault3', async function() {
             merkleRoot: merkleTree.getHexRoot(),
             ipfsCid: ""
         }
-        // print(await vaultContract.currReleaseAmount());
 
         let receipt = await vaultContract.newTranche(sale);
         let event = vaultContract.parseNewTrancheEvent(receipt);
@@ -373,12 +372,12 @@ describe('## Vault3', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseMintEvent(receipt);
+        let event4 = amm.parseTransferEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            sender: vaultContract.address,
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(10)
         }, true);
     });
     it ('claim exact in', async () => {
@@ -404,7 +403,6 @@ describe('## Vault3', async function() {
 
         let event2 = vaultContract.parseClaimEvent(receipt);
         assertEqual(event2.length, 1);
-        print(event2);
         assertEqual(event2[0], {
             from: buyer2,
             to: buyer2,
@@ -426,12 +424,12 @@ describe('## Vault3', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseMintEvent(receipt);
+        let event4 = amm.parseTransferEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            sender: vaultContract.address,
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(10)
         }, true);
     });
     it ('swap exact out', async () => {
@@ -441,7 +439,6 @@ describe('## Vault3', async function() {
         await usdt.mint({address: nobody, amount: ETH_PRICE_USD*10});
         wallet.defaultAccount = nobody;
         await usdt.approve({spender: wrapperContract.address, amount: ETH_PRICE_USD*10});
-        // await usdt.approve({spender: oswapContracts.hybridRouter.address, amount: ETH_PRICE_USD*20});
 
         console.log('swapExactOut');
         let receipt = await wrapperContract.swapExactOut({
@@ -452,6 +449,46 @@ describe('## Vault3', async function() {
             trancheIds: [trancheId],
             to: nobody, 
         });
+
+        let event = vaultContract.parseTrancheReleaseEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            trancheId: trancheId
+        }, true);
+        let event2 = vaultContract.parseReleaseEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            amount: Utils.toDecimals(10),
+            releasedAmount: Utils.toDecimals(10)
+        }, true);
+        let event3 = vaultContract.parseSwapEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {
+            from: nobody,
+            to: nobody,
+            amountScom: Utils.toDecimals(1),
+            amountEth: Utils.toDecimals(1),
+            remainingBalance: Utils.toDecimals(8),
+        }, true);
+        let event4 = scomContract.parseTransferEvent(receipt);
+        assertEqual(event4.length, 2);
+        assertEqual(event4[0], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: nobody,
+            value: Utils.toDecimals(1)
+        }, true);
+        let event5 = amm.parseTransferEvent(receipt);
+        assertEqual(event5.length, 1);
+        assertEqual(event5[0], {
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(1)
+        }, true);
     });
     it ('swap exact in', async () => {
         await wallet.setBlockTime(now + 6 * day);
@@ -460,16 +497,48 @@ describe('## Vault3', async function() {
         await usdt.mint({address: nobody, amount: ETH_PRICE_USD*10});
         wallet.defaultAccount = nobody;
         await usdt.approve({spender: wrapperContract.address, amount: ETH_PRICE_USD*10});
-        // await usdt.approve({spender: oswapContracts.hybridRouter.address, amount: ETH_PRICE_USD*20});
 
         console.log('swapExactIn');
         let receipt = await wrapperContract.swapExactIn({
-            pair: [await oswapContracts.factory.getPair({param1: usdt.address, param2: weth.address})], 
+            pair: [await oswapContracts.oracleFactory.getPair({param1: usdt.address, param2: weth.address})], 
             amountIn: Utils.toDecimals(1 * ETH_PRICE_USD, await usdt.decimals), 
             amountOutMin: 0, 
             deadline: (await wallet.getBlockTimestamp()) + 1000, 
             trancheIds: [],
             to: nobody, 
         });
+
+        let event = vaultContract.parseTrancheReleaseEvent(receipt);
+        assertEqual(event.length, 0);
+        let event2 = vaultContract.parseReleaseEvent(receipt);
+        assertEqual(event2.length, 0);
+        let event3 = vaultContract.parseSwapEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {
+            from: nobody,
+            to: nobody,
+            amountScom: Utils.toDecimals(1),
+            amountEth: Utils.toDecimals(1),
+            remainingBalance: Utils.toDecimals(6),
+        }, true);
+        let event4 = scomContract.parseTransferEvent(receipt);
+        assertEqual(event4.length, 2);
+        assertEqual(event4[0], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: nobody,
+            value: Utils.toDecimals(1)
+        }, true);
+        let event5 = amm.parseTransferEvent(receipt);
+        assertEqual(event5.length, 1);
+        assertEqual(event5[0], {
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(1)
+        }, true);
     });
 });

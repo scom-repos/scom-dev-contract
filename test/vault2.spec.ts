@@ -202,12 +202,12 @@ describe('## Vault2', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseMintEvent(receipt);
+        let event4 = amm.parseTransferEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            sender: vaultContract.address,
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(10)
         }, true);
 
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(30));
@@ -257,6 +257,7 @@ describe('## Vault2', async function() {
         wallet.defaultAccount = nobody;
         await expectToFail(vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
         let receipt = await vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
+
         let event = vaultContract.parseTrancheReleaseEvent(receipt);
         assertEqual(event.length, 1);
         assertEqual(event[0], {
@@ -266,7 +267,6 @@ describe('## Vault2', async function() {
         assertEqual(event2.length, 1);
         assertEqual(event2[0], {
             amount: Utils.toDecimals(6),
-            // unlockedAmount: Utils.toDecimals("3419982263.124570345043680163"),
             releasedAmount: Utils.toDecimals(6)
         }, true);
         let event3 = vaultContract.parseSwapEvent(receipt);
@@ -278,6 +278,26 @@ describe('## Vault2', async function() {
             amountEth: Utils.toDecimals(1),
             remainingBalance: Utils.toDecimals(4),
         }, true);
+        let event4 = scomContract.parseTransferEvent(receipt);
+        assertEqual(event4.length, 2);
+        assertEqual(event4[0], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: nobody,
+            value: Utils.toDecimals(1)
+        }, true);
+        let event5 = amm.parseTransferEvent(receipt);
+        assertEqual(event5.length, 1);
+        assertEqual(event5[0], {
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(1)
+        }, true);
+        
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), 0);
         assertEqual(await vaultContract.releasedAmount(), Utils.toDecimals(4));
     });
