@@ -5,7 +5,7 @@ import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
 
-describe('## SC-Contract', async function() {
+describe('## Audit', async function() {
     let accounts: string[];
     let wallet: Wallet;
     let result: IDeployResult;

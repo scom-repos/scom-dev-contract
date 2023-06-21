@@ -1,13 +1,13 @@
 // direct buy with ETH
 import 'mocha';
-import {Utils, Wallet, BigNumber} from "@ijstech/eth-wallet";
+import {Utils, Wallet, BigNumber, MerkleTree} from "@ijstech/eth-wallet";
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
 import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
 
-describe('## SC-Contract', async function() {
+describe('## Vault2', async function() {
     let accounts: string[];
     let wallet: Wallet;
 
@@ -22,19 +22,21 @@ describe('## SC-Contract', async function() {
     let foundation: string;
     let buyer1: string;
     let buyer2: string;
+    let nobody: string;
 
     let totalSuppy = Utils.toDecimals("10000000000");
     let period = 10 * 365 * 24 * 60 * 60; // 10 years
-    let derement = Utils.toDecimals("0.998"); // day
-    // let derement = Utils.toDecimals("0.999999987"); // second
+    // let derement = Utils.toDecimals("0.998"); // day
+    let derement = Utils.toDecimals("0.999999987"); // second
 
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
         accounts = await wallet.accounts;
         deployer = accounts[0];
         foundation = accounts[1];
-        buyer1 =  accounts[2];
-        buyer2 =  accounts[3];
+        buyer1 = accounts[2];
+        buyer2 = accounts[3];
+        nobody = accounts[4];
 
         wallet.defaultAccount = deployer;
 
@@ -92,13 +94,15 @@ describe('## SC-Contract', async function() {
 
         vaultContract = new Contracts.Vault(wallet, result.vault);
     });
-    it ('Vault', async () => {
-
-        let now = await wallet.getBlockTimestamp();
+    let now: number;
+    let trancheId: number;
+    const oneYear = 365 * 24 * 60 * 60;
+    const day = 24 * 60 * 60 ;
+    let merkleTree: MerkleTree;
+    it ('new tranche', async () => {
+        now = await wallet.getBlockTimestamp();
         let startTime = now + 1000;
         let endTime = now + period; // 10 years
-        const oneYear = 365 * 24 * 60 * 60;
-        const day = 24 * 60 * 60 ;
 
         wallet.defaultAccount = foundation;
         await scomContract.transfer({to: vaultContract.address, amount: await scomContract.balanceOf(foundation)});
@@ -130,7 +134,7 @@ describe('## SC-Contract', async function() {
         now  += oneYear;
         await wallet.setBlockTime(now);
 
-        let merkleTree = Utils.generateMerkleTree(wallet, {
+        merkleTree = Utils.generateMerkleTree(wallet, {
             abi,
             leavesData,
             abiKeyName: 'buyer'
@@ -138,13 +142,15 @@ describe('## SC-Contract', async function() {
         
         let sale = {
             startTime: now + day ,
-            limitedClaimEndTime: now + 2 * day,
-            unlimitedClaimEndTime: now + 4 * day,
-            amount: Utils.toDecimals(10),
+            limitedClaimEndTime: now + 3 * day,
+            unlimitedClaimEndTime: now + 5 * day,
+            amount: Utils.toDecimals(50),
             merkleRoot: merkleTree.getHexRoot(),
             ipfsCid: ""
         }
         // print(await vaultContract.currReleaseAmount());
+
+        print(await vaultContract.unlockedAmount());
 
         let receipt = await vaultContract.newTranche(sale);
         let event = vaultContract.parseNewTrancheEvent(receipt);
@@ -152,25 +158,38 @@ describe('## SC-Contract', async function() {
         assertEqual(event[0], {
             trancheId: 0
         }, true);
-        let trancheId = event[0].trancheId;
-
-        await wallet.setBlockTime(now + day + 10);
-
+        let event2 = vaultContract.parseUnlockEvent(receipt);
+        assertEqual(event2.length, 1);
+        // assertEqual(event2[0], {
+        //     unlock: Utils.toDecimals("3419982363.124570345043680163"),
+        //     available: Utils.toDecimals("3419982363.124570345043680163"),
+        //     balance: Utils.toDecimals("3419982363.124570345043680163"),
+        // }, true);
+        trancheId = event[0].trancheId.toNumber();
+        print(await vaultContract.unlockedAmount());
+        // assertEqual(await vaultContract.unlockedAmount(), Utils.toDecimals("3419982263.124570345043680163"));
+        assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(50));
+    });
+    it ('claim', async () => {
         let proof = merkleTree.getHexProofsByKey(buyer1);
-// console.log({trancheId:event.trancheId, allocation:10, proof[0]});
-        wallet.defaultAccount = buyer1;
-        let receipt2 = await vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
+        await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)}), "not started");
 
-        let event2 = vaultContract.parseClaimEvent(receipt2);
+        await wallet.setBlockTime(now + 2 * day);
+
+        wallet.defaultAccount = buyer1;
+        let receipt = await vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
+
+        let event2 = vaultContract.parseClaimEvent(receipt);
         assertEqual(event2.length, 1);
         assertEqual(event2[0], {
             from: buyer1,
             to: buyer1,
             amountScom: Utils.toDecimals(10),
-            amountEth: Utils.toDecimals(10)
+            amountEth: Utils.toDecimals(10),
+            remainingBalance: Utils.toDecimals(30)
         }, true);
 
-        let event3 = scomContract.parseTransferEvent(receipt2);
+        let event3 = scomContract.parseTransferEvent(receipt);
         assertEqual(event3.length, 2);
         assertEqual(event3[0], {
             from: vaultContract.address,
@@ -183,14 +202,114 @@ describe('## SC-Contract', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseMintEvent(receipt2);
+        let event4 = amm.parseTransferEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            sender: vaultContract.address,
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(10)
         }, true);
 
+        assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(30));
+        await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)}), "excceed allocation");
+    });
+    it('unlimited claim', async () => {
+        await wallet.setBlockTime(now + 4 * day);
+        wallet.defaultAccount = buyer1;
+        let proof = merkleTree.getHexProofsByKey(buyer1);
 
+        let receipt = await vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)});
+        let event2 = vaultContract.parseClaimEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            from: buyer1,
+            to: buyer1,
+            amountScom: Utils.toDecimals(10),
+            amountEth: Utils.toDecimals(10),
+            remainingBalance: Utils.toDecimals(10)
+        }, true);
+
+        assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(10));
+
+        await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(20)}), "insufficient balance");
+    });
+    it('admin tranche withdraw', async () => {
+        wallet.defaultAccount = deployer;
+        let receipt = await vaultContract.withdrawFromTranche({trancheIds:[trancheId],amountScom:[Utils.toDecimals(4)]});
+        let event = vaultContract.parseWithdrawScomFromTrancheEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            trancheId: 0,
+            amount: Utils.toDecimals(4),
+            remainingBalance: Utils.toDecimals(6),
+        }, true);
+        let event2 = scomContract.parseTransferEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            from: vaultContract.address,
+            to: foundation,
+            value: Utils.toDecimals(4)
+        }, true);
+        assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(6));
+    });
+    it('anyone can swap', async () => {
+        await wallet.setBlockTime(now + 6 * day);
+        wallet.defaultAccount = nobody;
+        await expectToFail(vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
+        let receipt = await vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
+
+        let event = vaultContract.parseTrancheReleaseEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            trancheId: trancheId
+        }, true);
+        let event2 = vaultContract.parseReleaseEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            amount: Utils.toDecimals(6),
+            releasedAmount: Utils.toDecimals(6)
+        }, true);
+        let event3 = vaultContract.parseSwapEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {
+            from: nobody,
+            to: nobody,
+            amountScom: Utils.toDecimals(1),
+            amountEth: Utils.toDecimals(1),
+            remainingBalance: Utils.toDecimals(4),
+        }, true);
+        let event4 = scomContract.parseTransferEvent(receipt);
+        assertEqual(event4.length, 2);
+        assertEqual(event4[0], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: nobody,
+            value: Utils.toDecimals(1)
+        }, true);
+        let event5 = amm.parseTransferEvent(receipt);
+        assertEqual(event5.length, 1);
+        assertEqual(event5[0], {
+            from: Utils.nullAddress,
+            to: foundation,
+            value: Utils.toDecimals(1)
+        }, true);
+        
+        assertEqual(await vaultContract.availableBalanceInTranche(trancheId), 0);
+        assertEqual(await vaultContract.releasedAmount(), Utils.toDecimals(4));
+    });
+    it('admin withdraw from release', async () => {
+        wallet.defaultAccount = deployer;
+        let receipt = await vaultContract.withdrawFromRelease(Utils.toDecimals(1));
+        let event = vaultContract.parseWithdrawScomFromReleaseEvent(receipt);
+        assertEqual(event.length, 1);
+        assertEqual(event[0], {
+            amount: Utils.toDecimals(1),
+            balance: Utils.toDecimals(3)
+        }, true);
+        assertEqual(await vaultContract.releasedAmount(), Utils.toDecimals(3));
     });
 });

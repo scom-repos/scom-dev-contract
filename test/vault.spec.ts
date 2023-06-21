@@ -7,7 +7,7 @@ import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
 import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
 
-describe('## SC-Contract', async function() {
+describe('## Vault', async function() {
     let accounts: string[];
     let wallet: Wallet;
     let result: IDeployResult;

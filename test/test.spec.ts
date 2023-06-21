@@ -132,7 +132,7 @@ describe('## SC-Contract', async function() {
             assert.strictEqual(newProjectEvent.projectId.toNumber() + 1, projectCount.toNumber());
             let name = await projectContract.projectName(newProjectEvent.projectId);
             let ipfsCid = await projectContract.projectIpfsCid(newProjectEvent.projectId);
-            assert.strictEqual(Utils.bytes32ToString(name), 'abc');
+            assert.strictEqual(name, 'abc');
             assert.strictEqual(ipfsCid, 'abc');
         })
         it('Duplicate Project Name', async function() {
@@ -147,7 +147,7 @@ describe('## SC-Contract', async function() {
                 name: 'scom'
             });
             let name = await projectContract.projectName(0);
-            assert.strictEqual(Utils.bytes32ToString(name), 'scom');
+            assert.strictEqual(name, 'scom');
         })
         it('Update Project IpfsCid', async function() {
             await projectContract.updateProjectIpfsCid({
@@ -213,7 +213,7 @@ describe('## SC-Contract', async function() {
                 param1: 0,
                 param2: 0
             });
-            assert.strictEqual(Utils.bytes32ToString(name), 'portal');
+            assert.strictEqual(name, 'portal');
         })
         it('Add Package Admin', async function() {
             await projectContract.addPackageAdmin({
@@ -247,7 +247,7 @@ describe('## SC-Contract', async function() {
             let event = projectContract.parseNewPackageVersionEvent(receipt)[0];
             let packageVersion = await projectContract.packageVersions(event.packageVersionId);
             assert.deepStrictEqual(packageVersion.version, version);
-            assert.strictEqual(packageVersion.status.toNumber(), 0);
+            assert.strictEqual(packageVersion.status.toNumber(), 1);
         })
         it('Update Package Version IpfsCid', async function() {
             wallet.defaultAccount = accounts[1]; 
@@ -272,7 +272,7 @@ describe('## SC-Contract', async function() {
             let packageVersionId = 0;
             await projectContract.setPackageVersionToAuditing(packageVersionId);
             let packageVersion = await projectContract.packageVersions(packageVersionId);
-            assert.strictEqual(packageVersion.status.toNumber(), 1);
+            assert.strictEqual(packageVersion.status.toNumber(), 2);
         })
         it('Update Package Version IpfsCid (not under working)', async function() {
             await expectToFail(projectContract.updatePackageVersionIpfsCid({

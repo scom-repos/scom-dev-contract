@@ -5,7 +5,7 @@ import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
 
-describe('## SC-Contract', async function() {
+describe('## Auditor', async function() {
 
     let accounts: string[];
     let wallet: Wallet;
@@ -84,6 +84,12 @@ describe('## SC-Contract', async function() {
         await auditorInfoContract.permit(deployer);
     });
     /*
+    endorses:
+    auditor1 -> auditor3
+    auditor2 -> auditor3
+    auditor3 -> auditor4
+    auditor2 -> auditor4
+    stakes:
     auditor3 -> auditor3: 1
     stkaer2 -> auditor4: 2
     stkaer1 -> auditor3: 1
@@ -312,7 +318,13 @@ describe('## SC-Contract', async function() {
 
         // update auditor 3's state
         wallet.defaultAccount = nobody;
-        await auditorInfoContract.updateAuditorState(auditor3);
+        receipt = await auditorInfoContract.updateAuditorState(auditor3);
+        let event2 = auditorInfoContract.parseAuditorStateChangeEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            auditor: auditor3,
+            newState: 0
+        }, true);
         assertEqual(await auditorInfoContract.auditorsData(auditor3), {
             status: 0,
             balance: Utils.toDecimals(2),
@@ -327,8 +339,14 @@ describe('## SC-Contract', async function() {
             endorsementCount: 2
         });
 
-        // update auditor 3's state
-        await auditorInfoContract.updateAuditorState(auditor4);
+        // update auditor 4's state
+        receipt = await auditorInfoContract.updateAuditorState(auditor4);
+        event2 = auditorInfoContract.parseAuditorStateChangeEvent(receipt);
+        assertEqual(event2.length, 1);
+        assertEqual(event2[0], {
+            auditor: auditor4,
+            newState: 0
+        }, true);
         assertEqual(await auditorInfoContract.auditorsData(auditor4), {
             status: 0,
             balance: Utils.toDecimals(3),
@@ -339,12 +357,6 @@ describe('## SC-Contract', async function() {
         await expectToFail(auditorInfoContract.endorseAuditor({auditor:auditor4, doUpdate:true}), "endorser is not an active auditor");
 
     });
-    /*
-    auditor3 -> auditor3: 1
-    stkaer2 -> auditor4: 2
-    stkaer1 -> auditor3: 1
-    stkaer1 -> auditor4: 1
-    */
     it('unstake', async function(){
         wallet.defaultAccount = staker2;
         let receipt = await auditorInfoContract.unstakeBondRequest({auditor: auditor4, amount: Utils.toDecimals(1)});
@@ -381,13 +393,16 @@ describe('## SC-Contract', async function() {
             balance: Utils.toDecimals(1),
             endorsementCount: 1
         });
+
+        wallet.defaultAccount = staker1;
+        receipt = await auditorInfoContract.unstakeBondRequest({auditor: auditor4, amount: Utils.toDecimals(1)});
+        let event4 = auditorInfoContract.parseAuditorStateChangeEvent(receipt);
+        assertEqual(event4.length, 1);
+        assertEqual(event4[0], {
+            auditor: auditor4,
+            newState: 0
+        }, true);
     });
-    /*
-    auditor3 -> auditor3: 1
-    stkaer2 -> auditor4: 0
-    stkaer1 -> auditor3: 1
-    stkaer1 -> auditor4: 1
-    */
     it('freeze', async function(){
         wallet.defaultAccount = auditor1;
         await auditorInfoContract.endorseAuditor({auditor:auditor3, doUpdate:true});
@@ -399,10 +414,11 @@ describe('## SC-Contract', async function() {
         await expectToFail(auditorInfoContract.freezeAuditor(nobody), 'auditor not exist');
 
         let receipt = await auditorInfoContract.freezeAuditor(auditor3);
-        let event = auditorInfoContract.parseFreezeAuditorEvent(receipt);
+        let event = auditorInfoContract.parseAuditorStateChangeEvent(receipt);
         assertEqual(event.length, 1);
         assertEqual(event[0], {
-            auditor: auditor3
+            auditor: auditor3,
+            newState: 2
         }, true);
         assertEqual(await auditorInfoContract.auditorsData(auditor3), {
             status: 2,
@@ -410,7 +426,10 @@ describe('## SC-Contract', async function() {
             endorsementCount: 2
         });
 
-        
+        wallet.defaultAccount = auditor3;
+        await expectToFail(auditorInfoContract.unstakeBondRequest({auditor:auditor3, amount:0}), "auditor freezed");
+
+        wallet.defaultAccount = deployer;
         receipt = await auditorInfoContract.penalize({auditor:auditor3, unfreezeAuditor:true, staker:[auditor3,staker1], amount:[Utils.toDecimals("0.75"),Utils.toDecimals("0.25")]});
         let event2 = auditorInfoContract.parsePenalizeEvent(receipt);
         assertEqual(event2.length, 2);
@@ -429,6 +448,12 @@ describe('## SC-Contract', async function() {
                 stakerAuditorBalance: Utils.toDecimals("0.75")
             }
         ], true);
+        let event3 = auditorInfoContract.parseAuditorStateChangeEvent(receipt);
+        assertEqual(event3.length, 1);
+        assertEqual(event3[0], {
+            auditor: auditor3,
+            newState: 0
+        }, true);
         assertEqual(await auditorInfoContract.auditorsData(auditor3), {
             status: 0,
             balance: Utils.toDecimals(1),

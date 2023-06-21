@@ -31,8 +31,20 @@ For the 1st interval, the amount released is "x".
 For the 2nd interval, the amount released for this interval will be x*r and the total amount released will be x + x*r.
 Similary, for the 3rd interval, the release amount will be x*r*r or x*r^2 and the total amount released will be x + x*r + x*r^2.
 For the nth interval, the release amount will be x*r^n and the total amount released will be x + x*r + x*r^2 + ... + x*r^n.
-The geometric sum can be represented by x * ((1 - r^(n+1)) / (1 - r)).
+The geometric sum can be represented by x * ((1 - r^(n+1)) / (1 - r)); see https://en.wikipedia.org/wiki/Geometric_series#Sum
 */
+/*
+tokens flow:
+mint* -> lock* -> unlock +> tranche* +> limited claim^
+                         |           +> unlimited claim^
+                         |           +> admin withdraw*
+                         |           +> release from tranche +> swap
+                         |                                   +> admin withdraw*
+                         +> admin release* ------------------+
+* = owner's / admin's / auth functions
+^ = whitelisted
+*/    
+
 contract Vault is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeERC20 for Scom;
@@ -71,17 +83,18 @@ contract Vault is Authorization, ReentrancyGuard {
     uint256 public releasedAmount;
 
     TrancheInfo[] public trancheInfo;
-    mapping(uint256 => uint256) public amountUsedInTranche; // amountUsedInTranche[trancheId] = amount
+    mapping(uint256 => uint256) public availableBalanceInTranche; // availableBalanceInTranche[trancheId] = amount
     mapping(bytes32 => uint256) public usedAllocation; // usedAllocation[hash] = amount
 
     event Lock(uint256 start, uint256 end, uint256 rate, uint256 initAmount);
     event Unlock(uint256 unlock, uint256 available, uint256 balance);
-    event NewTranche(uint256 trancheId);
-    event Claim(uint256 indexed trancheId, address indexed from, address indexed to, uint256 amountScom, uint256 amountEth);
-    event Swap(address indexed from, address indexed to, uint256 amountScom, uint256 amountEth);
-    event WithdrawScomFromTranche(uint256 amount);
-    event WithdrawScomFromRelease(uint256 amount);
-    event Release(uint256 amount, uint256 balance);
+    event NewTranche(uint256 indexed trancheId);
+    event Claim(uint256 indexed trancheId, address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
+    event Swap(address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
+    event WithdrawScomFromTranche(uint256 indexed trancheId, uint256 amount, uint256 remainingBalance);
+    event WithdrawScomFromRelease(uint256 amount, uint256 balance);
+    event Release(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
+    event TrancheRelease(uint256 indexed trancheId);
 
     constructor(address _foundation, Scom _scom, AMM _amm) {
         foundation = _foundation;
@@ -123,7 +136,6 @@ contract Vault is Authorization, ReentrancyGuard {
 				}
 		}
 	}
-    // https://en.wikipedia.org/wiki/Geometric_series#Sum
     // Sn = ((1 - r^(n+1)) / (1 - r))
     function geometricSum(uint256 r, uint256 n, uint256 b) internal pure returns (uint256 s) {
         s = (((b - pow(r, n+1, b)) * b) / (b - r));
@@ -176,29 +188,31 @@ contract Vault is Authorization, ReentrancyGuard {
     function newTranche(TrancheInfo calldata tranche) external auth {
         unlock();
         require(startTime < tranche.limitedClaimEndTime && tranche.limitedClaimEndTime <= tranche.unlimitedClaimEndTime, "invalid start / end time ");
-        require((tranche.amount * 2) < unlockedAmount, "invalid amount"); // an equal amount goes to foundation
+        require((tranche.amount * 2) < unlockedAmount, "invalid amount"); // an equal amount goes to foundation, thus 2x
         uint256 trancheId = trancheInfo.length;
         trancheInfo.push(tranche);
+        availableBalanceInTranche[trancheId] = tranche.amount;
         unlockedAmount -= (tranche.amount * 2);
         emit NewTranche(trancheId);
     }
-    function withdrawScomFromTranche(uint256[] calldata trancheIds, uint256[] calldata amountScom) external onlyOwner {
+    function withdrawFromTranche(uint256[] calldata trancheIds, uint256[] calldata amountScom) external onlyOwner {
         uint256 i;
         uint256 length = trancheIds.length;
         uint256 amount;
         require(length == amountScom.length, "array length not matched");
         while (i < length) {
             TrancheInfo storage tranche = trancheInfo[trancheIds[i]];
+            //TODO: withdraw after limited claim ends?
             if (tranche.limitedClaimEndTime < block.timestamp) {
+                require(amountScom[i] % 2 == 0, "amount must be even");
                 amount += amountScom[i];
-                uint256 newAmount = amountUsedInTranche[trancheIds[i]] + amountScom[i];
-                require(newAmount <= tranche.amount, "invalid amount");
-                amountUsedInTranche[trancheIds[i]] = newAmount;
+                require(amountScom[i] <= availableBalanceInTranche[trancheIds[i]], "invalid amount");
+                availableBalanceInTranche[trancheIds[i]] -= amountScom[i];
+                emit WithdrawScomFromTranche(trancheIds[i], amountScom[i], availableBalanceInTranche[trancheIds[i]]);
             }
             unchecked { i++; }
         }
         scom.safeTransfer(foundation, amount);
-        emit WithdrawScomFromTranche(amount);
     }
 
     // TODO: check from enduser only?
@@ -210,14 +224,13 @@ contract Vault is Authorization, ReentrancyGuard {
     function claimWithWETH(uint256 trancheId, address from, address to, uint256 allocation, bytes32[] calldata proof) external nonReentrant returns (uint256 amountScom) {
         return _claim(trancheId, from, to, allocation, proof);
     }
-
     function _claim(uint256 trancheId, address from, address to, uint256 allocation, bytes32[] calldata proof) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
         require(amountEth > 0, "no input amount");
 
         TrancheInfo storage tranche = trancheInfo[trancheId];
         require(tranche.amount > 0, "invalid tranche"); // tranche not found
-        require(tranche.startTime < block.timestamp, "not started");
+        require(tranche.startTime <= block.timestamp, "not started");
         bytes32 hash = keccak256(abi.encodePacked(from, allocation));
         require(
             MerkleProof.verifyCalldata(proof, tranche.merkleRoot, hash)
@@ -229,14 +242,16 @@ contract Vault is Authorization, ReentrancyGuard {
             (reserveScom, reserveEth) = (reserveEth, reserveScom);
         amountScom = (amountEth * reserveScom) / reserveEth;
 
-        if (tranche.limitedClaimEndTime < block.timestamp) {
+        if (block.timestamp < tranche.limitedClaimEndTime) {
             uint256 newAllocation = usedAllocation[hash] + amountEth;
             require(newAllocation <= allocation, "excceed allocation");
             usedAllocation[hash] = newAllocation;
         }
-        uint256 newAmount = amountUsedInTranche[trancheId] + amountScom;
-        require(newAmount <= tranche.amount, "invalid amount");
-        amountUsedInTranche[trancheId] = newAmount;
+
+        uint256 amount = (amountScom * 2);
+        require(amount <= availableBalanceInTranche[trancheId], "insufficient balance");
+        amount = availableBalanceInTranche[trancheId] - amount;
+        availableBalanceInTranche[trancheId] = amount;
 
         // add weth and half of the scom to amm pool
         scom.safeTransfer(address(amm), amountScom);
@@ -246,25 +261,27 @@ contract Vault is Authorization, ReentrancyGuard {
         // half of scom to user
         scom.safeTransfer(to, amountScom);
 
-        emit Claim(trancheId, from, to, amountScom, amountEth);
+        emit Claim(trancheId, from, to, amountScom, amountEth, amount);
     }
-    function releaseFromLocked(uint256 amount) external onlyOwner {
+
+    function unlockAndRelease(uint256 amount) external onlyOwner {
         unlock();
-        releaseFromUnlocked(amount);
+        directRelease(amount);
     }
-    function releaseFromUnlocked(uint256 amount) public onlyOwner {
-        require(amount % 2 == 0, "amount must be even number");
+    function directRelease(uint256 amount) public onlyOwner {
+        require(amount % 2 == 0, "amount must be even");
         unlockedAmount -= amount;
         releasedAmount += amount;
-        emit Release(amount, releasedAmount);
+        emit Release(amount, unlockedAmount, releasedAmount);
     }
-    function withdrawScomFromRelease(uint256 amount) external onlyOwner {
-        require(amount <= releasedAmount, "insuffcient balance");
-        require(amount % 2 == 0, "amount must be even number");
+    function withdrawFromRelease(uint256 amount) external onlyOwner {
+        require(amount <= releasedAmount, "insufficient balance");
+        require(amount % 2 == 0, "amount must be even");
         releasedAmount -= amount;
         scom.safeTransfer(foundation, amount);
-        emit WithdrawScomFromRelease(amount);
+        emit WithdrawScomFromRelease(amount, releasedAmount);
     }
+
     function _releaseTranche(uint256[] calldata trancheIds) internal returns (uint256 amount) {
         uint256 i;
         uint256 length = trancheIds.length;
@@ -272,13 +289,14 @@ contract Vault is Authorization, ReentrancyGuard {
             uint256 trancheId = trancheIds[i];
             TrancheInfo storage tranche = trancheInfo[trancheId];
             if (tranche.unlimitedClaimEndTime < block.timestamp) {
-                amount += tranche.amount - amountUsedInTranche[trancheId];
-                amountUsedInTranche[trancheId] = tranche.amount;
+                amount += availableBalanceInTranche[trancheId];
+                availableBalanceInTranche[trancheId] = 0;
+                emit TrancheRelease(trancheId);
             }
             unchecked { i++; } // gas savings
         }
         releasedAmount += amount;
-        emit Release(amount, releasedAmount);
+        emit Release(amount, unlockedAmount, releasedAmount);
     }
     function _swap(address from, address to) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
@@ -289,6 +307,7 @@ contract Vault is Authorization, ReentrancyGuard {
         if (!token0IsScom)
             (reserveScom, reserveEth) = (reserveEth, reserveScom);
         amountScom = (amountEth * reserveScom) / reserveEth;
+
         require((amountScom * 2) <= releasedAmount, "insufficient amount");
         releasedAmount -= amountScom * 2;
 
@@ -300,12 +319,12 @@ contract Vault is Authorization, ReentrancyGuard {
         // half of scom to user
         scom.safeTransfer(to, amountScom);
 
-        emit Swap(from, to, amountScom, amountEth);
+        emit Swap(from, to, amountScom, amountEth, releasedAmount);
     }
     function releaseTranche(uint256[] calldata trancheIds) external nonReentrant returns (uint256 amount) {
         amount = _releaseTranche(trancheIds);
     }
-    function swap() external payable nonReentrant returns (uint256 amountScom, address to) {
+    function swap(address to) external payable nonReentrant returns (uint256 amountScom) {
         weth.deposit{value: msg.value}();
         amountScom = _swap(msg.sender, to);
     }
@@ -314,7 +333,7 @@ contract Vault is Authorization, ReentrancyGuard {
         weth.deposit{value: msg.value}();
         amountScom = _swap(msg.sender, to);
     }
-    function publicSwapWithWETH(address from, address to) external nonReentrant returns (uint256 amountScom) {
+    function swapWithWETH(address from, address to) external nonReentrant returns (uint256 amountScom) {
         amountScom = _swap(from, to);
     }
     function releaseAndSwapWithWETH(uint256[] calldata trancheIds, address from, address to) external nonReentrant returns (uint256 amountScom) {

@@ -628,7 +628,6 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public endorsedByInv; //endorsedBy[to/endorsee][from/endorser] = idx2
 
     event AddAuditor(uint256 indexed auditorId, address indexed auditor);
-    event FreezeAuditor(address indexed auditor);
     event SetMinStakes(uint256 minStakes);
     event SetMinEndorsementsRequired(uint256 minEndorsementsRequired);
     event SetCooldownPeriod(uint256 cooldownPeriod);
@@ -638,6 +637,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     event Penalize(address indexed auditor, address indexed staker, uint256 amount, uint256 auditorBalance, uint256 stakerAuditorBalance);
     event EndorseAuditor(address indexed endorser, address indexed endorsee);
     event RevokeEndorsement(address indexed endorser, address indexed endorsee);
+    event AuditorStateChange(address indexed auditor, AuditorStatus newState);
 
     constructor(IERC20 _token, address _foundation, uint256 _minStakes, uint256 _minEndorsementsRequired, uint256 _cooldownPeriod) {
         token = _token;
@@ -660,15 +660,18 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         length = endorsedBy[endorsee].length;
     }
     function getArray(address[] storage array, uint256 start, uint256 length) internal view returns (address[] memory addresses) {
+        unchecked {
         uint256 arrLength = array.length;
+        if (start > arrLength) {
+            start = arrLength;
+        }
         if (length > arrLength) {
             length = arrLength;
         }
         addresses = new address[](length);
-        uint256 i;
-        while (i < length) {
-            addresses[i] = array[start];
-            unchecked { i++; start++; }
+        for (uint256 i; i < length; i++) {
+            addresses[i] = array[start++];
+        }
         }
     }
     function getStakerAuditor(address staker, uint256 start, uint256 length) external view returns (address[] memory _auditors) {
@@ -714,8 +717,15 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         address[] memory _auditors,
         AuditorData[] memory _auditorsData
     ) {
+        unchecked {
+        if (auditorIdStart == 0) {
+            auditorIdStart = 1;
+        }
+        else if (auditorIdStart >= auditorIdCount + 1) {
+            auditorIdStart = auditorIdCount + 1;
+        }
         if (auditorIdStart + length > auditorIdCount + 1) {
-            length = auditorIdCount - auditorIdStart + 1;
+            length = auditorIdCount + 1 - auditorIdStart;
         }
         _auditors = new address[](length);
         _auditorsData = new AuditorData[](length);
@@ -724,6 +734,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             _auditors[i] = auditor;
             _auditorsData[i] = auditorsData[auditor];
             auditorIdStart++;
+        }
         }
     }
 
@@ -747,12 +758,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             });
             auditors[auditorId] = auditor;
             auditorIds[auditor] = auditorId;
+            emit AddAuditor(auditorId, auditor);
         }else{
             if (isSuperAuditor){
                 auditorsData[auditor].status = AuditorStatus.Super;
+                emit AuditorStateChange(auditor, AuditorStatus.Super);
             }
         }
-        emit AddAuditor(auditorId, auditor);
     }
     // TODO: disable super auditor only?
     function freezeAuditor(address auditor) external onlyOwner {
@@ -760,7 +772,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         require(auditorId > 0, "auditor not exist");
         // require(auditorsData[auditor].status == AuditorStatus.Super, "not a super auditor");
         auditorsData[auditor].status = AuditorStatus.Freezed;
-        emit FreezeAuditor(auditor);
+        emit AuditorStateChange(auditor, AuditorStatus.Freezed);
     }
 
     function stakeBond(address auditor, uint256 amount, bool doUpdate) public /*onlyActiveAuditor*/ nonReentrant {
@@ -791,7 +803,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             updateAuditorState(auditor);
     }
     function unstakeBondRequest(address auditor, uint256 amount) external /*onlyActiveAuditor*/ nonReentrant {
-        require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
+        require(auditorsData[auditor].status != AuditorStatus.Freezed, "auditor freezed");
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not a auditor");
         require(amount > 0, "amount = 0");
@@ -815,6 +827,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
 
         if (auditorsData[auditor].status != AuditorStatus.Super && auditorBalance < minStakes) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
+            emit AuditorStateChange(auditor, AuditorStatus.Inactive);
         }
 
         emit UnstakeBondRequest(msg.sender, auditor, amount, auditorBalance, stakerAuditorBalance);
@@ -834,7 +847,7 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         require(length == amount.length, "length not matched");
         uint256 i;
         uint256 totalAmount;
-        for (; i < length ; i++) {
+        while (i < length) {
             address _staker = staker[i];
             uint256 _amount = amount[i];
             uint256 stakerAuditorBalance = stakeTo[_staker][auditor].balance  - _amount;
@@ -844,9 +857,13 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
             totalAmount += _amount;
 
             emit Penalize(auditor, _staker, _amount, auditorBalance, stakerAuditorBalance);
+
+            unchecked { i++; }
         }
-        if (unfreezeAuditor)
+        if (unfreezeAuditor) {
             auditorsData[auditor].status = AuditorStatus.Inactive;
+            emit AuditorStateChange(auditor, AuditorStatus.Inactive);
+        }
         token.safeTransfer(foundation, totalAmount);
     }
 
@@ -912,17 +929,19 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
     // anyone can call
     function updateAuditorState(address auditor) public {
         require(auditorsData[auditor].status != AuditorStatus.Freezed, "Auditor freezed");
-        (uint256 count, bool status) = getUpdatedStatus(auditor);
+        (uint256 count, bool isActive) = getUpdatedStatus(auditor);
         AuditorData storage auditorData = auditorsData[auditor];
         auditorData.endorsementCount = count;
         if (auditorData.status != AuditorStatus.Super) {
-             auditorData.status = status ? AuditorStatus.Active : AuditorStatus.Inactive;
+            AuditorStatus status = isActive ? AuditorStatus.Active : AuditorStatus.Inactive;
+            auditorData.status = status;
+            emit AuditorStateChange(auditor, status);
         }
     }
-    function isActiveAuditor(address auditor) external view returns (bool active) {
-        (, active) = getUpdatedStatus(auditor);
+    function isActiveAuditor(address auditor) external view returns (bool isActive) {
+        (, isActive) = getUpdatedStatus(auditor);
     }
-    function getUpdatedStatus(address auditor) internal view returns (uint256 count, bool status) {
+    function getUpdatedStatus(address auditor) internal view returns (uint256 count, bool isActive) {
         uint256 auditorId = auditorIds[auditor];
         require(auditorId > 0, "not an auditor");
         address[] storage array = endorsedBy[auditor];
@@ -935,13 +954,15 @@ contract AuditorInfo is Authorization, ReentrancyGuard {
         }
 
         AuditorData storage auditorData = auditorsData[auditor];
-        status = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
+        isActive = (count >= minEndorsementsRequired && auditorData.balance >= minStakes) || auditorData.status == AuditorStatus.Super;
     }
 
     function updateAuditorStateInBatch(address[] calldata _auditors) external {
+        unchecked {
         uint256 length = _auditors.length;
         for (uint256 i = 0 ; i < length ; i++) {
             updateAuditorState(_auditors[i]);
+        }
         }
     }
 }
@@ -957,7 +978,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     enum PackageStatus {INACTIVE, ACTIVE}
-    enum PackageVersionStatus {WORKING, AUDITING, VOIDED}
+    enum PackageVersionStatus {VOIDED, WORKING, AUDITING}
 
     struct Package {
         uint256 projectId;
@@ -988,8 +1009,8 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
     mapping(uint256 => uint256) public projectBalance; //projectBalance[projectId] = amount
     mapping(address => mapping(uint256 => uint256)) public projectBackerBalance; //projectBackerBalance[staker][projectId] = amount
-    mapping(uint256 => bytes) public projectName; // projectName[projectId] = name
-    mapping(bytes => uint256) public projectNameInv; //  projectNameInv[name] = projectId
+    mapping(uint256 => string) public projectName; // projectName[projectId] = name
+    mapping(string => uint256) public projectNameInv; //  projectNameInv[name] = projectId
     mapping(uint256 => string) public projectIpfsCid; // projectIpfsCid[projectId] = ipfsCid
     
     // project <-> owner / admin
@@ -1004,8 +1025,8 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     Package[] public packages; // packages[packageId] = {projectId, currVersionIndex, status}
     PackageVersion[] public packageVersions; // packageVersions[packageVersionsId] = {packageId, version, status, ipfsCid}
     mapping(uint256 => uint256[]) public packageVersionsList; // packageVersionsList[packageId][idx] = packageVersionsId
-    mapping(uint256 => mapping(uint256 => bytes)) public packageName; // packageName[projectId][packageId] = name;
-    mapping(uint256 => mapping(bytes => uint256)) public packageNameInv; // packageNameInv[projectId][name] = packageId;
+    mapping(uint256 => mapping(uint256 => string)) public packageName; // packageName[projectId][packageId] = name;
+    mapping(uint256 => mapping(string => uint256)) public packageNameInv; // packageNameInv[projectId][name] = packageId;
 
     // package <-> admin
     mapping(uint256 => address[]) public packageAdmin; // packageAdmin[packageId][idx] = admin
@@ -1056,9 +1077,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
 
     modifier isProjectOwner(uint256 packageId) {
         require(packageId < packages.length, "invalid packageId");
-        Package storage package = packages[packageId];
-        uint256 projectId = package.projectId;
-        require(projectOwner[package.projectId] == msg.sender, "not from owner");
+        require(projectOwner[packages[packageId].projectId] == msg.sender, "not from owner");
         _;
     }
 
@@ -1088,45 +1107,50 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     function projectPackagesLength(uint256 projectId) external view returns (uint256 length) {
         length = projectPackages[projectId].length;
     }
-    function _isValidName(bytes memory bName) internal pure returns (bool) {
+    function _isValidName(string memory name) internal pure returns (bool) {
+        bytes memory _name = bytes(name);
         // first char must be a-z0-9-
-        if (bName[0] > 0x7a) return false;
-        if (bName[0] < 0x61) {
-            if (bName[0] > 0x39) return false;
-            if (bName[0] < 0x30 && bName[0] != 0x2d) return false;
+        bytes1 c = _name[0];
+        if (!((c >= 0x61 && c <= 0x7a) || // a-z
+            (c >= 0x60 && c <= 0x39) || // 0-9
+            (c == 0x2d))) { // -
+                return false;
         }
         // Allowed characters: a-z0-9-._
-        for (uint i = 1; i < bName.length; i++) {
-            if (bName[i] >= 0x61 && bName[i] <= 0x7a) continue;
-            if (bName[i] >= 0x30 && bName[i] <= 0x39) continue;
-            if (bName[i] == 0x2d) continue;
-            if (bName[i] == 0x5f) continue;
-            if (bName[i] == 0x2e) continue;
+        for (uint i = 1; i < _name.length; i++) {
+            c = _name[i];
+            if (c >= 0x61 && c <= 0x7a) continue;
+            if (c >= 0x30 && c <= 0x39) continue;
+            if (c == 0x2d) continue;
+            if (c == 0x5f) continue;
+            if (c == 0x2e) continue;
             return false;
         }
         return true;
     }
-    function isValidProjectName(uint256 projectId, bytes memory bName) internal view returns (bool) {
-        if (bName.length == 0) return false;
+    function isValidProjectName(uint256 projectId, string calldata name) internal view returns (bool) {
+        uint256 length = bytes(name).length;
+        if (length == 0) return false;
         // excluding hyphen between project name and package name
         uint256 pLength = projectPackagesMaxLength[projectId] > 0 ? projectPackagesMaxLength[projectId] : 1;
-        if ((bName.length + pLength) > maxNameLength - 1) return false;
-        if (projectNameInv[bName] != projectId) {
-            bytes memory pName = projectName[projectNameInv[bName]];
-            if (bName.length == pName.length && keccak256(bName) == keccak256(pName)) return false;
+        if ((length + pLength) > maxNameLength - 1) return false;
+        if (projectNameInv[name] != projectId) {
+            string storage pName = projectName[projectNameInv[name]];
+            if (keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked(pName))) return false;
         }
-        return _isValidName(bName);
+        return _isValidName(name);
     }
-    function isValidPackageName(uint256 projectId, uint256 packageId, bytes memory bName) internal view returns (bool) {
-        if (bName.length == 0) return false;
+    function isValidPackageName(uint256 projectId, uint256 packageId, string calldata name) internal view returns (bool) {
+        uint256 length = bytes(name).length;
+        if (length == 0) return false;
         // excluding hyphen between project name and package name
-        if ((projectName[projectId].length + bName.length) > maxNameLength - 1) return false;
-        uint256 _packageId = packageNameInv[projectId][bName];
+        if ((bytes(projectName[projectId]).length + length) > maxNameLength - 1) return false;
+        uint256 _packageId = packageNameInv[projectId][name]; // if match to sth ---> _packageId >= 0
         if (_packageId != packageId) {
-            bytes memory pName = packageName[projectId][_packageId];
-            if (bName.length == pName.length && keccak256(bName) == keccak256(pName)) return false;
+            string storage pName = packageName[projectId][_packageId];
+            if (keccak256(abi.encodePacked(name)) == keccak256(abi.encodePacked(pName))) return false;
         }
-        return _isValidName(bName);
+        return _isValidName(name);
     }
     function isPackageAdmin(uint256 packageId) internal view returns (bool) {
         Package storage package = packages[packageId];
@@ -1145,23 +1169,21 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     //
     function newProject(string calldata name, string calldata ipfsCid) external returns (uint256 projectId) {
         projectId = projectCount;
-        bytes memory bName = bytes(name);
-        require(isValidProjectName(projectId, bName), "invalid project name");
+        require(isValidProjectName(projectId, name), "invalid project name");
         projectOwner[projectId] = msg.sender;
         ownersProjectsInv[msg.sender][projectId] = ownersProjects[msg.sender].length;
         ownersProjects[msg.sender].push(projectId);
-        projectName[projectId] = bName;
-        projectNameInv[bName] = projectId;
+        projectName[projectId] = name;
+        projectNameInv[name] = projectId;
         projectIpfsCid[projectId] = ipfsCid;
         projectCount++;
         emit NewProject(projectId, msg.sender, name, ipfsCid);
     }
     function updateProjectName(uint256 projectId, string calldata name) external isProjectAdminOrOwner(projectId) {
-        bytes memory bName = bytes(name);
-        require(isValidProjectName(projectId, bName), "invalid project name");
+        require(isValidProjectName(projectId, name), "invalid project name");
         delete projectNameInv[projectName[projectId]];
-        projectName[projectId] = bName;
-        projectNameInv[bName] = projectId;
+        projectName[projectId] = name;
+        projectNameInv[name] = projectId;
         emit UpdateProjectName(projectId, name);
     }
     function updateProjectIpfsCid(uint256 projectId, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) {
@@ -1182,7 +1204,6 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         ownersProjects[owner].pop();
     }
     function transferProjectOwnership(uint256 projectId, address newOwner) external onlyProjectOwner(projectId) {
-        
         projectNewOwner[projectId] = newOwner;
     }
     function takeProjectOwnership(uint256 projectId) external {
@@ -1190,13 +1211,15 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         address prevOwner = projectOwner[projectId];
         projectOwner[projectId] = msg.sender;
         projectNewOwner[projectId] = address(0);
+        ownersProjectsInv[msg.sender][projectId] = ownersProjects[msg.sender].length;
+        ownersProjects[msg.sender].push(projectId);
 
         _removeProjectFromOwner(prevOwner, projectId);
 
         emit TransferProjectOwnership(projectId, msg.sender);
     }
     function addProjectAdmin(uint256 projectId, address admin) external onlyProjectOwner(projectId) {
-        require(projectAdmin[projectId].length == 0 || projectAdmin[projectId][projectAdminInv[projectId][admin]] != admin, "already a admin");
+        require(projectAdmin[projectId].length == 0 || projectAdmin[projectId][projectAdminInv[projectId][admin]] != admin, "already an admin");
         projectAdminInv[projectId][admin] = projectAdmin[projectId].length;
         projectAdmin[projectId].push(admin);
 
@@ -1204,6 +1227,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     }
     function removeProjectAdmin(uint256 projectId, address admin) external onlyProjectOwner(projectId) {
         uint256 idx = projectAdminInv[projectId][admin];
+        require(projectAdmin[projectId].length>0 && projectAdmin[projectId][idx] == admin, "not an admin");
         uint256 lastIdx = projectAdmin[projectId].length - 1;
         if (idx < lastIdx) {
             address lastAdmin = projectAdmin[projectId][lastIdx];
@@ -1217,8 +1241,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
     }
     function newPackage(uint256 projectId, string calldata name, bytes32 category, string calldata ipfsCid) external isProjectAdminOrOwner(projectId) returns (uint256 packageId) {
         packageId = packages.length;
-        bytes memory bName = bytes(name);
-        require(isValidPackageName(projectId, packageId, bName), "invalid package name");
+        require(isValidPackageName(projectId, packageId, name), "invalid package name");
         packages.push(Package({
             projectId: projectId,
             currVersionIndex: 0,
@@ -1226,22 +1249,24 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
             category: category,
             status: PackageStatus.ACTIVE
         }));
-        packageName[projectId][packageId] = bName;
-        packageNameInv[projectId][bName] = packageId;
+        packageName[projectId][packageId] = name;
+        packageNameInv[projectId][name] = packageId;
         projectPackages[projectId].push(packageId);
-        if (bName.length > projectPackagesMaxLength[projectId]) {
-            projectPackagesMaxLength[projectId] = bName.length;
+        uint256 length = bytes(name).length;
+        if (length > projectPackagesMaxLength[projectId]) {
+            projectPackagesMaxLength[projectId] = length;
         }
         emit NewPackage(projectId, packageId, name, ipfsCid);
     }
     function updatePackageName(uint256 projectId, uint256 packageId, string calldata name) external isProjectAdminOrOwner(projectId) {
-        bytes memory bName = bytes(name);
-        require(isValidPackageName(projectId, packageId, bName), "invalid package name");
+        require(packageId < packages.length, "invalid packageId");
+        require(isValidPackageName(projectId, packageId, name), "invalid package name");
         delete  packageNameInv[projectId][packageName[projectId][packageId]];
-        packageName[projectId][packageId] = bName;
-        packageNameInv[projectId][bName] = packageId;
-        if (bName.length > projectPackagesMaxLength[projectId]) {
-            projectPackagesMaxLength[projectId] = bName.length;
+        packageName[projectId][packageId] = name;
+        packageNameInv[projectId][name] = packageId;
+        uint256 length = bytes(name).length;
+        if (length > projectPackagesMaxLength[projectId]) {
+            projectPackagesMaxLength[projectId] = length;
         }
         emit UpdatePackageName(packageId, name);
     }
@@ -1321,6 +1346,7 @@ contract ProjectInfo is Authorization, ReentrancyGuard {
         PackageVersion storage packageVersion = packageVersions[packageVersionId];
         require(packageVersion.status != PackageVersionStatus.VOIDED, "already voided");
         // require(packageVersion.status != PackageVersionStatus.AUDIT_PASSED, "Audit passed version cannot be voided");
+        require(isPackageAdmin(packageVersion.packageId), "not from admin");
         _setPackageVersionStatus(packageVersion, packageVersionId, PackageVersionStatus.VOIDED);
     } 
     function setPackageVersionToAuditing(uint256 packageVersionId) external {

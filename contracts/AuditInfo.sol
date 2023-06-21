@@ -115,17 +115,15 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         }
     }
     function latestAuditResult(uint256 packageVersionsId) public view returns (AuditResult result) {
+        unchecked {
         uint256 length = auditHistory[packageVersionsId].length;
         if (length >= minAuditRequired) {
             uint256 count;
-            uint256 i;
-
-            while (i < length) {
+            for (uint256 i; i < length; i++) {
                 AuditReport[] storage array = auditHistory[packageVersionsId][i];
                 if (array[array.length - 1].auditResult == AuditResult.PASSED) {
                     count++;
                 }
-                unchecked { i++; }
             }
      
             result = (count * THRESHOLD_BASE >= (length * passingThreshold )) ? AuditResult.PASSED : 
@@ -134,15 +132,18 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         } else {
             result = AuditResult.FAILED;
         }
+        }
     }
     function getLastAuditResult(uint256 packageVersionsId) external view returns (address[] memory auditors, AuditResult[] memory results) {
         uint256 length = auditHistory[packageVersionsId].length;
         auditors = new address[](length);
         results = new AuditResult[](length);
+        unchecked {
         for (uint256 i = 0 ; i < length ; i++) {
             auditors[i] = packageVersionsAuditors[packageVersionsId][i];
             AuditReport[] storage array = auditHistory[packageVersionsId][i];
             results[i] = array[array.length - 1].auditResult;
+        }
         }
     }
 }

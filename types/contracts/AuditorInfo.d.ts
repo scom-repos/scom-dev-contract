@@ -95,14 +95,14 @@ export declare class AuditorInfo extends _Contract {
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
     parseAddAuditorEvent(receipt: TransactionReceipt): AuditorInfo.AddAuditorEvent[];
     decodeAddAuditorEvent(event: Event): AuditorInfo.AddAuditorEvent;
+    parseAuditorStateChangeEvent(receipt: TransactionReceipt): AuditorInfo.AuditorStateChangeEvent[];
+    decodeAuditorStateChangeEvent(event: Event): AuditorInfo.AuditorStateChangeEvent;
     parseAuthorizeEvent(receipt: TransactionReceipt): AuditorInfo.AuthorizeEvent[];
     decodeAuthorizeEvent(event: Event): AuditorInfo.AuthorizeEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): AuditorInfo.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): AuditorInfo.DeauthorizeEvent;
     parseEndorseAuditorEvent(receipt: TransactionReceipt): AuditorInfo.EndorseAuditorEvent[];
     decodeEndorseAuditorEvent(event: Event): AuditorInfo.EndorseAuditorEvent;
-    parseFreezeAuditorEvent(receipt: TransactionReceipt): AuditorInfo.FreezeAuditorEvent[];
-    decodeFreezeAuditorEvent(event: Event): AuditorInfo.FreezeAuditorEvent;
     parsePenalizeEvent(receipt: TransactionReceipt): AuditorInfo.PenalizeEvent[];
     decodePenalizeEvent(event: Event): AuditorInfo.PenalizeEvent;
     parseRevokeEndorsementEvent(receipt: TransactionReceipt): AuditorInfo.RevokeEndorsementEvent[];
@@ -316,6 +316,11 @@ export declare module AuditorInfo {
         auditor: string;
         _event: Event;
     }
+    interface AuditorStateChangeEvent {
+        auditor: string;
+        newState: BigNumber;
+        _event: Event;
+    }
     interface AuthorizeEvent {
         user: string;
         _event: Event;
@@ -327,10 +332,6 @@ export declare module AuditorInfo {
     interface EndorseAuditorEvent {
         endorser: string;
         endorsee: string;
-        _event: Event;
-    }
-    interface FreezeAuditorEvent {
-        auditor: string;
         _event: Event;
     }
     interface PenalizeEvent {
