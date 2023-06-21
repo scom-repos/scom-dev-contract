@@ -518,7 +518,7 @@ export class ProjectInfo extends _Contract{
             return result;
         }
         this.packageName = packageName_call
-        let packageNameInvParams = (params: IPackageNameInvParams) => [this.wallet.utils.toString(params.param1),this.wallet.utils.stringToBytes(params.param2)];
+        let packageNameInvParams = (params: IPackageNameInvParams) => [this.wallet.utils.toString(params.param1),params.param2];
         let packageNameInv_call = async (params: IPackageNameInvParams, options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('packageNameInv',packageNameInvParams(params),options);
             return new BigNumber(result);
@@ -617,7 +617,7 @@ export class ProjectInfo extends _Contract{
         }
         this.projectName = projectName_call
         let projectNameInv_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('projectNameInv',[this.wallet.utils.stringToBytes(param1)],options);
+            let result = await this.call('projectNameInv',[param1],options);
             return new BigNumber(result);
         }
         this.projectNameInv = projectNameInv_call
