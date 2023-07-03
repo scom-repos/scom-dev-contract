@@ -130,16 +130,19 @@ describe('## Audit', async function() {
             ipfsCid: "ipfs4"
         }, true);
         assertEqual(await auditInfoContract.getLastAuditResult(packageVersionId), {auditors:[auditor1], results: [2]});
-        assertEqual(await auditInfoContract.auditHistoryAuditorLength(packageVersionId), 1);
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 1);
         assertEqual(await auditInfoContract.auditHistoryLength({packageVersionsId: packageVersionId, auditor:auditor1}), 1);
         assertEqual(await auditInfoContract.latestAuditResult(packageVersionId), 0);
         assertEqual(await auditInfoContract.lastAuditResultBeforeAuditPeriod(packageVersionId), 0);
+
+        receipt = await auditInfoContract.addAuditReport({packageVersionsId:packageVersionId, auditResult: 2, ipfsCid: "ipfs4a"});
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 1);
     });
     it('auditor 2 rejects', async function() {
         wallet.defaultAccount = auditor2;
         let receipt = await auditInfoContract.addAuditReport({packageVersionsId:packageVersionId, auditResult: 0, ipfsCid: "ipfs5"});
         assertEqual(await auditInfoContract.getLastAuditResult(packageVersionId), {auditors:[auditor1,auditor2], results: [2,0]});
-        assertEqual(await auditInfoContract.auditHistoryAuditorLength(packageVersionId), 2);
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 2);
         assertEqual(await auditInfoContract.auditHistoryLength({packageVersionsId: packageVersionId, auditor:auditor2}), 1);
         assertEqual(await auditInfoContract.latestAuditResult(packageVersionId), 0);
         assertEqual(await auditInfoContract.lastAuditResultBeforeAuditPeriod(packageVersionId), 0);
@@ -148,7 +151,7 @@ describe('## Audit', async function() {
         wallet.defaultAccount = auditor3;
         let receipt = await auditInfoContract.addAuditReport({packageVersionsId:packageVersionId, auditResult: 2, ipfsCid: "ipfs6"});
         assertEqual(await auditInfoContract.getLastAuditResult(packageVersionId), {auditors:[auditor1,auditor2,auditor3], results: [2,0,2]});
-        assertEqual(await auditInfoContract.auditHistoryAuditorLength(packageVersionId), 3);
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 3);
         assertEqual(await auditInfoContract.auditHistoryLength({packageVersionsId: packageVersionId, auditor:auditor3}), 1);
         assertEqual(await auditInfoContract.latestAuditResult(packageVersionId), 1); // 2 out of 3, warning
         assertEqual(await auditInfoContract.lastAuditResultBeforeAuditPeriod(packageVersionId), 1);
@@ -158,7 +161,7 @@ describe('## Audit', async function() {
         wallet.defaultAccount = auditor4;
         let receipt = await auditInfoContract.addAuditReport({packageVersionsId:packageVersionId, auditResult: 2, ipfsCid: "ipfs7"});
         assertEqual(await auditInfoContract.getLastAuditResult(packageVersionId), {auditors:[auditor1,auditor2,auditor3,auditor4], results: [2,0,2,2]});
-        assertEqual(await auditInfoContract.auditHistoryAuditorLength(packageVersionId), 4);
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 4);
         assertEqual(await auditInfoContract.auditHistoryLength({packageVersionsId: packageVersionId, auditor:auditor4}), 1);
         assertEqual(await auditInfoContract.latestAuditResult(packageVersionId), 2); // 3 out of 4, passed
         assertEqual(await auditInfoContract.lastAuditResultBeforeAuditPeriod(packageVersionId), 1);
@@ -167,7 +170,7 @@ describe('## Audit', async function() {
         wallet.defaultAccount = auditor3;
         let receipt = await auditInfoContract.addAuditReport({packageVersionsId:packageVersionId, auditResult: 0, ipfsCid: "ipfs8"});
         assertEqual(await auditInfoContract.getLastAuditResult(packageVersionId), {auditors:[auditor1,auditor2,auditor3,auditor4], results: [2,0,0,2]});
-        assertEqual(await auditInfoContract.auditHistoryAuditorLength(packageVersionId), 4);
+        assertEqual(await auditInfoContract.packageVersionsAuditorsLength(packageVersionId), 4);
         assertEqual(await auditInfoContract.auditHistoryLength({packageVersionsId: packageVersionId, auditor:auditor3}), 2);
         assertEqual(await auditInfoContract.latestAuditResult(packageVersionId), 1); // 2 out of 4, warning
         assertEqual(await auditInfoContract.lastAuditResultBeforeAuditPeriod(packageVersionId), 1);

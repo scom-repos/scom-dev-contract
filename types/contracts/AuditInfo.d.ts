@@ -68,9 +68,6 @@ export declare class AuditInfo extends _Contract {
             timestamp: BigNumber;
         }>;
     };
-    auditHistoryAuditorLength: {
-        (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    };
     auditHistoryLength: {
         (params: IAuditHistoryLengthParams, options?: TransactionOptions): Promise<BigNumber>;
     };
@@ -110,6 +107,9 @@ export declare class AuditInfo extends _Contract {
     };
     packageVersionsAuditorsInv: {
         (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    };
+    packageVersionsAuditorsLength: {
+        (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     passingThreshold: {
         (options?: TransactionOptions): Promise<BigNumber>;

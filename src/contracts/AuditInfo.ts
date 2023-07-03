@@ -121,9 +121,6 @@ export class AuditInfo extends _Contract{
     auditHistory: {
         (params: IAuditHistoryParams, options?: TransactionOptions): Promise<{auditResult:BigNumber,ipfsCid:string,timestamp:BigNumber}>;
     }
-    auditHistoryAuditorLength: {
-        (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    }
     auditHistoryLength: {
         (params: IAuditHistoryLengthParams, options?: TransactionOptions): Promise<BigNumber>;
     }
@@ -160,6 +157,9 @@ export class AuditInfo extends _Contract{
     }
     packageVersionsAuditorsInv: {
         (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
+    }
+    packageVersionsAuditorsLength: {
+        (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     passingThreshold: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -219,11 +219,6 @@ export class AuditInfo extends _Contract{
             };
         }
         this.auditHistory = auditHistory_call
-        let auditHistoryAuditorLength_call = async (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('auditHistoryAuditorLength',[this.wallet.utils.toString(packageVersionsId)],options);
-            return new BigNumber(result);
-        }
-        this.auditHistoryAuditorLength = auditHistoryAuditorLength_call
         let auditHistoryLengthParams = (params: IAuditHistoryLengthParams) => [this.wallet.utils.toString(params.packageVersionsId),params.auditor];
         let auditHistoryLength_call = async (params: IAuditHistoryLengthParams, options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('auditHistoryLength',auditHistoryLengthParams(params),options);
@@ -285,6 +280,11 @@ export class AuditInfo extends _Contract{
             return new BigNumber(result);
         }
         this.packageVersionsAuditorsInv = packageVersionsAuditorsInv_call
+        let packageVersionsAuditorsLength_call = async (packageVersionsId:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('packageVersionsAuditorsLength',[this.wallet.utils.toString(packageVersionsId)],options);
+            return new BigNumber(result);
+        }
+        this.packageVersionsAuditorsLength = packageVersionsAuditorsLength_call
         let passingThreshold_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('passingThreshold',[],options);
             return new BigNumber(result);

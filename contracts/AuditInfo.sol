@@ -68,8 +68,8 @@ contract AuditInfo is Authorization, ReentrancyGuard {
         emit SetMinAuditRequired(_minAuditRequired);
     }
 
-    function auditHistoryAuditorLength(uint256 packageVersionsId) external view returns (uint256 length)  {
-        length = auditHistory[packageVersionsId].length;
+    function packageVersionsAuditorsLength(uint256 packageVersionsId) external view returns (uint256 length)  {
+        length = packageVersionsAuditors[packageVersionsId].length;
     }
     function auditHistoryLength(uint256 packageVersionsId, address auditor) external view returns (uint256 length)  {
         if (packageVersionsAuditors[packageVersionsId][0] == auditor) {
@@ -91,7 +91,7 @@ contract AuditInfo is Authorization, ReentrancyGuard {
             auditHistory[packageVersionsId].push();
         } else {
             uint256 auditorIdx2 = packageVersionsAuditorsInv[packageVersionsId][msg.sender];
-            if (auditorIdx2 == 0) {
+            if (packageVersionsAuditors[packageVersionsId][packageVersionsAuditorsInv[packageVersionsId][msg.sender]] != msg.sender) {
                 packageVersionsAuditors[packageVersionsId].push(msg.sender);
                 packageVersionsAuditorsInv[packageVersionsId][msg.sender] = auditorIdx;
                 auditHistory[packageVersionsId].push();
