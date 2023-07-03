@@ -116,9 +116,6 @@ declare module "@scom/scom-dev-contract/contracts/AuditInfo.ts" {
                 timestamp: BigNumber;
             }>;
         };
-        auditHistoryAuditorLength: {
-            (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-        };
         auditHistoryLength: {
             (params: IAuditHistoryLengthParams, options?: TransactionOptions): Promise<BigNumber>;
         };
@@ -158,6 +155,9 @@ declare module "@scom/scom-dev-contract/contracts/AuditInfo.ts" {
         };
         packageVersionsAuditorsInv: {
             (params: IPackageVersionsAuditorsInvParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        packageVersionsAuditorsLength: {
+            (packageVersionsId: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
         };
         passingThreshold: {
             (options?: TransactionOptions): Promise<BigNumber>;
