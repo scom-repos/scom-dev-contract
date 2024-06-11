@@ -1,32 +1,19 @@
 // buy with wrapper
 import 'mocha';
 import {Utils, Wallet, BigNumber, Erc20, Contract, TransactionReceipt, MerkleTree} from "@ijstech/eth-wallet";
+import * as UniV3 from '@scom/scom-uniswap-v3-contract';
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
 import * as Ganache from "ganache";
 import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
-import { WETH9, MockErc20, MockOracleAdaptor3 } from '../packages/mock-contracts/src'
+import {stakeToVote, voteToPass, initHybridRouter}  from './oswapHelper';
+import { Contracts as Mocks } from '../packages/mock-contracts/src'
 import * as OSWAP from '@openswap/sdk';
 
-
-const oswapDeployOptions = {
-    govOptions: {
-        minStakePeriod: 1,
-        tradeFee: 0.28,
-        protocolFee: 0,
-        protocolFeeTo: '',
-        profiles: {
-            name: ['poll','vote','addOldOracleToNewPair'],
-            minExeDelay: [1,1,1],
-            minVoteDuration: [0,0,0],
-            maxVoteDuration: [1209600,1209600,1209600],
-            minGovTokenToCreateVote: [Utils.toDecimals(100),Utils.toDecimals(200000),Utils.toDecimals(100)],
-            minQuorum: [Utils.toDecimals(0),Utils.toDecimals(1000000),Utils.toDecimals(100)]
-        }
-    },
-    hybridRouter: {
-    }
-};
+const X96 = new BigNumber(2).pow(96);
+export function toSqrtX96(n: BigNumber): BigNumber {
+    return n.sqrt().times(X96).dp(0, BigNumber.ROUND_FLOOR);
+}
 
 describe('## Vault3', async function() {
     let accounts: string[];
@@ -35,8 +22,10 @@ describe('## Vault3', async function() {
     let oswapContracts: OSWAP.IDeploymentContracts;
     let result: IDeployResult;
 
-    let amm: OSWAP.Contracts.OSWAP_Pair;
-    let weth: WETH9;
+    let uniV3: UniV3.IDeployedContracts;
+    let amm: UniV3.CoreContracts.UniswapV3Pool;
+
+    let weth: Mocks.WETH9;
     let usdt: Erc20;
     let scomContract: Contracts.Scom;
     let vaultContract: Contracts.Vault;
@@ -60,57 +49,11 @@ describe('## Vault3', async function() {
     const ETH_PRICE_USD = 2000;
     const LINK_PRICE_USD = 8;
 
-    async function voteToPass(wallet: Wallet, oswapContracts: OSWAP.IDeploymentContracts, executor: any, type: string, quorum: number | BigNumber | string, param: string[]):Promise<TransactionReceipt> {
-        let voting = await newVote(wallet, oswapContracts, executor, type, quorum, param);
-        await voting.vote(0);
-    
-        let now = <number>(await wallet.web3.eth.getBlock('latest')).timestamp;
-        let end = (await voting.voteEndTime()).plus(await voting.executeDelay()).toNumber() + 10;
-    if (end>now) {
-            await wallet.setBlockTime(end-now+1);
-        }
-        return await voting.execute();
-    }
-    async function newVote(wallet: Wallet, oswapContracts: OSWAP.IDeploymentContracts, executor: any, type: string, quorum: number | BigNumber | string, param: string[]):Promise<OSWAP.Contracts.OAXDEX_VotingContract> {
-        let now = <number>(await wallet.web3.eth.getBlock('latest')).timestamp;
-        let votingConfig = (await oswapContracts.governance.votingConfigs(Utils.stringToBytes32("vote") as string));
-        quorum = votingConfig.minQuorum;
-        let threshold = Utils.toDecimals("0.5");
-        let voteEndTime = now + votingConfig.minVoteDuration.toNumber() + 10;
-        let exeDelay = votingConfig.minExeDelay.toNumber();
-    
-        let receipt = await oswapContracts.registry.newVote({
-            executor: executor.address,
-            name: Utils.stringToBytes32(type) as string,
-            options: [Utils.stringToBytes32('Y') as string, Utils.stringToBytes32('N') as string],
-            quorum: quorum,
-            threshold: threshold,
-            voteEndTime: voteEndTime,
-            executeDelay: exeDelay,
-            executeParam: [Utils.stringToBytes32(type) as string].concat(param)
-        });
-        let events = oswapContracts.governance.parseNewVoteEvent(receipt)[0];
-        let voteAddr = events.vote;
-        console.log("voting address " + voteAddr);
-    
-        let voting = new OSWAP.Contracts.OAXDEX_VotingContract(wallet, voteAddr);
-    
-        return voting;
-    }
-    async function deployOSWAP(weth: WETH9, usdt: Erc20): Promise<OSWAP.IDeploymentContracts> {
+    async function deployOSWAP(weth: Mocks.WETH9, usdt: Erc20): Promise<OSWAP.IDeploymentContracts> {
         wallet.defaultAccount = oswapDeployer;
-        oswapContracts = OSWAP.toDeploymentContracts(wallet, await OSWAP.deploy(wallet, Object.assign({tokens: {weth: weth.address}}, oswapDeployOptions)));
-
-        let votingConfig = (await oswapContracts.governance.votingConfigs(Utils.stringToBytes32("vote") as string));
-        let amount = Utils.fromDecimals(BigNumber.max(votingConfig.minOaxTokenToCreateVote, votingConfig.minQuorum));
-        await oswapContracts.openSwap.mint({address:oswapAdmin,amount:amount});
-
-        wallet.defaultAccount = oswapAdmin;
-        await oswapContracts.openSwap.approve({spender:oswapContracts.governance.address, amount:amount});
-        await oswapContracts.governance.stake(Utils.toDecimals(amount));
-        let wait = (await oswapContracts.governance.minStakePeriod()).toNumber() + 1;
-        await wallet.setBlockTime(wait);
-        await oswapContracts.governance.unlockStake();        
+        oswapContracts = OSWAP.toDeploymentContracts(wallet, await OSWAP.deploy(wallet, {tokens: {weth: weth.address}, hybridRouter: {}}));
+        await initHybridRouter(wallet, oswapContracts);
+        await stakeToVote(oswapAdmin, oswapAdmin, wallet, oswapContracts);
 
         let wethAmount = WETH_POOL_SIZE;
         let usdtAmount = wethAmount * ETH_PRICE_USD;
@@ -135,12 +78,12 @@ describe('## Vault3', async function() {
 
         // oracle
         wallet.defaultAccount = oswapAdmin;
-        let oracle = new MockOracleAdaptor3(wallet);
+        let oracle = new Mocks.MockOracleAdaptor3(wallet);
         await oracle.deploy({weth:weth.address, decimals:18, tokens:[usdt.address, weth.address], prices:[Utils.toDecimals(1),Utils.toDecimals(ETH_PRICE_USD)]});
         if (new BigNumber(usdt.address.toLowerCase()).lt(weth.address.toLowerCase()))
-            await voteToPass(wallet, oswapContracts, oswapContracts.executor2, "setOracle", "1000000", [Utils.addressToBytes32Right(usdt.address, true), Utils.addressToBytes32Right(weth.address, true),Utils.addressToBytes32Right(oracle.address, true)]);
+            await voteToPass(oswapAdmin, wallet, oswapContracts, oswapContracts.executor2, "setOracle", [Utils.addressToBytes32Right(usdt.address, true), Utils.addressToBytes32Right(weth.address, true),Utils.addressToBytes32Right(oracle.address, true)]);
         else
-            await voteToPass(wallet, oswapContracts, oswapContracts.executor2, "setOracle", "1000000", [Utils.addressToBytes32Right(weth.address, true), Utils.addressToBytes32Right(usdt.address, true),Utils.addressToBytes32Right(oracle.address, true)]);
+            await voteToPass(oswapAdmin, wallet, oswapContracts, oswapContracts.executor2, "setOracle", [Utils.addressToBytes32Right(weth.address, true), Utils.addressToBytes32Right(usdt.address, true),Utils.addressToBytes32Right(oracle.address, true)]);
 
         wallet.defaultAccount = deployer;
         await usdt.mint({address: lp, amount: usdtAmount});
@@ -170,22 +113,14 @@ describe('## Vault3', async function() {
         }, 0);
 
         // hybrid router
-        wallet.defaultAccount = oswapAdmin;
-        let name = Utils.stringToBytes32("AMM") as string;
-        await voteToPass(wallet, oswapContracts, oswapContracts.hybridRouterRegistry, "registerProtocol", "1000000", [name, Utils.addressToBytes32Right(oswapContracts.factory.address, true), Utils.numberToBytes32(100000, true),  Utils.numberToBytes32(100000, true), Utils.numberToBytes32(1, true)]);
         wallet.defaultAccount = nobody;
-        let ammPair = new OSWAP.Contracts.OSWAP_Pair(wallet, await oswapContracts.factory.getPair({param1:usdt.address,param2:weth.address}));
-        await oswapContracts.hybridRouterRegistry.registerPairByAddress({factory:oswapContracts.factory.address, pairAddress:ammPair.address});
+        let ammPair = await oswapContracts.factory.getPair({param1:usdt.address,param2:weth.address});
+        await oswapContracts.hybridRouterRegistry.registerPairByAddress({factory:oswapContracts.factory.address, pairAddress:ammPair});
+        let oraclePair = await oswapContracts.oracleFactory.getPair({param1:usdt.address,param2:weth.address});
+        await oswapContracts.hybridRouterRegistry.registerPairByAddress({factory:oswapContracts.oracleFactory.address, pairAddress:oraclePair});
 
         wallet.defaultAccount = oswapAdmin;
-        name = Utils.stringToBytes32("ORACLE") as string;
-        await voteToPass( wallet, oswapContracts, oswapContracts.hybridRouterRegistry, "registerProtocol", "1000000", [name, Utils.addressToBytes32Right(oswapContracts.oracleFactory.address, true), Utils.numberToBytes32(100000, true),  Utils.numberToBytes32(100000, true), Utils.numberToBytes32(2, true)]);
-        wallet.defaultAccount = nobody;
-        let oraclePair = new OSWAP.Contracts.OSWAP_OraclePair(wallet, await oswapContracts.oracleFactory.getPair({param1:usdt.address,param2:weth.address}));
-        await oswapContracts.hybridRouterRegistry.registerPairByAddress({factory:oswapContracts.oracleFactory.address, pairAddress:oraclePair.address});
-
-        wallet.defaultAccount = oswapAdmin;
-        await voteToPass(wallet, oswapContracts, oswapContracts.executor2, "setWhiteList", "1000000", [Utils.addressToBytes32Right(oswapContracts.hybridRouter.address, true), Utils.numberToBytes32(1, true)]);
+        await voteToPass(oswapAdmin, wallet, oswapContracts, oswapContracts.executor2, "setWhiteList", [Utils.addressToBytes32Right(oswapContracts.hybridRouter.address, true), Utils.numberToBytes32(1, true)]);
 
         return oswapContracts;
     }
@@ -208,27 +143,28 @@ describe('## Vault3', async function() {
         await scomContract.deploy({minter:Utils.nullAddress, initSupply:totalSuppy, initSupplyTo: foundation, totalSupply: totalSuppy});
         console.log('scom', scomContract.address);
 
-        weth = new WETH9(wallet);
+        weth = new Mocks.WETH9(wallet);
         await weth.deploy();
         console.log('weth', weth.address);
 
-        usdt = new Erc20(wallet, await new MockErc20(wallet).deploy({name:"USDT", symbol:"USDT", decimals:6}));
+        uniV3 = await UniV3.deploy(wallet, {weth: weth.address}, (msg: string)=>{
+            console.dir(msg)
+        });
+
+        usdt = new Erc20(wallet, await new Mocks.MockErc20(wallet).deploy({name:"USDT", symbol:"USDT", decimals:6}));
         console.log('usdt', usdt.address);
 
         let oswapContracts = await deployOSWAP(weth, usdt);
 
         wallet.defaultAccount = foundation;        
-        await scomContract.approve({spender:oswapContracts.router.address, amount:Utils.toDecimals(1)});
+        let pairFee = Utils.toDecimals("0.0005", 6); // 0.000500
+        let receipt1 = await uniV3.factory.createPool({tokenA: scomContract.address, tokenB: weth.address, fee: pairFee});
+        let event1 = uniV3.factory.parsePoolCreatedEvent(receipt1)[0];
 
-        let receipt = await oswapContracts.router.addLiquidityETH({
-            token: scomContract.address,
-            amountTokenDesired: Utils.toDecimals(1),
-            amountTokenMin: Utils.toDecimals(1),
-            amountETHMin: Utils.toDecimals(1),
-            to: foundation,
-            deadline: (await wallet.getBlockTimestamp()) + 1000
-        }, Utils.toDecimals(1));
-        amm = new OSWAP.Contracts.OSWAP_Pair(wallet, await oswapContracts.factory.getPair({param1: scomContract.address, param2: weth.address}));
+        let price = toSqrtX96(new BigNumber(1)); // 1 scom = 1 eth
+        amm = new UniV3.CoreContracts.UniswapV3Pool(wallet, event1.pool);
+        let receipt2 = await amm.initialize(price);
+        let event2 = amm.parseInitializeEvent(receipt2)[0];
 
         wallet.defaultAccount = deployer;
         const deployOptions:IDeployOptions = {
@@ -252,7 +188,7 @@ describe('## Vault3', async function() {
             //     minAuditRequired: 3
             // },
             vault: {
-                amm: amm.address,
+                uniV3: amm.address,
                 foundation: foundation,
             }
         }
@@ -271,7 +207,7 @@ describe('## Vault3', async function() {
     const oneYear = 365 * 24 * 60 * 60;
     const day = 24 * 60 * 60 ;
     let merkleTree: MerkleTree;
-    it ('new tranche', async () => {
+    it ('lock', async () => {
         now = await wallet.getBlockTimestamp();
         let startTime = now + 1000;
         let endTime = now + period; // 10 years
@@ -372,12 +308,16 @@ describe('## Vault3', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseTransferEvent(receipt);
+        let event4 = amm.parseMintEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(10)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(10), // liquidity
+            amount0: Utils.toDecimals(10),
+            amount1: Utils.toDecimals(10)
         }, true);
     });
     it ('claim exact in', async () => {
@@ -424,12 +364,16 @@ describe('## Vault3', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseTransferEvent(receipt);
+        let event4 = amm.parseMintEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(10)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(10), // liquidity
+            amount0: Utils.toDecimals(10),
+            amount1: Utils.toDecimals(10)
         }, true);
     });
     it ('swap exact out', async () => {
@@ -482,12 +426,16 @@ describe('## Vault3', async function() {
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
-        let event5 = amm.parseTransferEvent(receipt);
+        let event5 = amm.parseMintEvent(receipt);
         assertEqual(event5.length, 1);
         assertEqual(event5[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(1)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(1), // liquidity
+            amount0: Utils.toDecimals(1),
+            amount1: Utils.toDecimals(1)
         }, true);
     });
     it ('swap exact in', async () => {
@@ -533,12 +481,16 @@ describe('## Vault3', async function() {
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
-        let event5 = amm.parseTransferEvent(receipt);
+        let event5 = amm.parseMintEvent(receipt);
         assertEqual(event5.length, 1);
         assertEqual(event5[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(1)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(1), // liquidity
+            amount0: Utils.toDecimals(1),
+            amount1: Utils.toDecimals(1)
         }, true);
     });
 });

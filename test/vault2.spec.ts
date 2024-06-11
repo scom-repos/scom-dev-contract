@@ -1,11 +1,15 @@
 // direct buy with ETH
 import 'mocha';
 import {Utils, Wallet, BigNumber, MerkleTree} from "@ijstech/eth-wallet";
+import * as UniV3 from '@scom/scom-uniswap-v3-contract';
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
-import * as Ganache from "ganache";
-import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
-import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
+import { Contracts as Mocks } from '../packages/mock-contracts/src'
+
+const X96 = new BigNumber(2).pow(96);
+export function toSqrtX96(n: BigNumber): BigNumber {
+    return n.sqrt().times(X96).dp(0, BigNumber.ROUND_FLOOR);
+}
 
 describe('## Vault2', async function() {
     let accounts: string[];
@@ -13,8 +17,10 @@ describe('## Vault2', async function() {
 
     let result: IDeployResult;
 
-    let amm: MockAmmPair;
-    let weth: WETH9;
+    let uniV3: UniV3.IDeployedContracts;
+    let amm: UniV3.CoreContracts.UniswapV3Pool;
+
+    let weth: Mocks.WETH9;
     let scomContract: Contracts.Scom;
     let vaultContract: Contracts.Vault;
 
@@ -26,8 +32,8 @@ describe('## Vault2', async function() {
 
     let totalSuppy = Utils.toDecimals("10000000000");
     let period = 10 * 365 * 24 * 60 * 60; // 10 years
-    // let derement = Utils.toDecimals("0.998"); // day
-    let derement = Utils.toDecimals("0.999999987"); // second
+    // let decrement = Utils.toDecimals("0.998"); // day
+    let decrement = Utils.toDecimals("0.999999987"); // second
 
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
@@ -44,22 +50,23 @@ describe('## Vault2', async function() {
         await scomContract.deploy({minter:Utils.nullAddress, initSupply:totalSuppy, initSupplyTo: foundation, totalSupply: totalSuppy});
         console.log('scom', scomContract.address);
 
-        weth = new WETH9(wallet);
+        weth = new Mocks.WETH9(wallet);
         await weth.deploy();
         console.log('weth', weth.address);
 
-        amm = new MockAmmPair(wallet);
-        await amm.deploy(
-            new BigNumber(scomContract.address.toLowerCase()).lt(weth.address.toLowerCase()) ? 
-            {token0: scomContract.address, token1: weth.address} : 
-            {token0: weth.address, token1: scomContract.address}
-        );
+        uniV3 = await UniV3.deploy(wallet, {weth: weth.address}, (msg: string)=>{
+            console.dir(msg)
+        });
 
-        wallet.defaultAccount = foundation;        
-        await weth.deposit({value:Utils.toDecimals(1)});
-        await scomContract.transfer({to:amm.address, amount:Utils.toDecimals(1)});
-        await weth.transfer({dst:amm.address, wad:Utils.toDecimals(1)});
-        await amm.sync();
+        wallet.defaultAccount = foundation;   
+        let pairFee = Utils.toDecimals("0.0005", 6); // 0.000500
+        let receipt1 = await uniV3.factory.createPool({tokenA: scomContract.address, tokenB: weth.address, fee: pairFee});
+        let event1 = uniV3.factory.parsePoolCreatedEvent(receipt1)[0];
+
+        let price = toSqrtX96(new BigNumber(1)); // 1 scom = 1 eth
+        amm = new UniV3.CoreContracts.UniswapV3Pool(wallet, event1.pool);
+        let receipt2 = await amm.initialize(price);
+        let event2 = amm.parseInitializeEvent(receipt2)[0];
 
         wallet.defaultAccount = deployer;
         const deployOptions:IDeployOptions = {
@@ -83,7 +90,7 @@ describe('## Vault2', async function() {
             //     minAuditRequired: 3
             // },
             vault: {
-                amm: amm.address,
+                uniV3: amm.address,
                 foundation: foundation,
             }
         }
@@ -99,7 +106,7 @@ describe('## Vault2', async function() {
     const oneYear = 365 * 24 * 60 * 60;
     const day = 24 * 60 * 60 ;
     let merkleTree: MerkleTree;
-    it ('new tranche', async () => {
+    it ('lock', async () => {
         now = await wallet.getBlockTimestamp();
         let startTime = now + 1000;
         let endTime = now + period; // 10 years
@@ -110,12 +117,13 @@ describe('## Vault2', async function() {
         wallet.defaultAccount = deployer;
         await vaultContract.permit(deployer);
         await vaultContract.lock({
-            decrementDecimal: derement,
+            decrementDecimal: decrement,
             startTime,
             endTime 
         });
         now = startTime;
-
+    });
+    it ('new tranche', async () => {
         const abi = [
             {
                 type: "address",
@@ -202,12 +210,16 @@ describe('## Vault2', async function() {
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseTransferEvent(receipt);
+        let event4 = amm.parseMintEvent(receipt);
         assertEqual(event4.length, 1);
         assertEqual(event4[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(10)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(10), // liquidity
+            amount0: Utils.toDecimals(10),
+            amount1: Utils.toDecimals(10)
         }, true);
 
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(30));
@@ -290,12 +302,16 @@ describe('## Vault2', async function() {
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
-        let event5 = amm.parseTransferEvent(receipt);
+        let event5 = amm.parseMintEvent(receipt);
         assertEqual(event5.length, 1);
         assertEqual(event5[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(1)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(1), // liquidity
+            amount0: Utils.toDecimals(1),
+            amount1: Utils.toDecimals(1)
         }, true);
         
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), 0);
