@@ -1,5 +1,5 @@
 {
-  "name": "@scom/scom-dev-contract",
+  "name": "@scom/scom-portal-contract",
   "version": "0.1.8",
   "description": "",
   "main": "lib/index.js",
@@ -9,14 +9,15 @@
   "scripts": {
     "build": "rm -rf lib && rm -rf dist && rm -rf types && rm -rf pluginTypes && rm -rf src/contracts && npx @ijstech/compiler && npm run build:deployer",
     "build:deployer": "rm -rf deployer && npx @ijstech/cli bundle deployer",
-    "build:mock-contracts": "cd packages/mock-contracts && npm run build",
+    "build:mocks": "cd packages/mock-contracts && npm run build",
     "deployer": "npx @ijstech/cli serve 8080 deployer",
     "test": "mocha --exit --require ts-node/register --timeout 1000000 ./test/*.spec.ts",
     "deploy": "ts-node tools/deploy.ts",
     "setup": "ts-node tools/setup.ts"
   },
   "dependencies": {
-    "@ijstech/eth-contract": "^0.1.13"
+    "@ijstech/eth-contract": "^0.1.13",
+    "@scom/scom-uniswap-v3-contract": "https://github.com/scom-repos/scom-uniswap-v3-contract"
   },
   "devDependencies": {
     "@ijstech/cli": "^0.1.28",
