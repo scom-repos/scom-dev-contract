@@ -8,15 +8,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./AuditorInfo.sol";
 import './Scom.sol';
 
-interface AMM {
+interface UniV3 {
     function token0() external view returns (address);
     function token1() external view returns (address);
-    function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
-    function mint(address to) external returns (uint liquidity);
-    function burn(address to) external returns (uint amount0, uint amount1);
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external;
-    function skim(address to) external;
-    function sync() external;
+    function slot0() external view returns ( uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked);
+    function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amount, bytes calldata data) external returns (uint256 amount0, uint256 amount1);
 }
 interface IWETH is IERC20 {
     function deposit() external payable;
@@ -59,13 +55,28 @@ contract Vault is Authorization, ReentrancyGuard {
         bytes ipfsCid;
     }
 
+    struct PoolKey {
+        address token0;
+        address token1;
+        uint24 fee;
+    }
+    struct MintCallbackData {
+        PoolKey poolKey;
+        address payer;
+    }
+
     uint256 constant WEI = 10 ** 18;
 
     Scom public immutable scom;
-    AMM public immutable amm;
     IWETH public immutable weth;
+    UniV3 public immutable uniV3;
     bool public immutable token0IsScom; // token0 is scom in the amm pool, i.e., address(scom) < address(weth)
-
+    int24 constant public maxTick = 887260;
+    int24 constant public minTick = -887260;
+    int24 constant internal MIN_TICK = -887272;
+    int24 constant internal MAX_TICK = -MIN_TICK;
+    uint24 constant public fee = 500;
+    int24 constant public tickSpacing = 10;
     address public foundation;
 
     // release schedule constants
@@ -88,20 +99,21 @@ contract Vault is Authorization, ReentrancyGuard {
 
     event Lock(uint256 start, uint256 end, uint256 rate, uint256 initAmount);
     event Unlock(uint256 unlock, uint256 available, uint256 balance);
-    event NewTranche(uint256 indexed trancheId);
+    event NewTranche(uint256 indexed trancheId, uint256 unlockedAmount);
     event Claim(uint256 indexed trancheId, address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
     event Swap(address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
     event WithdrawScomFromTranche(uint256 indexed trancheId, uint256 amount, uint256 remainingBalance);
     event WithdrawScomFromRelease(uint256 amount, uint256 balance);
-    event Release(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
+    event Release(uint256[] trancheIds, uint256 amount, uint256 releasedAmount);
+    event DirectRelease(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
     event TrancheRelease(uint256 indexed trancheId);
 
-    constructor(address _foundation, Scom _scom, AMM _amm) {
+    constructor(address _foundation, Scom _scom, UniV3 _uniV3) {
         foundation = _foundation;
         scom = _scom;
-        amm = _amm;
-        address token0 = _amm.token0();
-        address token1 = _amm.token1();
+        uniV3 = _uniV3;
+        address token0 = _uniV3.token0();
+        address token1 = _uniV3.token1();
         (token0IsScom, weth) = (token0 == address(_scom)) ? (true, IWETH(token1)) : (false, IWETH(token0));
     }
 
@@ -164,7 +176,7 @@ contract Vault is Authorization, ReentrancyGuard {
         // FIXME: check schedule
     }
 
-    function totalSuppyAt(uint256 timestamp) public view returns (uint256 amount) {
+    function totalSupplyAt(uint256 timestamp) public view returns (uint256 amount) {
         if (timestamp > endTime) {
             amount = totalAmount;
         } else {
@@ -173,14 +185,14 @@ contract Vault is Authorization, ReentrancyGuard {
         }
     }
     function currTotalSupply() public view returns (uint256 amount) {
-        return totalSuppyAt(block.timestamp);
+        return totalSupplyAt(block.timestamp);
     }
 
     function unlock() public returns (uint256 newAmount) {
         uint256 totalUnlockedAmount = currTotalSupply();
         newAmount = totalUnlockedAmount - lastUnlockedAmount;
         unlockedAmount += newAmount;
-        lastUnlockedAmount = unlockedAmount;
+        lastUnlockedAmount = totalUnlockedAmount;
         lastUpdate = block.timestamp;
         emit Unlock(newAmount, unlockedAmount, totalUnlockedAmount);
     }
@@ -188,12 +200,23 @@ contract Vault is Authorization, ReentrancyGuard {
     function newTranche(TrancheInfo calldata tranche) external auth {
         unlock();
         require(startTime < tranche.limitedClaimEndTime && tranche.limitedClaimEndTime <= tranche.unlimitedClaimEndTime, "invalid start / end time ");
-        require((tranche.amount * 2) < unlockedAmount, "invalid amount"); // an equal amount goes to foundation, thus 2x
+        require(tranche.amount % 2 == 0, "amount must be event");
+        require(tranche.amount < unlockedAmount, "invalid amount");
         uint256 trancheId = trancheInfo.length;
         trancheInfo.push(tranche);
+        unlockedAmount -= tranche.amount;
         availableBalanceInTranche[trancheId] = tranche.amount;
-        unlockedAmount -= (tranche.amount * 2);
-        emit NewTranche(trancheId);
+        emit NewTranche(trancheId, unlockedAmount);
+    }
+    function directRelease(uint256 amount) public onlyOwner {
+        require(amount % 2 == 0, "amount must be even");
+        unlockedAmount -= amount;
+        releasedAmount += amount;
+        emit DirectRelease(amount, unlockedAmount, releasedAmount);
+    }
+    function unlockAndRelease(uint256 amount) external onlyOwner {
+        unlock();
+        directRelease(amount);
     }
     function withdrawFromTranche(uint256[] calldata trancheIds, uint256[] calldata amountScom) external onlyOwner {
         uint256 i;
@@ -205,14 +228,21 @@ contract Vault is Authorization, ReentrancyGuard {
             //TODO: withdraw after limited claim ends?
             if (tranche.limitedClaimEndTime < block.timestamp) {
                 require(amountScom[i] % 2 == 0, "amount must be even");
-                amount += amountScom[i];
                 require(amountScom[i] <= availableBalanceInTranche[trancheIds[i]], "invalid amount");
                 availableBalanceInTranche[trancheIds[i]] -= amountScom[i];
+                amount += amountScom[i];
                 emit WithdrawScomFromTranche(trancheIds[i], amountScom[i], availableBalanceInTranche[trancheIds[i]]);
             }
             unchecked { i++; }
         }
         scom.safeTransfer(foundation, amount);
+    }
+    function withdrawFromRelease(uint256 amount) external onlyOwner {
+        require(amount <= releasedAmount, "insufficient balance");
+        require(amount % 2 == 0, "amount must be even");
+        releasedAmount -= amount;
+        scom.safeTransfer(foundation, amount);
+        emit WithdrawScomFromRelease(amount, releasedAmount);
     }
 
     // TODO: check from enduser only?
@@ -223,6 +253,226 @@ contract Vault is Authorization, ReentrancyGuard {
     // TODO: check from wrapper only?
     function claimWithWETH(uint256 trancheId, address from, address to, uint256 allocation, bytes32[] calldata proof) external nonReentrant returns (uint256 amountScom) {
         return _claim(trancheId, from, to, allocation, proof);
+    }
+    function uniswapV3MintCallback(
+        uint256 amount0Owed,
+        uint256 amount1Owed,
+        bytes calldata /*data*/
+    ) external {
+        // MintCallbackData memory decoded = abi.decode(data, (MintCallbackData));
+        require(msg.sender == address(uniV3), "not from uni");
+
+        if (amount0Owed > 0) (token0IsScom ? IERC20(scom) : IERC20(weth)).safeTransfer(msg.sender, amount0Owed);
+        if (amount1Owed > 0) (token0IsScom ? IERC20(weth) : IERC20(scom)).safeTransfer(msg.sender, amount1Owed);
+    }
+    uint8 internal constant RESOLUTION = 96;
+    uint256 internal constant Q96 = 0x1000000000000000000000000;
+    function mulDiv(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        // 512-bit multiply [prod1 prod0] = a * b
+        // Compute the product mod 2**256 and mod 2**256 - 1
+        // then use the Chinese Remainder Theorem to reconstruct
+        // the 512 bit result. The result is stored in two 256
+        // variables such that product = prod1 * 2**256 + prod0
+        uint256 prod0; // Least significant 256 bits of the product
+        uint256 prod1; // Most significant 256 bits of the product
+        assembly {
+            let mm := mulmod(a, b, not(0))
+            prod0 := mul(a, b)
+            prod1 := sub(sub(mm, prod0), lt(mm, prod0))
+        }
+
+        // Handle non-overflow cases, 256 by 256 division
+        if (prod1 == 0) {
+            require(denominator > 0);
+            assembly {
+                result := div(prod0, denominator)
+            }
+            return result;
+        }
+
+        // Make sure the result is less than 2**256.
+        // Also prevents denominator == 0
+        require(denominator > prod1);
+
+        ///////////////////////////////////////////////
+        // 512 by 256 division.
+        ///////////////////////////////////////////////
+
+        // Make division exact by subtracting the remainder from [prod1 prod0]
+        // Compute remainder using mulmod
+        uint256 remainder;
+        assembly {
+            remainder := mulmod(a, b, denominator)
+        }
+        // Subtract 256 bit number from 512 bit number
+        assembly {
+            prod1 := sub(prod1, gt(remainder, prod0))
+            prod0 := sub(prod0, remainder)
+        }
+
+        // Factor powers of two out of denominator
+        // Compute largest power of two divisor of denominator.
+        // Always >= 1.
+        uint256 twos = uint256(-int256(denominator)) & denominator;
+        // Divide denominator by power of two
+        assembly {
+            denominator := div(denominator, twos)
+        }
+
+        // Divide [prod1 prod0] by the factors of two
+        assembly {
+            prod0 := div(prod0, twos)
+        }
+        // Shift in bits from prod1 into prod0. For this we need
+        // to flip `twos` such that it is 2**256 / twos.
+        // If twos is zero, then it becomes one
+        assembly {
+            twos := add(div(sub(0, twos), twos), 1)
+        }
+        prod0 |= prod1 * twos;
+
+        // Invert denominator mod 2**256
+        // Now that denominator is an odd number, it has an inverse
+        // modulo 2**256 such that denominator * inv = 1 mod 2**256.
+        // Compute the inverse by starting with a seed that is correct
+        // correct for four bits. That is, denominator * inv = 1 mod 2**4
+        uint256 inv = (3 * denominator) ^ 2;
+        // Now use Newton-Raphson iteration to improve the precision.
+        // Thanks to Hensel's lifting lemma, this also works in modular
+        // arithmetic, doubling the correct bits in each step.
+        inv *= 2 - denominator * inv; // inverse mod 2**8
+        inv *= 2 - denominator * inv; // inverse mod 2**16
+        inv *= 2 - denominator * inv; // inverse mod 2**32
+        inv *= 2 - denominator * inv; // inverse mod 2**64
+        inv *= 2 - denominator * inv; // inverse mod 2**128
+        inv *= 2 - denominator * inv; // inverse mod 2**256
+
+        // Because the division is now exact we can divide by multiplying
+        // with the modular inverse of denominator. This will give us the
+        // correct result modulo 2**256. Since the precoditions guarantee
+        // that the outcome is less than 2**256, this is the final result.
+        // We don't need to compute the high bits of the result and prod1
+        // is no longer required.
+        result = prod0 * inv;
+        return result;
+    }
+    function mulDivRoundingUp(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) internal pure returns (uint256 result) {
+        result = mulDiv(a, b, denominator);
+        if (mulmod(a, b, denominator) > 0) {
+            require(result < type(uint256).max);
+            result++;
+        }
+    }
+    function divRoundingUp(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        assembly {
+            z := add(div(x, y), gt(mod(x, y), 0))
+        }
+    }
+    function toUint128(uint256 x) private pure returns (uint128 y) {
+        require((y = uint128(x)) == x);
+    }
+    function getSqrtRatioAtTick(int24 tick) internal pure returns (uint160 sqrtPriceX96) {
+        uint256 absTick = tick < 0 ? uint256(-int256(tick)) : uint256(int256(tick));
+        require(absTick <= uint256(uint24(MAX_TICK)), 'T');
+
+        uint256 ratio = absTick & 0x1 != 0 ? 0xfffcb933bd6fad37aa2d162d1a594001 : 0x100000000000000000000000000000000;
+        if (absTick & 0x2 != 0) ratio = (ratio * 0xfff97272373d413259a46990580e213a) >> 128;
+        if (absTick & 0x4 != 0) ratio = (ratio * 0xfff2e50f5f656932ef12357cf3c7fdcc) >> 128;
+        if (absTick & 0x8 != 0) ratio = (ratio * 0xffe5caca7e10e4e61c3624eaa0941cd0) >> 128;
+        if (absTick & 0x10 != 0) ratio = (ratio * 0xffcb9843d60f6159c9db58835c926644) >> 128;
+        if (absTick & 0x20 != 0) ratio = (ratio * 0xff973b41fa98c081472e6896dfb254c0) >> 128;
+        if (absTick & 0x40 != 0) ratio = (ratio * 0xff2ea16466c96a3843ec78b326b52861) >> 128;
+        if (absTick & 0x80 != 0) ratio = (ratio * 0xfe5dee046a99a2a811c461f1969c3053) >> 128;
+        if (absTick & 0x100 != 0) ratio = (ratio * 0xfcbe86c7900a88aedcffc83b479aa3a4) >> 128;
+        if (absTick & 0x200 != 0) ratio = (ratio * 0xf987a7253ac413176f2b074cf7815e54) >> 128;
+        if (absTick & 0x400 != 0) ratio = (ratio * 0xf3392b0822b70005940c7a398e4b70f3) >> 128;
+        if (absTick & 0x800 != 0) ratio = (ratio * 0xe7159475a2c29b7443b29c7fa6e889d9) >> 128;
+        if (absTick & 0x1000 != 0) ratio = (ratio * 0xd097f3bdfd2022b8845ad8f792aa5825) >> 128;
+        if (absTick & 0x2000 != 0) ratio = (ratio * 0xa9f746462d870fdf8a65dc1f90e061e5) >> 128;
+        if (absTick & 0x4000 != 0) ratio = (ratio * 0x70d869a156d2a1b890bb3df62baf32f7) >> 128;
+        if (absTick & 0x8000 != 0) ratio = (ratio * 0x31be135f97d08fd981231505542fcfa6) >> 128;
+        if (absTick & 0x10000 != 0) ratio = (ratio * 0x9aa508b5b7a84e1c677de54f3e99bc9) >> 128;
+        if (absTick & 0x20000 != 0) ratio = (ratio * 0x5d6af8dedb81196699c329225ee604) >> 128;
+        if (absTick & 0x40000 != 0) ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98) >> 128;
+        if (absTick & 0x80000 != 0) ratio = (ratio * 0x48a170391f7dc42444e8fa2) >> 128;
+
+        if (tick > 0) ratio = type(uint256).max / ratio;
+
+        // this divides by 1<<32 rounding up to go from a Q128.128 to a Q128.96.
+        // we then downcast because we know the result always fits within 160 bits due to our tick input constraint
+        // we round up in the division so getTickAtSqrtRatio of the output price is always consistent
+        sqrtPriceX96 = uint160((ratio >> 32) + (ratio % (1 << 32) == 0 ? 0 : 1));
+    }
+    function getLiquidityForAmount0(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 amount0
+    ) internal pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        uint256 intermediate = mulDiv(sqrtRatioAX96, sqrtRatioBX96, Q96);
+        return toUint128(mulDiv(amount0, intermediate, sqrtRatioBX96 - sqrtRatioAX96));
+    }
+    function getLiquidityForAmount1(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint256 amount1
+    ) internal pure returns (uint128 liquidity) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+        return toUint128(mulDiv(amount1, Q96, sqrtRatioBX96 - sqrtRatioAX96));
+    }
+    function getAmount0ForLiquidity(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity
+    ) internal pure returns (uint256 amount0) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+        return
+            divRoundingUp(mulDivRoundingUp(
+                uint256(liquidity) << RESOLUTION,
+                sqrtRatioBX96 - sqrtRatioAX96,
+                sqrtRatioBX96
+            ) , sqrtRatioAX96);
+    }
+    function getAmount1ForLiquidity(
+        uint160 sqrtRatioAX96,
+        uint160 sqrtRatioBX96,
+        uint128 liquidity
+    ) internal pure returns (uint256 amount1) {
+        if (sqrtRatioAX96 > sqrtRatioBX96) (sqrtRatioAX96, sqrtRatioBX96) = (sqrtRatioBX96, sqrtRatioAX96);
+
+        return mulDivRoundingUp(liquidity, sqrtRatioBX96 - sqrtRatioAX96, Q96);
+    }
+    function _addToUniV3(uint256 amountEth) internal returns (uint256 amountScom) {
+        (uint160 sqrtPriceX96, , , , , , ) = uniV3.slot0();
+        uint128 liquidity;
+        // find scom amount from uniV3
+        // get liquidity by eth amount
+        // get scom amount by liqudity
+        if (token0IsScom) {
+            // token 1 is weth
+            liquidity = getLiquidityForAmount1(getSqrtRatioAtTick(minTick), sqrtPriceX96, amountEth);
+            // amountScom = getAmount0ForLiquidity(getSqrtRatioAtTick(minTick), sqrtPriceX96, liquidity);
+            // amountScom = getAmount0ForLiquidity(sqrtPriceX96, getSqrtRatioAtTick(maxTick), liquidity);
+        } else {
+            // token 0 is weth
+            liquidity = getLiquidityForAmount0(sqrtPriceX96, getSqrtRatioAtTick(maxTick), amountEth);
+            // amountScom = getAmount1ForLiquidity(sqrtPriceX96, getSqrtRatioAtTick(maxTick), liquidity);
+            // amountScom = getAmount1ForLiquidity(getSqrtRatioAtTick(minTick), sqrtPriceX96, liquidity);
+        }
+
+        // add weth and half of the scom to amm pool
+        (uint256 amount0, uint256 amount1) = uniV3.mint(foundation, minTick, maxTick, liquidity, "");
+        amountScom = token0IsScom ? amount0 : amount1;
+
     }
     function _claim(uint256 trancheId, address from, address to, uint256 allocation, bytes32[] calldata proof) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
@@ -236,50 +486,23 @@ contract Vault is Authorization, ReentrancyGuard {
             MerkleProof.verifyCalldata(proof, tranche.merkleRoot, hash)
         , "merkle proof failed");
 
-        // find scom amount from amm
-        (uint112 reserveScom, uint112 reserveEth, /*uint32 blockTimestampLast*/) = amm.getReserves();
-        if (!token0IsScom)
-            (reserveScom, reserveEth) = (reserveEth, reserveScom);
-        amountScom = (amountEth * reserveScom) / reserveEth;
-
         if (block.timestamp < tranche.limitedClaimEndTime) {
             uint256 newAllocation = usedAllocation[hash] + amountEth;
             require(newAllocation <= allocation, "excceed allocation");
             usedAllocation[hash] = newAllocation;
         }
 
-        uint256 amount = (amountScom * 2);
+        amountScom = _addToUniV3(amountEth);
+
+        uint256 amount = amountScom * 2;
         require(amount <= availableBalanceInTranche[trancheId], "insufficient balance");
         amount = availableBalanceInTranche[trancheId] - amount;
         availableBalanceInTranche[trancheId] = amount;
-
-        // add weth and half of the scom to amm pool
-        scom.safeTransfer(address(amm), amountScom);
-        weth.safeTransfer(address(amm), amountEth);
-        amm.mint(foundation);
 
         // half of scom to user
         scom.safeTransfer(to, amountScom);
 
         emit Claim(trancheId, from, to, amountScom, amountEth, amount);
-    }
-
-    function unlockAndRelease(uint256 amount) external onlyOwner {
-        unlock();
-        directRelease(amount);
-    }
-    function directRelease(uint256 amount) public onlyOwner {
-        require(amount % 2 == 0, "amount must be even");
-        unlockedAmount -= amount;
-        releasedAmount += amount;
-        emit Release(amount, unlockedAmount, releasedAmount);
-    }
-    function withdrawFromRelease(uint256 amount) external onlyOwner {
-        require(amount <= releasedAmount, "insufficient balance");
-        require(amount % 2 == 0, "amount must be even");
-        releasedAmount -= amount;
-        scom.safeTransfer(foundation, amount);
-        emit WithdrawScomFromRelease(amount, releasedAmount);
     }
 
     function _releaseTranche(uint256[] calldata trancheIds) internal returns (uint256 amount) {
@@ -296,30 +519,23 @@ contract Vault is Authorization, ReentrancyGuard {
             unchecked { i++; } // gas savings
         }
         releasedAmount += amount;
-        emit Release(amount, unlockedAmount, releasedAmount);
+        emit Release(trancheIds, amount, releasedAmount);
     }
     function _swap(address from, address to) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
         require(amountEth > 0, "no input amount");
 
-        // find scom amount from amm
-        (uint112 reserveScom, uint112 reserveEth, /*uint32 blockTimestampLast*/) = amm.getReserves();
-        if (!token0IsScom)
-            (reserveScom, reserveEth) = (reserveEth, reserveScom);
-        amountScom = (amountEth * reserveScom) / reserveEth;
+        amountScom = _addToUniV3(amountEth);
 
-        require((amountScom * 2) <= releasedAmount, "insufficient amount");
-        releasedAmount -= amountScom * 2;
-
-        // add weth and half of the scom to amm pool
-        scom.safeTransfer(address(amm), amountScom);
-        weth.safeTransfer(address(amm), amountEth);
-        amm.mint(foundation);
+        uint256 amount = amountScom * 2;
+        require(amount <= releasedAmount, "insufficient amount");
+        amount = releasedAmount - amount;
+        releasedAmount = amount;
 
         // half of scom to user
         scom.safeTransfer(to, amountScom);
 
-        emit Swap(from, to, amountScom, amountEth, releasedAmount);
+        emit Swap(from, to, amountScom, amountEth, amount);
     }
     function releaseTranche(uint256[] calldata trancheIds) external nonReentrant returns (uint256 amount) {
         amount = _releaseTranche(trancheIds);
@@ -340,5 +556,4 @@ contract Vault is Authorization, ReentrancyGuard {
         _releaseTranche(trancheIds);
         amountScom = _swap(from, to);
     }
-
 }
