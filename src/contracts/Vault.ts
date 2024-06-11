@@ -1,12 +1,13 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Vault.json";
-export interface IDeployParams {foundation:string;scom:string;amm:string}
+export interface IDeployParams {foundation:string;scom:string;uniV3:string}
 export interface IClaimParams {trancheId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export interface IClaimWithWETHParams {trancheId:number|BigNumber;from:string;to:string;allocation:number|BigNumber;proof:string[]}
 export interface ILockParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IReleaseAndSwapParams {trancheIds:(number|BigNumber)[];to:string}
 export interface IReleaseAndSwapWithWETHParams {trancheIds:(number|BigNumber)[];from:string;to:string}
 export interface ISwapWithWETHParams {from:string;to:string}
+export interface IUniswapV3MintCallbackParams {amount0Owed:number|BigNumber;amount1Owed:number|BigNumber;param3:string}
 export interface IUpdateReleaseSchduleParams {endTime:number|BigNumber;startingAmount:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IWithdrawFromTrancheParams {trancheIds:(number|BigNumber)[];amountScom:(number|BigNumber)[]}
 export class Vault extends _Contract{
@@ -16,7 +17,7 @@ export class Vault extends _Contract{
         this.assign()
     }
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>{
-        return this.__deploy([params.foundation,params.scom,params.amm], options);
+        return this.__deploy([params.foundation,params.scom,params.uniV3], options);
     }
     parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[]{
         return this.parseEvents(receipt, "Authorize").map(e=>this.decodeAuthorizeEvent(e));
@@ -53,6 +54,18 @@ export class Vault extends _Contract{
             _event: event
         };
     }
+    parseDirectReleaseEvent(receipt: TransactionReceipt): Vault.DirectReleaseEvent[]{
+        return this.parseEvents(receipt, "DirectRelease").map(e=>this.decodeDirectReleaseEvent(e));
+    }
+    decodeDirectReleaseEvent(event: Event): Vault.DirectReleaseEvent{
+        let result = event.data;
+        return {
+            amount: new BigNumber(result.amount),
+            unlockedAmount: new BigNumber(result.unlockedAmount),
+            releasedAmount: new BigNumber(result.releasedAmount),
+            _event: event
+        };
+    }
     parseLockEvent(receipt: TransactionReceipt): Vault.LockEvent[]{
         return this.parseEvents(receipt, "Lock").map(e=>this.decodeLockEvent(e));
     }
@@ -73,6 +86,7 @@ export class Vault extends _Contract{
         let result = event.data;
         return {
             trancheId: new BigNumber(result.trancheId),
+            unlockedAmount: new BigNumber(result.unlockedAmount),
             _event: event
         };
     }
@@ -82,8 +96,8 @@ export class Vault extends _Contract{
     decodeReleaseEvent(event: Event): Vault.ReleaseEvent{
         let result = event.data;
         return {
+            trancheIds: result.trancheIds.map(e=>new BigNumber(e)),
             amount: new BigNumber(result.amount),
-            unlockedAmount: new BigNumber(result.unlockedAmount),
             releasedAmount: new BigNumber(result.releasedAmount),
             _event: event
         };
@@ -167,9 +181,6 @@ export class Vault extends _Contract{
             _event: event
         };
     }
-    amm: {
-        (options?: TransactionOptions): Promise<string>;
-    }
     availableBalanceInTranche: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
@@ -198,6 +209,9 @@ export class Vault extends _Contract{
     endTime: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
+    fee: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    }
     foundation: {
         (options?: TransactionOptions): Promise<string>;
     }
@@ -213,6 +227,12 @@ export class Vault extends _Contract{
     lock: {
         (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+    }
+    maxTick: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    }
+    minTick: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
@@ -264,13 +284,16 @@ export class Vault extends _Contract{
         (options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (options?: TransactionOptions) => Promise<void>;
     }
+    tickSpacing: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    }
     token0IsScom: {
         (options?: TransactionOptions): Promise<boolean>;
     }
     totalAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
-    totalSuppyAt: {
+    totalSupplyAt: {
         (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     }
     trancheInfo: {
@@ -279,6 +302,13 @@ export class Vault extends _Contract{
     transferOwnership: {
         (newOwner:string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (newOwner:string, options?: TransactionOptions) => Promise<void>;
+    }
+    uniV3: {
+        (options?: TransactionOptions): Promise<string>;
+    }
+    uniswapV3MintCallback: {
+        (params: IUniswapV3MintCallbackParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUniswapV3MintCallbackParams, options?: TransactionOptions) => Promise<void>;
     }
     unlock: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -310,11 +340,6 @@ export class Vault extends _Contract{
         call: (params: IWithdrawFromTrancheParams, options?: TransactionOptions) => Promise<void>;
     }
     private assign(){
-        let amm_call = async (options?: TransactionOptions): Promise<string> => {
-            let result = await this.call('amm',[],options);
-            return result;
-        }
-        this.amm = amm_call
         let availableBalanceInTranche_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('availableBalanceInTranche',[this.wallet.utils.toString(param1)],options);
             return new BigNumber(result);
@@ -335,6 +360,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.endTime = endTime_call
+        let fee_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('fee',[],options);
+            return new BigNumber(result);
+        }
+        this.fee = fee_call
         let foundation_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('foundation',[],options);
             return result;
@@ -355,6 +385,16 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.lastUpdate = lastUpdate_call
+        let maxTick_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('maxTick',[],options);
+            return new BigNumber(result);
+        }
+        this.maxTick = maxTick_call
+        let minTick_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('minTick',[],options);
+            return new BigNumber(result);
+        }
+        this.minTick = minTick_call
         let newOwner_call = async (options?: TransactionOptions): Promise<string> => {
             let result = await this.call('newOwner',[],options);
             return result;
@@ -385,6 +425,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.startingAmount = startingAmount_call
+        let tickSpacing_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('tickSpacing',[],options);
+            return new BigNumber(result);
+        }
+        this.tickSpacing = tickSpacing_call
         let token0IsScom_call = async (options?: TransactionOptions): Promise<boolean> => {
             let result = await this.call('token0IsScom',[],options);
             return result;
@@ -395,11 +440,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.totalAmount = totalAmount_call
-        let totalSuppyAt_call = async (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('totalSuppyAt',[this.wallet.utils.toString(timestamp)],options);
+        let totalSupplyAt_call = async (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('totalSupplyAt',[this.wallet.utils.toString(timestamp)],options);
             return new BigNumber(result);
         }
-        this.totalSuppyAt = totalSuppyAt_call
+        this.totalSupplyAt = totalSupplyAt_call
         let trancheInfo_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedClaimEndTime:BigNumber,unlimitedClaimEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
             let result = await this.call('trancheInfo',[this.wallet.utils.toString(param1)],options);
             return {
@@ -412,6 +457,11 @@ export class Vault extends _Contract{
             };
         }
         this.trancheInfo = trancheInfo_call
+        let uniV3_call = async (options?: TransactionOptions): Promise<string> => {
+            let result = await this.call('uniV3',[],options);
+            return result;
+        }
+        this.uniV3 = uniV3_call
         let unlockedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('unlockedAmount',[],options);
             return new BigNumber(result);
@@ -587,6 +637,18 @@ export class Vault extends _Contract{
         this.transferOwnership = Object.assign(transferOwnership_send, {
             call:transferOwnership_call
         });
+        let uniswapV3MintCallbackParams = (params: IUniswapV3MintCallbackParams) => [this.wallet.utils.toString(params.amount0Owed),this.wallet.utils.toString(params.amount1Owed),this.wallet.utils.stringToBytes(params.param3)];
+        let uniswapV3MintCallback_send = async (params: IUniswapV3MintCallbackParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
+            let result = await this.send('uniswapV3MintCallback',uniswapV3MintCallbackParams(params),options);
+            return result;
+        }
+        let uniswapV3MintCallback_call = async (params: IUniswapV3MintCallbackParams, options?: TransactionOptions): Promise<void> => {
+            let result = await this.call('uniswapV3MintCallback',uniswapV3MintCallbackParams(params),options);
+            return;
+        }
+        this.uniswapV3MintCallback = Object.assign(uniswapV3MintCallback_send, {
+            call:uniswapV3MintCallback_call
+        });
         let unlock_send = async (options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('unlock',[],options);
             return result;
@@ -650,9 +712,10 @@ export module Vault{
     export interface AuthorizeEvent {user:string,_event:Event}
     export interface ClaimEvent {trancheId:BigNumber,from:string,to:string,amountScom:BigNumber,amountEth:BigNumber,remainingBalance:BigNumber,_event:Event}
     export interface DeauthorizeEvent {user:string,_event:Event}
+    export interface DirectReleaseEvent {amount:BigNumber,unlockedAmount:BigNumber,releasedAmount:BigNumber,_event:Event}
     export interface LockEvent {start:BigNumber,end:BigNumber,rate:BigNumber,initAmount:BigNumber,_event:Event}
-    export interface NewTrancheEvent {trancheId:BigNumber,_event:Event}
-    export interface ReleaseEvent {amount:BigNumber,unlockedAmount:BigNumber,releasedAmount:BigNumber,_event:Event}
+    export interface NewTrancheEvent {trancheId:BigNumber,unlockedAmount:BigNumber,_event:Event}
+    export interface ReleaseEvent {trancheIds:BigNumber[],amount:BigNumber,releasedAmount:BigNumber,_event:Event}
     export interface StartOwnershipTransferEvent {user:string,_event:Event}
     export interface SwapEvent {from:string,to:string,amountScom:BigNumber,amountEth:BigNumber,remainingBalance:BigNumber,_event:Event}
     export interface TrancheReleaseEvent {trancheId:BigNumber,_event:Event}

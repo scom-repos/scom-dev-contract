@@ -2,7 +2,7 @@ import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, T
 export interface IDeployParams {
     foundation: string;
     scom: string;
-    amm: string;
+    uniV3: string;
 }
 export interface IClaimParams {
     trancheId: number | BigNumber;
@@ -35,6 +35,11 @@ export interface ISwapWithWETHParams {
     from: string;
     to: string;
 }
+export interface IUniswapV3MintCallbackParams {
+    amount0Owed: number | BigNumber;
+    amount1Owed: number | BigNumber;
+    param3: string;
+}
 export interface IUpdateReleaseSchduleParams {
     endTime: number | BigNumber;
     startingAmount: number | BigNumber;
@@ -54,6 +59,8 @@ export declare class Vault extends _Contract {
     decodeClaimEvent(event: Event): Vault.ClaimEvent;
     parseDeauthorizeEvent(receipt: TransactionReceipt): Vault.DeauthorizeEvent[];
     decodeDeauthorizeEvent(event: Event): Vault.DeauthorizeEvent;
+    parseDirectReleaseEvent(receipt: TransactionReceipt): Vault.DirectReleaseEvent[];
+    decodeDirectReleaseEvent(event: Event): Vault.DirectReleaseEvent;
     parseLockEvent(receipt: TransactionReceipt): Vault.LockEvent[];
     decodeLockEvent(event: Event): Vault.LockEvent;
     parseNewTrancheEvent(receipt: TransactionReceipt): Vault.NewTrancheEvent[];
@@ -74,9 +81,6 @@ export declare class Vault extends _Contract {
     decodeWithdrawScomFromReleaseEvent(event: Event): Vault.WithdrawScomFromReleaseEvent;
     parseWithdrawScomFromTrancheEvent(receipt: TransactionReceipt): Vault.WithdrawScomFromTrancheEvent[];
     decodeWithdrawScomFromTrancheEvent(event: Event): Vault.WithdrawScomFromTrancheEvent;
-    amm: {
-        (options?: TransactionOptions): Promise<string>;
-    };
     availableBalanceInTranche: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
@@ -105,6 +109,9 @@ export declare class Vault extends _Contract {
     endTime: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
+    fee: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
     foundation: {
         (options?: TransactionOptions): Promise<string>;
     };
@@ -120,6 +127,12 @@ export declare class Vault extends _Contract {
     lock: {
         (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+    };
+    maxTick: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
+    minTick: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     };
     newOwner: {
         (options?: TransactionOptions): Promise<string>;
@@ -185,13 +198,16 @@ export declare class Vault extends _Contract {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (options?: TransactionOptions) => Promise<void>;
     };
+    tickSpacing: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
     token0IsScom: {
         (options?: TransactionOptions): Promise<boolean>;
     };
     totalAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
-    totalSuppyAt: {
+    totalSupplyAt: {
         (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     trancheInfo: {
@@ -207,6 +223,13 @@ export declare class Vault extends _Contract {
     transferOwnership: {
         (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+    };
+    uniV3: {
+        (options?: TransactionOptions): Promise<string>;
+    };
+    uniswapV3MintCallback: {
+        (params: IUniswapV3MintCallbackParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+        call: (params: IUniswapV3MintCallbackParams, options?: TransactionOptions) => Promise<void>;
     };
     unlock: {
         (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -257,6 +280,12 @@ export declare module Vault {
         user: string;
         _event: Event;
     }
+    interface DirectReleaseEvent {
+        amount: BigNumber;
+        unlockedAmount: BigNumber;
+        releasedAmount: BigNumber;
+        _event: Event;
+    }
     interface LockEvent {
         start: BigNumber;
         end: BigNumber;
@@ -266,11 +295,12 @@ export declare module Vault {
     }
     interface NewTrancheEvent {
         trancheId: BigNumber;
+        unlockedAmount: BigNumber;
         _event: Event;
     }
     interface ReleaseEvent {
+        trancheIds: BigNumber[];
         amount: BigNumber;
-        unlockedAmount: BigNumber;
         releasedAmount: BigNumber;
         _event: Event;
     }

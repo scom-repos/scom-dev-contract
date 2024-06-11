@@ -28,7 +28,7 @@ export interface IDeployOptions{
     };
     vault?: {
         foundation: string;
-        amm: string;
+        uniV3: string;
     }
 };
 export interface IDeployResult{
@@ -65,7 +65,7 @@ export var DefaultDeployOptions: IDeployOptions = {
     },
     // vault: {
     //     foundation: '',
-    //     amm: ''
+    //     uniV3: ''
     // }
 };
 async function deployScom(wallet: IWallet, Config: IDeployOptions): Promise<string> {
@@ -122,7 +122,7 @@ async function deployAuditInfo(wallet: IWallet, projectInfo: string, auditorInfo
 
 async function deployVault(wallet: IWallet, scom: string, Config: IDeployOptions) {
     let vault = new Contracts.Vault(wallet);
-    return await vault.deploy({foundation: Config.vault.foundation, scom:scom, amm: Config.vault.amm});
+    return await vault.deploy({foundation: Config.vault.foundation, scom:scom, uniV3: Config.vault.uniV3});
 }
 
 export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {

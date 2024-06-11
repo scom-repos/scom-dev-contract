@@ -27,7 +27,7 @@ export interface IDeployOptions {
     };
     vault?: {
         foundation: string;
-        amm: string;
+        uniV3: string;
     };
 }
 export interface IDeployResult {
