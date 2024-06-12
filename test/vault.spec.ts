@@ -71,6 +71,7 @@ describe('## Vault', async function() {
             },
             auditorInfo: {
                 foundation: foundation,
+                foundationShare: Utils.toDecimals("0.2"),
                 minStakes: 1,
                 minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
@@ -106,6 +107,7 @@ describe('## Vault', async function() {
 
         wallet.defaultAccount = deployer;
         await vaultContract.lock({
+            presale: 0,
             decrementDecimal: decrement,
             startTime,
             endTime 
@@ -113,12 +115,12 @@ describe('## Vault', async function() {
 
         console.log('day 1');
         await wallet.setBlockTime(now + 24 * 60 * 60 + 1001);
-        print(await vaultContract.currTotalSupply());
+        print(await vaultContract.currUnlockedAmount());
 
         for (let i = 1 ; i < 11 ; i++) {
             console.log(`year ${i}`)
             await wallet.setBlockTime(now + (i * oneYear));
-            print(await vaultContract.currTotalSupply());
+            print(await vaultContract.currUnlockedAmount());
             let receipt = await vaultContract.unlock();
             console.log(`gas used = ${receipt.gasUsed}`);
             let event = vaultContract.parseUnlockEvent(receipt)[0];
@@ -128,10 +130,10 @@ describe('## Vault', async function() {
 
         console.log('year 10 + 1 day');
         await wallet.setBlockTime(now + (10 * oneYear) + 24 * 60 * 60 + 1001 );
-        print(await vaultContract.currTotalSupply());
+        print(await vaultContract.currUnlockedAmount());
 
         console.log('endTime');
         await wallet.setBlockTime(now + endTime);
-        print(await vaultContract.currTotalSupply());
+        print(await vaultContract.currUnlockedAmount());
     });
 });

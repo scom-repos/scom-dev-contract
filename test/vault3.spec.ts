@@ -173,6 +173,7 @@ describe('## Vault3', async function() {
             },
             auditorInfo: {
                 foundation: foundation,
+                foundationShare: Utils.toDecimals("0.2"),
                 minStakes: 1,
                 minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
@@ -218,6 +219,7 @@ describe('## Vault3', async function() {
         wallet.defaultAccount = deployer;
         await vaultContract.permit(deployer);
         await vaultContract.lock({
+            presale: 0,
             decrementDecimal: derement,
             startTime,
             endTime 
@@ -296,28 +298,42 @@ describe('## Vault3', async function() {
         }, true);
 
         let event3 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event3.length, 2);
+        assertEqual(event3.length, 3);
         assertEqual(event3[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(10)
+            value: Utils.toDecimals(2)
         }, true);
         assertEqual(event3[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(8)
+        }, true);
+        assertEqual(event3[2], {
             from: vaultContract.address,
             to: buyer1,
             value: Utils.toDecimals(10)
         }, true);
 
         let event4 = amm.parseMintEvent(receipt);
-        assertEqual(event4.length, 1);
+        assertEqual(event4.length, 2);
         assertEqual(event4[0], {
             sender: vaultContract.address,
             owner: foundation,
             tickLower: -887260, 
             tickUpper: 887260,
-            amount: Utils.toDecimals(10), // liquidity
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            amount: Utils.toDecimals(2), // liquidity
+            amount0: Utils.toDecimals(2),
+            amount1: Utils.toDecimals(2)
+        }, true);
+        assertEqual(event4[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(8), // liquidity
+            amount0: Utils.toDecimals(8),
+            amount1: Utils.toDecimals(8)
         }, true);
     });
     it ('claim exact in', async () => {
@@ -352,28 +368,42 @@ describe('## Vault3', async function() {
         }, true);
 
         let event3 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event3.length, 2);
+        assertEqual(event3.length, 3);
         assertEqual(event3[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(10)
+            value: Utils.toDecimals(2)
         }, true);
         assertEqual(event3[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(8)
+        }, true);
+        assertEqual(event3[2], {
             from: vaultContract.address,
             to: buyer2,
             value: Utils.toDecimals(10)
         }, true);
 
         let event4 = amm.parseMintEvent(receipt);
-        assertEqual(event4.length, 1);
+        assertEqual(event4.length, 2);
         assertEqual(event4[0], {
             sender: vaultContract.address,
             owner: foundation,
             tickLower: -887260, 
             tickUpper: 887260,
-            amount: Utils.toDecimals(10), // liquidity
-            amount0: Utils.toDecimals(10),
-            amount1: Utils.toDecimals(10)
+            amount: Utils.toDecimals(2), // liquidity
+            amount0: Utils.toDecimals(2),
+            amount1: Utils.toDecimals(2)
+        }, true);
+        assertEqual(event4[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(8), // liquidity
+            amount0: Utils.toDecimals(8),
+            amount1: Utils.toDecimals(8)
         }, true);
     });
     it ('swap exact out', async () => {
@@ -415,27 +445,41 @@ describe('## Vault3', async function() {
             remainingBalance: Utils.toDecimals(8),
         }, true);
         let event4 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event4.length, 2);
+        assertEqual(event4.length, 3);
         assertEqual(event4[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(1)
+            value: Utils.toDecimals(0.2)
         }, true);
         assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(0.8)
+        }, true);
+        assertEqual(event4[2], {
             from: vaultContract.address,
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
         let event5 = amm.parseMintEvent(receipt);
-        assertEqual(event5.length, 1);
+        assertEqual(event5.length, 2);
         assertEqual(event5[0], {
             sender: vaultContract.address,
             owner: foundation,
             tickLower: -887260, 
             tickUpper: 887260,
-            amount: Utils.toDecimals(1), // liquidity
-            amount0: Utils.toDecimals(1),
-            amount1: Utils.toDecimals(1)
+            amount: Utils.toDecimals(0.2), // liquidity
+            amount0: Utils.toDecimals(0.2),
+            amount1: Utils.toDecimals(0.2)
+        }, true);
+        assertEqual(event5[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(0.8), // liquidity
+            amount0: Utils.toDecimals(0.8),
+            amount1: Utils.toDecimals(0.8)
         }, true);
     });
     it ('swap exact in', async () => {
@@ -470,27 +514,41 @@ describe('## Vault3', async function() {
             remainingBalance: Utils.toDecimals(6),
         }, true);
         let event4 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event4.length, 2);
+        assertEqual(event4.length, 3);
         assertEqual(event4[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(1)
+            value: Utils.toDecimals(0.2)
         }, true);
         assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(0.8)
+        }, true);
+        assertEqual(event4[2], {
             from: vaultContract.address,
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
         let event5 = amm.parseMintEvent(receipt);
-        assertEqual(event5.length, 1);
+        assertEqual(event5.length, 2);
         assertEqual(event5[0], {
             sender: vaultContract.address,
             owner: foundation,
             tickLower: -887260, 
             tickUpper: 887260,
-            amount: Utils.toDecimals(1), // liquidity
-            amount0: Utils.toDecimals(1),
-            amount1: Utils.toDecimals(1)
+            amount: Utils.toDecimals(0.2), // liquidity
+            amount0: Utils.toDecimals(0.2),
+            amount1: Utils.toDecimals(0.2)
+        }, true);
+        assertEqual(event5[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(0.8), // liquidity
+            amount0: Utils.toDecimals(0.8),
+            amount1: Utils.toDecimals(0.8)
         }, true);
     });
 });

@@ -54,6 +54,7 @@ describe('## Audit', async function() {
             },
             auditorInfo: {
                 foundation: foundation,
+                foundationShare: Utils.toDecimals(0.2),
                 minStakes: 1,
                 minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
