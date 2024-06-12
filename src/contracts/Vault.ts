@@ -1,9 +1,9 @@
 import {IWallet, Contract as _Contract, Transaction, TransactionReceipt, BigNumber, Event, IBatchRequestObj, TransactionOptions} from "@ijstech/eth-contract";
 import Bin from "./Vault.json";
-export interface IDeployParams {foundation:string;scom:string;uniV3:string}
+export interface IDeployParams {foundation:string;foundationShare:number|BigNumber;scom:string;uniV3:string}
 export interface IClaimParams {trancheId:number|BigNumber;to:string;allocation:number|BigNumber;proof:string[]}
 export interface IClaimWithWETHParams {trancheId:number|BigNumber;from:string;to:string;allocation:number|BigNumber;proof:string[]}
-export interface ILockParams {startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
+export interface ILockParams {presale:number|BigNumber;startTime:number|BigNumber;endTime:number|BigNumber;decrementDecimal:number|BigNumber}
 export interface IReleaseAndSwapParams {trancheIds:(number|BigNumber)[];to:string}
 export interface IReleaseAndSwapWithWETHParams {trancheIds:(number|BigNumber)[];from:string;to:string}
 export interface ISwapWithWETHParams {from:string;to:string}
@@ -17,7 +17,7 @@ export class Vault extends _Contract{
         this.assign()
     }
     deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>{
-        return this.__deploy([params.foundation,params.scom,params.uniV3], options);
+        return this.__deploy([params.foundation,this.wallet.utils.toString(params.foundationShare),params.scom,params.uniV3], options);
     }
     parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[]{
         return this.parseEvents(receipt, "Authorize").map(e=>this.decodeAuthorizeEvent(e));
@@ -192,7 +192,7 @@ export class Vault extends _Contract{
         (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IClaimWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     }
-    currTotalSupply: {
+    currUnlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
     decrementDecimal: {
@@ -215,6 +215,9 @@ export class Vault extends _Contract{
     foundation: {
         (options?: TransactionOptions): Promise<string>;
     }
+    foundationShare: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    }
     isPermitted: {
         (param1:string, options?: TransactionOptions): Promise<boolean>;
     }
@@ -227,6 +230,9 @@ export class Vault extends _Contract{
     lock: {
         (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+    }
+    lockedAmount: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     }
     maxTick: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -290,12 +296,6 @@ export class Vault extends _Contract{
     token0IsScom: {
         (options?: TransactionOptions): Promise<boolean>;
     }
-    totalAmount: {
-        (options?: TransactionOptions): Promise<BigNumber>;
-    }
-    totalSupplyAt: {
-        (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    }
     trancheInfo: {
         (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedClaimEndTime:BigNumber,unlimitedClaimEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}>;
     }
@@ -321,6 +321,9 @@ export class Vault extends _Contract{
     unlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     }
+    unlockedAmountAt: {
+        (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+    }
     updateReleaseSchdule: {
         (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IUpdateReleaseSchduleParams, options?: TransactionOptions) => Promise<void>;
@@ -345,11 +348,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.availableBalanceInTranche = availableBalanceInTranche_call
-        let currTotalSupply_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('currTotalSupply',[],options);
+        let currUnlockedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('currUnlockedAmount',[],options);
             return new BigNumber(result);
         }
-        this.currTotalSupply = currTotalSupply_call
+        this.currUnlockedAmount = currUnlockedAmount_call
         let decrementDecimal_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('decrementDecimal',[],options);
             return new BigNumber(result);
@@ -370,6 +373,11 @@ export class Vault extends _Contract{
             return result;
         }
         this.foundation = foundation_call
+        let foundationShare_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('foundationShare',[],options);
+            return new BigNumber(result);
+        }
+        this.foundationShare = foundationShare_call
         let isPermitted_call = async (param1:string, options?: TransactionOptions): Promise<boolean> => {
             let result = await this.call('isPermitted',[param1],options);
             return result;
@@ -385,6 +393,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.lastUpdate = lastUpdate_call
+        let lockedAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('lockedAmount',[],options);
+            return new BigNumber(result);
+        }
+        this.lockedAmount = lockedAmount_call
         let maxTick_call = async (options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('maxTick',[],options);
             return new BigNumber(result);
@@ -435,16 +448,6 @@ export class Vault extends _Contract{
             return result;
         }
         this.token0IsScom = token0IsScom_call
-        let totalAmount_call = async (options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('totalAmount',[],options);
-            return new BigNumber(result);
-        }
-        this.totalAmount = totalAmount_call
-        let totalSupplyAt_call = async (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
-            let result = await this.call('totalSupplyAt',[this.wallet.utils.toString(timestamp)],options);
-            return new BigNumber(result);
-        }
-        this.totalSupplyAt = totalSupplyAt_call
         let trancheInfo_call = async (param1:number|BigNumber, options?: TransactionOptions): Promise<{startTime:BigNumber,limitedClaimEndTime:BigNumber,unlimitedClaimEndTime:BigNumber,amount:BigNumber,merkleRoot:string,ipfsCid:string}> => {
             let result = await this.call('trancheInfo',[this.wallet.utils.toString(param1)],options);
             return {
@@ -467,6 +470,11 @@ export class Vault extends _Contract{
             return new BigNumber(result);
         }
         this.unlockedAmount = unlockedAmount_call
+        let unlockedAmountAt_call = async (timestamp:number|BigNumber, options?: TransactionOptions): Promise<BigNumber> => {
+            let result = await this.call('unlockedAmountAt',[this.wallet.utils.toString(timestamp)],options);
+            return new BigNumber(result);
+        }
+        this.unlockedAmountAt = unlockedAmountAt_call
         let usedAllocation_call = async (param1:string, options?: TransactionOptions): Promise<BigNumber> => {
             let result = await this.call('usedAllocation',[this.wallet.utils.stringToBytes32(param1)],options);
             return new BigNumber(result);
@@ -523,7 +531,7 @@ export class Vault extends _Contract{
         this.directRelease = Object.assign(directRelease_send, {
             call:directRelease_call
         });
-        let lockParams = (params: ILockParams) => [this.wallet.utils.toString(params.startTime),this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.decrementDecimal)];
+        let lockParams = (params: ILockParams) => [this.wallet.utils.toString(params.presale),this.wallet.utils.toString(params.startTime),this.wallet.utils.toString(params.endTime),this.wallet.utils.toString(params.decrementDecimal)];
         let lock_send = async (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt> => {
             let result = await this.send('lock',lockParams(params),options);
             return result;

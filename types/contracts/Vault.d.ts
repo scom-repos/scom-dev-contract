@@ -1,6 +1,7 @@
 import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
 export interface IDeployParams {
     foundation: string;
+    foundationShare: number | BigNumber;
     scom: string;
     uniV3: string;
 }
@@ -18,6 +19,7 @@ export interface IClaimWithWETHParams {
     proof: string[];
 }
 export interface ILockParams {
+    presale: number | BigNumber;
     startTime: number | BigNumber;
     endTime: number | BigNumber;
     decrementDecimal: number | BigNumber;
@@ -92,7 +94,7 @@ export declare class Vault extends _Contract {
         (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: IClaimWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
     };
-    currTotalSupply: {
+    currUnlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
     };
     decrementDecimal: {
@@ -115,6 +117,9 @@ export declare class Vault extends _Contract {
     foundation: {
         (options?: TransactionOptions): Promise<string>;
     };
+    foundationShare: {
+        (options?: TransactionOptions): Promise<BigNumber>;
+    };
     isPermitted: {
         (param1: string, options?: TransactionOptions): Promise<boolean>;
     };
@@ -127,6 +132,9 @@ export declare class Vault extends _Contract {
     lock: {
         (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
         call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+    };
+    lockedAmount: {
+        (options?: TransactionOptions): Promise<BigNumber>;
     };
     maxTick: {
         (options?: TransactionOptions): Promise<BigNumber>;
@@ -204,12 +212,6 @@ export declare class Vault extends _Contract {
     token0IsScom: {
         (options?: TransactionOptions): Promise<boolean>;
     };
-    totalAmount: {
-        (options?: TransactionOptions): Promise<BigNumber>;
-    };
-    totalSupplyAt: {
-        (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-    };
     trancheInfo: {
         (param1: number | BigNumber, options?: TransactionOptions): Promise<{
             startTime: BigNumber;
@@ -241,6 +243,9 @@ export declare class Vault extends _Contract {
     };
     unlockedAmount: {
         (options?: TransactionOptions): Promise<BigNumber>;
+    };
+    unlockedAmountAt: {
+        (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
     };
     updateReleaseSchdule: {
         (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;

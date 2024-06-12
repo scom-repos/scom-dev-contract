@@ -2264,6 +2264,7 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
     import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
     export interface IDeployParams {
         foundation: string;
+        foundationShare: number | BigNumber;
         scom: string;
         uniV3: string;
     }
@@ -2281,6 +2282,7 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         proof: string[];
     }
     export interface ILockParams {
+        presale: number | BigNumber;
         startTime: number | BigNumber;
         endTime: number | BigNumber;
         decrementDecimal: number | BigNumber;
@@ -2355,7 +2357,7 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
             (params: IClaimWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: IClaimWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
         };
-        currTotalSupply: {
+        currUnlockedAmount: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
         decrementDecimal: {
@@ -2378,6 +2380,9 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         foundation: {
             (options?: TransactionOptions): Promise<string>;
         };
+        foundationShare: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
         isPermitted: {
             (param1: string, options?: TransactionOptions): Promise<boolean>;
         };
@@ -2390,6 +2395,9 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         lock: {
             (params: ILockParams, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (params: ILockParams, options?: TransactionOptions) => Promise<void>;
+        };
+        lockedAmount: {
+            (options?: TransactionOptions): Promise<BigNumber>;
         };
         maxTick: {
             (options?: TransactionOptions): Promise<BigNumber>;
@@ -2467,12 +2475,6 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         token0IsScom: {
             (options?: TransactionOptions): Promise<boolean>;
         };
-        totalAmount: {
-            (options?: TransactionOptions): Promise<BigNumber>;
-        };
-        totalSupplyAt: {
-            (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
-        };
         trancheInfo: {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<{
                 startTime: BigNumber;
@@ -2504,6 +2506,9 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         };
         unlockedAmount: {
             (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        unlockedAmountAt: {
+            (timestamp: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
         };
         updateReleaseSchdule: {
             (params: IUpdateReleaseSchduleParams, options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -2633,6 +2638,7 @@ declare module "@scom/scom-portal-contract" {
         };
         auditorInfo: {
             foundation: string;
+            foundationShare: BigNumber;
             minStakes: number | BigNumber;
             minEndorsementsRequired: number;
             cooldownPeriod: number;

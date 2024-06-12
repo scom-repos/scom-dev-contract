@@ -11,6 +11,7 @@ export interface IDeployOptions {
     };
     auditorInfo: {
         foundation: string;
+        foundationShare: BigNumber;
         minStakes: number | BigNumber;
         minEndorsementsRequired: number;
         cooldownPeriod: number;

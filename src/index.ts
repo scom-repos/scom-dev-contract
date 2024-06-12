@@ -1,4 +1,4 @@
-import {IWallet, BigNumber} from "@ijstech/eth-wallet";
+import {IWallet, BigNumber, Utils} from "@ijstech/eth-wallet";
 import * as Contracts from "./contracts/index";
 export {Contracts};
 
@@ -12,6 +12,7 @@ export interface IDeployOptions{
     };
     auditorInfo: {
         foundation: string;
+        foundationShare: BigNumber;
         minStakes: number|BigNumber;
         minEndorsementsRequired: number;
         cooldownPeriod: number;
@@ -49,6 +50,7 @@ export var DefaultDeployOptions: IDeployOptions = {
     },
     auditorInfo: {
         foundation: '',
+        foundationShare: Utils.toDecimals("0.2"),
         minStakes: 1,
         minEndorsementsRequired: 2,
         cooldownPeriod: 60,
@@ -122,7 +124,7 @@ async function deployAuditInfo(wallet: IWallet, projectInfo: string, auditorInfo
 
 async function deployVault(wallet: IWallet, scom: string, Config: IDeployOptions) {
     let vault = new Contracts.Vault(wallet);
-    return await vault.deploy({foundation: Config.vault.foundation, scom:scom, uniV3: Config.vault.uniV3});
+    return await vault.deploy({foundation: Config.vault.foundation, foundationShare: Config.auditorInfo.foundationShare, scom:scom, uniV3: Config.vault.uniV3});
 }
 
 export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {
