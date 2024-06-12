@@ -79,6 +79,7 @@ contract Vault is Authorization, ReentrancyGuard {
     uint24 constant public fee = 500;
     int24 constant public tickSpacing = 10;
     address public foundation;
+    uint256 public foundationShare;
 
     // release schedule constants
     uint256 public lockedAmount;
@@ -109,8 +110,9 @@ contract Vault is Authorization, ReentrancyGuard {
     event DirectRelease(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
     event TrancheRelease(uint256 indexed trancheId);
 
-    constructor(address _foundation, Scom _scom, UniV3 _uniV3) {
+    constructor(address _foundation, uint256 _foundationShare, Scom _scom, UniV3 _uniV3) {
         foundation = _foundation;
+        foundationShare = _foundationShare;
         scom = _scom;
         uniV3 = _uniV3;
         address token0 = _uniV3.token0();
@@ -466,10 +468,11 @@ contract Vault is Authorization, ReentrancyGuard {
             liquidity = getLiquidityForAmount0(sqrtPriceX96, getSqrtRatioAtTick(maxTick), amountEth);
         }
 
-        // add weth and half of the scom to amm pool
-        (uint256 amount0, uint256 amount1) = uniV3.mint(foundation, minTick, maxTick, liquidity, "");
-        amountScom = token0IsScom ? amount0 : amount1;
+        uint128 toFoundation = uint128(uint256(liquidity) * foundationShare / WEI);
 
+        (uint256 amount0, uint256 amount1) = uniV3.mint(foundation, minTick, maxTick, toFoundation, "");
+        (uint256 amount2, uint256 amount3) = uniV3.mint(address(this), minTick, maxTick, liquidity - toFoundation, "");
+        amountScom = token0IsScom ? (amount0 + amount2) : (amount1 + amount3);
     }
     function _claim(uint256 trancheId, address from, address to, uint256 allocation, bytes32[] calldata proof) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
@@ -489,6 +492,7 @@ contract Vault is Authorization, ReentrancyGuard {
             usedAllocation[hash] = newAllocation;
         }
 
+        // add weth and half of the scom to amm pool
         amountScom = _addToUniV3(amountEth);
 
         uint256 amount = amountScom * 2;
