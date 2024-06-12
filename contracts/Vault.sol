@@ -32,11 +32,12 @@ The geometric sum can be represented by x * ((1 - r^(n+1)) / (1 - r)); see https
 /*
 tokens flow:
 mint* -> lock* -> unlock +> tranche* +> limited claim^
-                         |           +> unlimited claim^
-                         |           +> admin withdraw*
-                         |           +> release from tranche +> swap
-                         |                                   +> admin withdraw*
-                         +> admin release* ------------------+
+           |             |           +> unlimited claim^
+           |             |           +> admin withdraw*
+           |             |           +> release from tranche +> swap
+           |             |                                   +> admin withdraw*
+           |             +> admin release* ------------------+
+           + (presale) --------------------------------------+
 * = owner's / admin's / auth functions
 ^ = whitelisted
 */    
@@ -80,7 +81,7 @@ contract Vault is Authorization, ReentrancyGuard {
     address public foundation;
 
     // release schedule constants
-    uint256 public totalAmount;
+    uint256 public lockedAmount;
     uint256 public startTime;
     uint256 public endTime;
     uint256 public startingAmount;
@@ -153,18 +154,23 @@ contract Vault is Authorization, ReentrancyGuard {
         s = (((b - pow(r, n+1, b)) * b) / (b - r));
     }
 
-    function lock(uint256 _startTime, uint256 _endTime, uint256 _decrementDecimal) external onlyOwner {
-        require(totalAmount == 0, "already started");
+    function lock(uint256 presale, uint256 _startTime, uint256 _endTime, uint256 _decrementDecimal) external onlyOwner {
+        require(lockedAmount == 0, "already started");
+        require(presale % 2 == 0, "presale must be even");
         require(_startTime < _endTime, "invalid startTime / endTime");
         require(_decrementDecimal <= 1e18, "invalid decrement");
-        totalAmount = scom.balanceOf(address(this));
-        require(totalAmount > 0, "no scom locked");
+
+        uint256 totalAmount = scom.balanceOf(address(this));
+        require(presale <= totalAmount, "presale too large");
+        releasedAmount = presale;
+        lockedAmount = totalAmount - presale;
+
         startTime = _startTime;
         endTime = _endTime;
         decrementDecimal = _decrementDecimal;
         // oneMinusDecrement = WEI - _decrementDecimal;
         // total
-        startingAmount = totalAmount * WEI / geometricSum(decrementDecimal, (endTime - startTime) /*/ (1 days)*/, WEI);
+        startingAmount = lockedAmount * WEI / geometricSum(decrementDecimal, (endTime - startTime) /*/ (1 days)*/, WEI);
         emit Lock(_startTime, _endTime, _decrementDecimal, startingAmount);
     }
     function updateReleaseSchdule(uint256 _endTime, uint256 _startingAmount, uint256 _decrementDecimal) external onlyOwner {
@@ -176,20 +182,20 @@ contract Vault is Authorization, ReentrancyGuard {
         // FIXME: check schedule
     }
 
-    function totalSupplyAt(uint256 timestamp) public view returns (uint256 amount) {
+    function unlockedAmountAt(uint256 timestamp) public view returns (uint256 amount) {
         if (timestamp > endTime) {
-            amount = totalAmount;
+            amount = lockedAmount;
         } else {
             uint256 period = (timestamp - startTime) /*/ (1 days)*/;
             amount = startingAmount * geometricSum(decrementDecimal, period, WEI) / WEI;
         }
     }
-    function currTotalSupply() public view returns (uint256 amount) {
-        return totalSupplyAt(block.timestamp);
+    function currUnlockedAmount() public view returns (uint256 amount) {
+        return unlockedAmountAt(block.timestamp);
     }
 
     function unlock() public returns (uint256 newAmount) {
-        uint256 totalUnlockedAmount = currTotalSupply();
+        uint256 totalUnlockedAmount = currUnlockedAmount();
         newAmount = totalUnlockedAmount - lastUnlockedAmount;
         unlockedAmount += newAmount;
         lastUnlockedAmount = totalUnlockedAmount;
@@ -454,19 +460,10 @@ contract Vault is Authorization, ReentrancyGuard {
     function _addToUniV3(uint256 amountEth) internal returns (uint256 amountScom) {
         (uint160 sqrtPriceX96, , , , , , ) = uniV3.slot0();
         uint128 liquidity;
-        // find scom amount from uniV3
-        // get liquidity by eth amount
-        // get scom amount by liqudity
         if (token0IsScom) {
-            // token 1 is weth
             liquidity = getLiquidityForAmount1(getSqrtRatioAtTick(minTick), sqrtPriceX96, amountEth);
-            // amountScom = getAmount0ForLiquidity(getSqrtRatioAtTick(minTick), sqrtPriceX96, liquidity);
-            // amountScom = getAmount0ForLiquidity(sqrtPriceX96, getSqrtRatioAtTick(maxTick), liquidity);
         } else {
-            // token 0 is weth
             liquidity = getLiquidityForAmount0(sqrtPriceX96, getSqrtRatioAtTick(maxTick), amountEth);
-            // amountScom = getAmount1ForLiquidity(sqrtPriceX96, getSqrtRatioAtTick(maxTick), liquidity);
-            // amountScom = getAmount1ForLiquidity(getSqrtRatioAtTick(minTick), sqrtPriceX96, liquidity);
         }
 
         // add weth and half of the scom to amm pool
