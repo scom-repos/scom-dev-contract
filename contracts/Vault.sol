@@ -12,7 +12,10 @@ interface UniV3 {
     function token0() external view returns (address);
     function token1() external view returns (address);
     function slot0() external view returns ( uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked);
+    function positions(bytes32 key) external view returns (uint128 _liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1);
     function mint(address recipient, int24 tickLower, int24 tickUpper, uint128 amount, bytes calldata data) external returns (uint256 amount0, uint256 amount1);
+    function burn(int24 tickLower, int24 tickUpper, uint128 amount) external returns (uint256 amount0, uint256 amount1);
+    function collect(address recipient, int24 tickLower, int24 tickUpper, uint128 amount0Requested, uint128 amount1Requested) external returns (uint128 amount0, uint128 amount1);
 }
 interface IWETH is IERC20 {
     function deposit() external payable;
@@ -34,7 +37,7 @@ tokens flow:
 mint* -> lock* -> unlock +> tranche* +> limited claim^
            |             |           +> unlimited claim^
            |             |           +> admin withdraw*
-           |             |           +> release from tranche +> swap
+           |             |           +> release from tranche +> buy
            |             |                                   +> admin withdraw*
            |             +> admin release* ------------------+
            + (presale) --------------------------------------+
@@ -103,12 +106,13 @@ contract Vault is Authorization, ReentrancyGuard {
     event Unlock(uint256 unlock, uint256 available, uint256 balance);
     event NewTranche(uint256 indexed trancheId, uint256 unlockedAmount);
     event Claim(uint256 indexed trancheId, address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
-    event Swap(address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
+    event Buy(address indexed from, address indexed to, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
     event WithdrawScomFromTranche(uint256 indexed trancheId, uint256 amount, uint256 remainingBalance);
     event WithdrawScomFromRelease(uint256 amount, uint256 balance);
     event Release(uint256[] trancheIds, uint256 amount, uint256 releasedAmount);
     event DirectRelease(uint256 amount, uint256 unlockedAmount, uint256 releasedAmount);
     event TrancheRelease(uint256 indexed trancheId);
+    event Sell(address indexed from, uint256 amountScom, uint256 amountEth, uint256 remainingBalance);
 
     constructor(address _foundation, uint256 _foundationShare, Scom _scom, UniV3 _uniV3) {
         foundation = _foundation;
@@ -118,6 +122,9 @@ contract Vault is Authorization, ReentrancyGuard {
         address token0 = _uniV3.token0();
         address token1 = _uniV3.token1();
         (token0IsScom, weth) = (token0 == address(_scom)) ? (true, IWETH(token1)) : (false, IWETH(token0));
+    }
+
+    receive() external payable {
     }
 
     // exponentiation by squaring, fixed-point version, with over-flow checkings
@@ -522,7 +529,7 @@ contract Vault is Authorization, ReentrancyGuard {
         releasedAmount += amount;
         emit Release(trancheIds, amount, releasedAmount);
     }
-    function _swap(address from, address to) internal returns (uint256 amountScom) {
+    function _buyScom(address from, address to) internal returns (uint256 amountScom) {
         uint256 amountEth = weth.balanceOf(address(this));
         require(amountEth > 0, "no input amount");
 
@@ -536,25 +543,60 @@ contract Vault is Authorization, ReentrancyGuard {
         // half of scom to user
         scom.safeTransfer(to, amountScom);
 
-        emit Swap(from, to, amountScom, amountEth, amount);
+        emit Buy(from, to, amountScom, amountEth, amount);
     }
     function releaseTranche(uint256[] calldata trancheIds) external nonReentrant returns (uint256 amount) {
         amount = _releaseTranche(trancheIds);
     }
-    function swap(address to) external payable nonReentrant returns (uint256 amountScom) {
+    function buyScom(address to) external payable nonReentrant returns (uint256 amountScom) {
         weth.deposit{value: msg.value}();
-        amountScom = _swap(msg.sender, to);
+        amountScom = _buyScom(msg.sender, to);
     }
-    function releaseAndSwap(uint256[] calldata trancheIds, address to) external payable nonReentrant returns (uint256 amountScom) {
+    function releaseAndBuy(uint256[] calldata trancheIds, address to) external payable nonReentrant returns (uint256 amountScom) {
         _releaseTranche(trancheIds);
         weth.deposit{value: msg.value}();
-        amountScom = _swap(msg.sender, to);
+        amountScom = _buyScom(msg.sender, to);
     }
-    function swapWithWETH(address from, address to) external nonReentrant returns (uint256 amountScom) {
-        amountScom = _swap(from, to);
+    function buyWithWETH(address from, address to) external nonReentrant returns (uint256 amountScom) {
+        amountScom = _buyScom(from, to);
     }
-    function releaseAndSwapWithWETH(uint256[] calldata trancheIds, address from, address to) external nonReentrant returns (uint256 amountScom) {
+    function releaseAndBuyWithWETH(uint256[] calldata trancheIds, address from, address to) external nonReentrant returns (uint256 amountScom) {
         _releaseTranche(trancheIds);
-        amountScom = _swap(from, to);
+        amountScom = _buyScom(from, to);
+    }
+
+    function sellScom(uint256 amountScom) external returns (uint256 amountEth) {
+        (uint160 sqrtPriceX96, , , , , , ) = uniV3.slot0();
+        uint128 liquidity;
+        if (token0IsScom) {
+            liquidity = getLiquidityForAmount0(sqrtPriceX96, getSqrtRatioAtTick(maxTick), amountScom);
+        } else {
+            liquidity = getLiquidityForAmount1(getSqrtRatioAtTick(minTick), sqrtPriceX96, amountScom);
+        }
+
+        (uint128 _liquidity,,,,) = uniV3.positions(keccak256(abi.encodePacked(address(this), minTick, maxTick)));
+        require(liquidity <= _liquidity, "insufficient liquidity");
+
+        scom.safeTransferFrom(msg.sender, address(this), amountScom);
+
+        uint256 amountScom2;
+        (amountScom2, amountEth) = uniV3.burn(minTick, maxTick, liquidity);
+        (amountScom2, amountEth) = uniV3.collect(address(this), minTick, maxTick, uint128(amountScom2), uint128(amountEth));
+
+    // function collect(
+    //     address recipient,
+    //     int24 tickLower,
+    //     int24 tickUpper,
+    //     uint128 amount0Requested,
+    //     uint128 amount1Requested
+        if (!token0IsScom) (amountScom2, amountEth) = (amountEth, amountScom2);
+
+        amountScom2 = releasedAmount + amountScom + amountScom2;
+        releasedAmount = amountScom2;
+
+        weth.withdraw(amountEth);
+        payable(msg.sender).transfer(amountEth);
+        
+        emit Sell(msg.sender, amountScom, amountEth, amountScom2);
     }
 }
