@@ -2254,6 +2254,13 @@ declare module "@scom/scom-portal-contract/contracts/Vault.json.ts" {
             stateMutability: string;
             type: string;
             anonymous?: undefined;
+        } | {
+            stateMutability: string;
+            type: string;
+            inputs?: undefined;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
         })[];
         bytecode: string;
     };
@@ -2267,6 +2274,10 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         foundationShare: number | BigNumber;
         scom: string;
         uniV3: string;
+    }
+    export interface IBuyWithWETHParams {
+        from: string;
+        to: string;
     }
     export interface IClaimParams {
         trancheId: number | BigNumber;
@@ -2287,16 +2298,12 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         endTime: number | BigNumber;
         decrementDecimal: number | BigNumber;
     }
-    export interface IReleaseAndSwapParams {
+    export interface IReleaseAndBuyParams {
         trancheIds: (number | BigNumber)[];
         to: string;
     }
-    export interface IReleaseAndSwapWithWETHParams {
+    export interface IReleaseAndBuyWithWETHParams {
         trancheIds: (number | BigNumber)[];
-        from: string;
-        to: string;
-    }
-    export interface ISwapWithWETHParams {
         from: string;
         to: string;
     }
@@ -2320,6 +2327,8 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
         parseAuthorizeEvent(receipt: TransactionReceipt): Vault.AuthorizeEvent[];
         decodeAuthorizeEvent(event: Event): Vault.AuthorizeEvent;
+        parseBuyEvent(receipt: TransactionReceipt): Vault.BuyEvent[];
+        decodeBuyEvent(event: Event): Vault.BuyEvent;
         parseClaimEvent(receipt: TransactionReceipt): Vault.ClaimEvent[];
         decodeClaimEvent(event: Event): Vault.ClaimEvent;
         parseDeauthorizeEvent(receipt: TransactionReceipt): Vault.DeauthorizeEvent[];
@@ -2332,10 +2341,10 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         decodeNewTrancheEvent(event: Event): Vault.NewTrancheEvent;
         parseReleaseEvent(receipt: TransactionReceipt): Vault.ReleaseEvent[];
         decodeReleaseEvent(event: Event): Vault.ReleaseEvent;
+        parseSellEvent(receipt: TransactionReceipt): Vault.SellEvent[];
+        decodeSellEvent(event: Event): Vault.SellEvent;
         parseStartOwnershipTransferEvent(receipt: TransactionReceipt): Vault.StartOwnershipTransferEvent[];
         decodeStartOwnershipTransferEvent(event: Event): Vault.StartOwnershipTransferEvent;
-        parseSwapEvent(receipt: TransactionReceipt): Vault.SwapEvent[];
-        decodeSwapEvent(event: Event): Vault.SwapEvent;
         parseTrancheReleaseEvent(receipt: TransactionReceipt): Vault.TrancheReleaseEvent[];
         decodeTrancheReleaseEvent(event: Event): Vault.TrancheReleaseEvent;
         parseTransferOwnershipEvent(receipt: TransactionReceipt): Vault.TransferOwnershipEvent[];
@@ -2348,6 +2357,14 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         decodeWithdrawScomFromTrancheEvent(event: Event): Vault.WithdrawScomFromTrancheEvent;
         availableBalanceInTranche: {
             (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        buyScom: {
+            (to: string, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+            call: (to: string, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+        };
+        buyWithWETH: {
+            (params: IBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
         };
         claim: {
             (params: IClaimParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
@@ -2433,13 +2450,13 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
             (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
             call: (user: string, options?: TransactionOptions) => Promise<void>;
         };
-        releaseAndSwap: {
-            (params: IReleaseAndSwapParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
-            call: (params: IReleaseAndSwapParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
+        releaseAndBuy: {
+            (params: IReleaseAndBuyParams, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IReleaseAndBuyParams, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
         };
-        releaseAndSwapWithWETH: {
-            (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (params: IReleaseAndSwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
+        releaseAndBuyWithWETH: {
+            (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IReleaseAndBuyWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
         };
         releaseTranche: {
             (trancheIds: (number | BigNumber)[], options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -2451,19 +2468,15 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
         scom: {
             (options?: TransactionOptions): Promise<string>;
         };
+        sellScom: {
+            (amountScom: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (amountScom: number | BigNumber, options?: TransactionOptions) => Promise<BigNumber>;
+        };
         startTime: {
             (options?: TransactionOptions): Promise<BigNumber>;
         };
         startingAmount: {
             (options?: TransactionOptions): Promise<BigNumber>;
-        };
-        swap: {
-            (to: string, options?: number | BigNumber | TransactionOptions): Promise<TransactionReceipt>;
-            call: (to: string, options?: number | BigNumber | TransactionOptions) => Promise<BigNumber>;
-        };
-        swapWithWETH: {
-            (params: ISwapWithWETHParams, options?: TransactionOptions): Promise<TransactionReceipt>;
-            call: (params: ISwapWithWETHParams, options?: TransactionOptions) => Promise<BigNumber>;
         };
         takeOwnership: {
             (options?: TransactionOptions): Promise<TransactionReceipt>;
@@ -2535,6 +2548,14 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
             user: string;
             _event: Event;
         }
+        interface BuyEvent {
+            from: string;
+            to: string;
+            amountScom: BigNumber;
+            amountEth: BigNumber;
+            remainingBalance: BigNumber;
+            _event: Event;
+        }
         interface ClaimEvent {
             trancheId: BigNumber;
             from: string;
@@ -2572,16 +2593,15 @@ declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
             releasedAmount: BigNumber;
             _event: Event;
         }
-        interface StartOwnershipTransferEvent {
-            user: string;
-            _event: Event;
-        }
-        interface SwapEvent {
+        interface SellEvent {
             from: string;
-            to: string;
             amountScom: BigNumber;
             amountEth: BigNumber;
             remainingBalance: BigNumber;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
             _event: Event;
         }
         interface TrancheReleaseEvent {
