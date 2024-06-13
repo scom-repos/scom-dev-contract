@@ -435,7 +435,7 @@ describe('## Vault3', async function() {
             amount: Utils.toDecimals(10),
             releasedAmount: Utils.toDecimals(10)
         }, true);
-        let event3 = vaultContract.parseSwapEvent(receipt);
+        let event3 = vaultContract.parseBuyEvent(receipt);
         assertEqual(event3.length, 1);
         assertEqual(event3[0], {
             from: nobody,
@@ -504,7 +504,7 @@ describe('## Vault3', async function() {
         assertEqual(event.length, 0);
         let event2 = vaultContract.parseReleaseEvent(receipt);
         assertEqual(event2.length, 0);
-        let event3 = vaultContract.parseSwapEvent(receipt);
+        let event3 = vaultContract.parseBuyEvent(receipt);
         assertEqual(event3.length, 1);
         assertEqual(event3[0], {
             from: nobody,

@@ -294,8 +294,8 @@ describe('## Vault2', async function() {
     it('anyone can swap', async () => {
         await wallet.setBlockTime(now + 6 * day);
         wallet.defaultAccount = nobody;
-        await expectToFail(vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
-        let receipt = await vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
+        await expectToFail(vaultContract.releaseAndBuy({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
+        let receipt = await vaultContract.releaseAndBuy({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
 
         let event = vaultContract.parseTrancheReleaseEvent(receipt);
         assertEqual(event.length, 1);
@@ -308,7 +308,7 @@ describe('## Vault2', async function() {
             amount: Utils.toDecimals(6),
             releasedAmount: Utils.toDecimals(6)
         }, true);
-        let event3 = vaultContract.parseSwapEvent(receipt);
+        let event3 = vaultContract.parseBuyEvent(receipt);
         assertEqual(event3.length, 1);
         assertEqual(event3[0], {
             from: nobody,
@@ -368,5 +368,36 @@ describe('## Vault2', async function() {
             balance: Utils.toDecimals(3)
         }, true);
         assertEqual(await vaultContract.releasedAmount(), Utils.toDecimals(3));
+    });
+    it('sell scom', async () => {
+        wallet.defaultAccount = nobody;
+        await scomContract.approve({spender: vaultContract.address, amount: Utils.toDecimals(1)});
+
+        let eth1 = await wallet.balance;
+        let receipt = await vaultContract.sellScom(Utils.toDecimals(1));
+        let eth2 = await wallet.balance;
+
+        let event1 = vaultContract.parseSellEvent(receipt);
+        assertEqual(event1.length, 1);
+        assertEqual(event1[0], {
+            from: nobody,
+            amountScom: Utils.toDecimals(1),
+            amountEth: Utils.toDecimals("0.999999999999999999"),
+            remainingBalance: Utils.toDecimals("4.999999999999999999")
+        }, true);
+        let event2 = scomContract.parseTransferEvent(receipt);
+        print(event2);
+        assertEqual(event2.length, 2);
+        assertEqual(event2[0], {
+            from: nobody,
+            to: vaultContract.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event2[1], {
+            from: amm.address,
+            to: vaultContract.address,
+            value: Utils.toDecimals("0.999999999999999999")
+        }, true);
+        assertEqual(eth2.minus(eth1).toFixed().substring(0,6), "0.9996");
     });
 });
