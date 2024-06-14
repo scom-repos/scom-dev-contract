@@ -1,6 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
-import "@nomiclabs/hardhat-web3";
+// import "@nomiclabs/hardhat-web3";
 
 const config: HardhatUserConfig = {
   solidity: {

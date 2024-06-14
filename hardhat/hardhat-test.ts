@@ -11,7 +11,7 @@ describe('Hardhat',()=>{
         });
         await server.listen();
     });
-    it('Hardhat server started',()=>{});
+    it('Hardhat server started');
 });
 
 import "../test/audit.spec";

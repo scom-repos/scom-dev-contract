@@ -5,6 +5,7 @@
         "compile:openswap": "npx hardhat --config ./hardhat-openswap.config.ts compile",
         "compile:mocks": "npx hardhat --config ./hardhat-mocks.config.ts compile",
         "node": "npx hardhat node",
+        "test": "mocha --exit --require ts-node/register --timeout 1000000 ./hardhat-test.ts",
         "coverage": "PROVIDER_URL=http://127.0.0.1:8545 npx hardhat coverage --solcoverjs ./hardhat/.solcover.js --testfiles ./hardhat-test.ts && mv ../coverage.json ./"
     },
     "devDependencies": {
