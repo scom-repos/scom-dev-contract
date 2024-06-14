@@ -15,7 +15,7 @@ export function toWeiInv(n: any, unit?: any) {
     return new BigNumber("1").shiftedBy((unit || 18)*2).idiv(new BigNumber(n).shiftedBy(unit || 18));
 }
 
-export async function expectToFail(f:Promise<TransactionReceipt>, error=""): Promise<void> {
+export async function expectToFail(f:Promise<TransactionReceipt>, error:string=""): Promise<void> {
     try {
         await f;
         throw new Error("Exception not thrown");
@@ -28,8 +28,8 @@ export async function expectToFail(f:Promise<TransactionReceipt>, error=""): Pro
         }
     }
 }
-export function print(o:any, indent?:string) {
-    console.log(_print(o, indent), "\n");
+export function print(...o:any) {
+    console.log.apply(this, o.map(e=>_print(e)));
 }
 function _print(o:any, indent?:string) {
     let s = "";

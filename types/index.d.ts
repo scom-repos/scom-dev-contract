@@ -11,6 +11,7 @@ export interface IDeployOptions {
     };
     auditorInfo: {
         foundation: string;
+        foundationShare: BigNumber;
         minStakes: number | BigNumber;
         minEndorsementsRequired: number;
         cooldownPeriod: number;
@@ -27,7 +28,7 @@ export interface IDeployOptions {
     };
     vault?: {
         foundation: string;
-        amm: string;
+        uniV3: string;
     };
 }
 export interface IDeployResult {

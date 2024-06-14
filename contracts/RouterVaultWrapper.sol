@@ -91,9 +91,9 @@ contract RouterVaultWrapper is Authorization {
         (/*address[] memory path*/, uint256[] memory amounts) = router.swapExactTokensForTokens(amountIn, amountOutMin, pair, address(inToken), address(vault), deadline, new bytes(0));
 
         if (trancheIds.length > 0)
-            vault.releaseAndSwapWithWETH(trancheIds, msg.sender, to);
+            vault.releaseAndBuyWithWETH(trancheIds, msg.sender, to);
         else
-            vault.swapWithWETH(msg.sender, to);
+            vault.buyWithWETH(msg.sender, to);
 
         emit Swap(trancheIds, msg.sender, address(inToken), amounts[0]);
     }
@@ -109,9 +109,9 @@ contract RouterVaultWrapper is Authorization {
         (/*address[] memory path*/, uint256[] memory amounts) = router.swapTokensForExactTokens(amountOut, amountInMax, pair, weth, address(vault), deadline, new bytes(0));
 
         if (trancheIds.length > 0)
-            vault.releaseAndSwapWithWETH(trancheIds, msg.sender, to);
+            vault.releaseAndBuyWithWETH(trancheIds, msg.sender, to);
         else
-            vault.swapWithWETH(msg.sender, to);
+            vault.buyWithWETH(msg.sender, to);
         emit Swap(trancheIds, msg.sender, address(inToken), amounts[0]);
 
         // refund excessive amount back to user

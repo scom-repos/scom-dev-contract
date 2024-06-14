@@ -1,7 +1,6 @@
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
-module.exports = {
+import { HardhatUserConfig } from "hardhat/config";
+
+const config: HardhatUserConfig = {
   solidity: {
     compilers:[
     {
@@ -60,3 +59,5 @@ module.exports = {
     cache: "../cache"
   }
 };
+
+export default config;

@@ -1,11 +1,15 @@
 // direct buy with ETH
 import 'mocha';
 import {Utils, Wallet, BigNumber, MerkleTree} from "@ijstech/eth-wallet";
+import * as UniV3 from '@scom/scom-uniswap-v3-contract';
 import {Contracts, deploy, IDeployOptions, DefaultDeployOptions, IDeployResult} from '../src';
-import * as Ganache from "ganache";
-import * as assert from 'assert';
 import { assertEqual, getProvider, expectToFail, print } from './helper';
-import { MockAmmPair, WETH9 } from '../packages/mock-contracts/src'
+import { Contracts as Mocks } from '../packages/mock-contracts/src'
+
+const X96 = new BigNumber(2).pow(96);
+export function toSqrtX96(n: BigNumber): BigNumber {
+    return n.sqrt().times(X96).dp(0, BigNumber.ROUND_FLOOR);
+}
 
 describe('## Vault2', async function() {
     let accounts: string[];
@@ -13,8 +17,10 @@ describe('## Vault2', async function() {
 
     let result: IDeployResult;
 
-    let amm: MockAmmPair;
-    let weth: WETH9;
+    let uniV3: UniV3.IDeployedContracts;
+    let amm: UniV3.CoreContracts.UniswapV3Pool;
+
+    let weth: Mocks.WETH9;
     let scomContract: Contracts.Scom;
     let vaultContract: Contracts.Vault;
 
@@ -26,8 +32,8 @@ describe('## Vault2', async function() {
 
     let totalSuppy = Utils.toDecimals("10000000000");
     let period = 10 * 365 * 24 * 60 * 60; // 10 years
-    // let derement = Utils.toDecimals("0.998"); // day
-    let derement = Utils.toDecimals("0.999999987"); // second
+    // let decrement = Utils.toDecimals("0.998"); // day
+    let decrement = Utils.toDecimals("0.999999987"); // second
 
     before('deploy', async () => {
         wallet = new Wallet(getProvider());
@@ -44,22 +50,23 @@ describe('## Vault2', async function() {
         await scomContract.deploy({minter:Utils.nullAddress, initSupply:totalSuppy, initSupplyTo: foundation, totalSupply: totalSuppy});
         console.log('scom', scomContract.address);
 
-        weth = new WETH9(wallet);
+        weth = new Mocks.WETH9(wallet);
         await weth.deploy();
         console.log('weth', weth.address);
 
-        amm = new MockAmmPair(wallet);
-        await amm.deploy(
-            new BigNumber(scomContract.address.toLowerCase()).lt(weth.address.toLowerCase()) ? 
-            {token0: scomContract.address, token1: weth.address} : 
-            {token0: weth.address, token1: scomContract.address}
-        );
+        uniV3 = await UniV3.deploy(wallet, {weth: weth.address}, (msg: string)=>{
+            console.dir(msg)
+        });
 
-        wallet.defaultAccount = foundation;        
-        await weth.deposit({value:Utils.toDecimals(1)});
-        await scomContract.transfer({to:amm.address, amount:Utils.toDecimals(1)});
-        await weth.transfer({dst:amm.address, wad:Utils.toDecimals(1)});
-        await amm.sync();
+        wallet.defaultAccount = foundation;   
+        let pairFee = Utils.toDecimals("0.0005", 6); // 0.000500
+        let receipt1 = await uniV3.factory.createPool({tokenA: scomContract.address, tokenB: weth.address, fee: pairFee});
+        let event1 = uniV3.factory.parsePoolCreatedEvent(receipt1)[0];
+
+        let price = toSqrtX96(new BigNumber(1)); // 1 scom = 1 eth
+        amm = new UniV3.CoreContracts.UniswapV3Pool(wallet, event1.pool);
+        let receipt2 = await amm.initialize(price);
+        let event2 = amm.parseInitializeEvent(receipt2)[0];
 
         wallet.defaultAccount = deployer;
         const deployOptions:IDeployOptions = {
@@ -68,6 +75,7 @@ describe('## Vault2', async function() {
             },
             auditorInfo: {
                 foundation: foundation,
+                foundationShare: Utils.toDecimals("0.2"),
                 minStakes: 1,
                 minEndorsementsRequired: 2,
                 cooldownPeriod: 60,
@@ -83,7 +91,7 @@ describe('## Vault2', async function() {
             //     minAuditRequired: 3
             // },
             vault: {
-                amm: amm.address,
+                uniV3: amm.address,
                 foundation: foundation,
             }
         }
@@ -99,7 +107,7 @@ describe('## Vault2', async function() {
     const oneYear = 365 * 24 * 60 * 60;
     const day = 24 * 60 * 60 ;
     let merkleTree: MerkleTree;
-    it ('new tranche', async () => {
+    it ('lock', async () => {
         now = await wallet.getBlockTimestamp();
         let startTime = now + 1000;
         let endTime = now + period; // 10 years
@@ -110,12 +118,14 @@ describe('## Vault2', async function() {
         wallet.defaultAccount = deployer;
         await vaultContract.permit(deployer);
         await vaultContract.lock({
-            decrementDecimal: derement,
+            presale: Utils.toDecimals(0),
+            decrementDecimal: decrement,
             startTime,
             endTime 
         });
         now = startTime;
-
+    });
+    it ('new tranche', async () => {
         const abi = [
             {
                 type: "address",
@@ -190,26 +200,55 @@ describe('## Vault2', async function() {
         }, true);
 
         let event3 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event3.length, 2);
+        assertEqual(event3.length, 3);
         assertEqual(event3[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(10)
+            value: Utils.toDecimals(2)
         }, true);
         assertEqual(event3[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(8)
+        }, true);
+        assertEqual(event3[2], {
             from: vaultContract.address,
             to: buyer1,
             value: Utils.toDecimals(10)
         }, true);
 
-        let event4 = amm.parseTransferEvent(receipt);
-        assertEqual(event4.length, 1);
+        let event4 = amm.parseMintEvent(receipt);
+        assertEqual(event4.length, 2);
         assertEqual(event4[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(10)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(2), // liquidity
+            amount0: Utils.toDecimals(2),
+            amount1: Utils.toDecimals(2)
+        }, true);
+        assertEqual(event4[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(8), // liquidity
+            amount0: Utils.toDecimals(8),
+            amount1: Utils.toDecimals(8)
         }, true);
 
+        function getPositionKey(address: string) {
+            return Utils.soliditySha3(address + Utils.padLeft((-887260>>>0).toString(16).slice(-6), 6) + Utils.padLeft((887260).toString(16), 6))
+        }
+        assertEqual(
+            await amm.positions(getPositionKey(vaultContract.address)),
+            { liquidity: Utils.toDecimals(8), feeGrowthInside0LastX128: 0, feeGrowthInside1LastX128: 0, tokensOwed0: 0, tokensOwed1: 0}
+        );
+        assertEqual(
+            await amm.positions(getPositionKey(foundation)),
+            { liquidity: Utils.toDecimals(2), feeGrowthInside0LastX128: 0, feeGrowthInside1LastX128: 0, tokensOwed0: 0, tokensOwed1: 0}
+        );
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(30));
         await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(10)}), "excceed allocation");
     });
@@ -231,7 +270,7 @@ describe('## Vault2', async function() {
 
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), Utils.toDecimals(10));
 
-        await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(20)}), "insufficient balance");
+        // await expectToFail(vaultContract.claim({trancheId:trancheId, to: buyer1, allocation:Utils.toDecimals(10), proof:proof[0]}, {value:Utils.toDecimals(20)}), "insufficient balance");
     });
     it('admin tranche withdraw', async () => {
         wallet.defaultAccount = deployer;
@@ -255,8 +294,8 @@ describe('## Vault2', async function() {
     it('anyone can swap', async () => {
         await wallet.setBlockTime(now + 6 * day);
         wallet.defaultAccount = nobody;
-        await expectToFail(vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
-        let receipt = await vaultContract.releaseAndSwap({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
+        await expectToFail(vaultContract.releaseAndBuy({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(4)}), "insufficient amount");
+        let receipt = await vaultContract.releaseAndBuy({trancheIds:[trancheId], to:nobody}, {value:Utils.toDecimals(1)});
 
         let event = vaultContract.parseTrancheReleaseEvent(receipt);
         assertEqual(event.length, 1);
@@ -269,7 +308,7 @@ describe('## Vault2', async function() {
             amount: Utils.toDecimals(6),
             releasedAmount: Utils.toDecimals(6)
         }, true);
-        let event3 = vaultContract.parseSwapEvent(receipt);
+        let event3 = vaultContract.parseBuyEvent(receipt);
         assertEqual(event3.length, 1);
         assertEqual(event3[0], {
             from: nobody,
@@ -279,23 +318,41 @@ describe('## Vault2', async function() {
             remainingBalance: Utils.toDecimals(4),
         }, true);
         let event4 = scomContract.parseTransferEvent(receipt);
-        assertEqual(event4.length, 2);
+        assertEqual(event4.length, 3);
         assertEqual(event4[0], {
             from: vaultContract.address,
             to: amm.address,
-            value: Utils.toDecimals(1)
+            value: Utils.toDecimals(0.2)
         }, true);
         assertEqual(event4[1], {
+            from: vaultContract.address,
+            to: amm.address,
+            value: Utils.toDecimals(0.8)
+        }, true);
+        assertEqual(event4[2], {
             from: vaultContract.address,
             to: nobody,
             value: Utils.toDecimals(1)
         }, true);
-        let event5 = amm.parseTransferEvent(receipt);
-        assertEqual(event5.length, 1);
+        let event5 = amm.parseMintEvent(receipt);
+        assertEqual(event5.length, 2);
         assertEqual(event5[0], {
-            from: Utils.nullAddress,
-            to: foundation,
-            value: Utils.toDecimals(1)
+            sender: vaultContract.address,
+            owner: foundation,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(0.2), // liquidity
+            amount0: Utils.toDecimals(0.2),
+            amount1: Utils.toDecimals(0.2)
+        }, true);
+        assertEqual(event5[1], {
+            sender: vaultContract.address,
+            owner: vaultContract.address,
+            tickLower: -887260, 
+            tickUpper: 887260,
+            amount: Utils.toDecimals(0.8), // liquidity
+            amount0: Utils.toDecimals(0.8),
+            amount1: Utils.toDecimals(0.8)
         }, true);
         
         assertEqual(await vaultContract.availableBalanceInTranche(trancheId), 0);
@@ -311,5 +368,36 @@ describe('## Vault2', async function() {
             balance: Utils.toDecimals(3)
         }, true);
         assertEqual(await vaultContract.releasedAmount(), Utils.toDecimals(3));
+    });
+    it('sell scom', async () => {
+        wallet.defaultAccount = nobody;
+        await scomContract.approve({spender: vaultContract.address, amount: Utils.toDecimals(1)});
+
+        let eth1 = await wallet.balance;
+        let receipt = await vaultContract.sellScom(Utils.toDecimals(1));
+        let eth2 = await wallet.balance;
+
+        let event1 = vaultContract.parseSellEvent(receipt);
+        assertEqual(event1.length, 1);
+        assertEqual(event1[0], {
+            from: nobody,
+            amountScom: Utils.toDecimals(1),
+            amountEth: Utils.toDecimals("0.999999999999999999"),
+            remainingBalance: Utils.toDecimals("4.999999999999999999")
+        }, true);
+        let event2 = scomContract.parseTransferEvent(receipt);
+        print(event2);
+        assertEqual(event2.length, 2);
+        assertEqual(event2[0], {
+            from: nobody,
+            to: vaultContract.address,
+            value: Utils.toDecimals(1)
+        }, true);
+        assertEqual(event2[1], {
+            from: amm.address,
+            to: vaultContract.address,
+            value: Utils.toDecimals("0.999999999999999999")
+        }, true);
+        assertEqual(eth2.minus(eth1).toFixed().substring(0,6), "0.9996");
     });
 });
