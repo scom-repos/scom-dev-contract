@@ -101,22 +101,26 @@ describe('## Vault', async function() {
         let startTime = now + 1000;
         let endTime = now + period; // 10 years
         const oneYear = 365 * 24 * 60 * 60;
+        const oneMonth = 30 * 24 * 60 * 60;
 
         wallet.defaultAccount = foundation;
         await scomContract.transfer({to: vaultContract.address, amount: await scomContract.balanceOf(foundation)});
 
         wallet.defaultAccount = deployer;
-        await vaultContract.lock({
+        let receipt = await vaultContract.lock({
             presale: 0,
             decrementDecimal: decrement,
             startTime,
             endTime 
         });
+        let event = vaultContract.parseLockEvent(receipt);
+        print(event[0]);
 
         console.log('day 1');
-        await wallet.setBlockTime(now + 24 * 60 * 60 + 1001);
+        await wallet.setBlockTime(now + 24 * 60 * 60 + 1);
         print(await vaultContract.currUnlockedAmount());
 
+         // yearly
         for (let i = 1 ; i < 11 ; i++) {
             console.log(`year ${i}`)
             await wallet.setBlockTime(now + (i * oneYear));
@@ -135,5 +139,11 @@ describe('## Vault', async function() {
         console.log('endTime');
         await wallet.setBlockTime(now + endTime);
         print(await vaultContract.currUnlockedAmount());
+
+        // monthly
+        // for (let i = 1 ; i <= 12*10 + 3 ; i++) {
+        //     await wallet.setBlockTime(now + (i * oneMonth) + 1);
+        //     print(await vaultContract.currUnlockedAmount());
+        // }
     });
 });
