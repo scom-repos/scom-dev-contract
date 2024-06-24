@@ -1260,9 +1260,620 @@ declare module "@scom/scom-portal-contract/contracts/ModuleInfo.ts" {
         }
     }
 }
+/// <amd-module name="@scom/scom-portal-contract/contracts/NFTManager.json.ts" />
+declare module "@scom/scom-portal-contract/contracts/NFTManager.json.ts" {
+    const _default_5: {
+        abi: ({
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
+        } | {
+            anonymous: boolean;
+            inputs: {
+                indexed: boolean;
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            type: string;
+            stateMutability?: undefined;
+            outputs?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                components: {
+                    internalType: string;
+                    name: string;
+                    type: string;
+                }[];
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        })[];
+        bytecode: string;
+    };
+    export default _default_5;
+}
+/// <amd-module name="@scom/scom-portal-contract/contracts/NFTManager.ts" />
+declare module "@scom/scom-portal-contract/contracts/NFTManager.ts" {
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export interface IDeployParams {
+        scom: string;
+        protocolFeeTo: string;
+    }
+    export interface IAddNftParams {
+        nft: string;
+        desc: string;
+        stakes: number | BigNumber;
+        protocolFee: number | BigNumber;
+        enabled: boolean;
+    }
+    export interface IAddStakesParams {
+        nft: string;
+        tokenId: number | BigNumber;
+        stakes: number | BigNumber;
+    }
+    export interface IBurnParams {
+        nft: string;
+        tokenId: number | BigNumber;
+    }
+    export interface IGetNftsParams {
+        start: number | BigNumber;
+        length: number | BigNumber;
+    }
+    export interface IStakedParams {
+        param1: string;
+        param2: string;
+        param3: number | BigNumber;
+    }
+    export class NFTManager extends _Contract {
+        static _abi: any;
+        constructor(wallet: IWallet, address?: string);
+        deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
+        parseAddStakesEvent(receipt: TransactionReceipt): NFTManager.AddStakesEvent[];
+        decodeAddStakesEvent(event: Event): NFTManager.AddStakesEvent;
+        parseAuthorizeEvent(receipt: TransactionReceipt): NFTManager.AuthorizeEvent[];
+        decodeAuthorizeEvent(event: Event): NFTManager.AuthorizeEvent;
+        parseBurnEvent(receipt: TransactionReceipt): NFTManager.BurnEvent[];
+        decodeBurnEvent(event: Event): NFTManager.BurnEvent;
+        parseDeauthorizeEvent(receipt: TransactionReceipt): NFTManager.DeauthorizeEvent[];
+        decodeDeauthorizeEvent(event: Event): NFTManager.DeauthorizeEvent;
+        parseMintEvent(receipt: TransactionReceipt): NFTManager.MintEvent[];
+        decodeMintEvent(event: Event): NFTManager.MintEvent;
+        parseNewNFTEvent(receipt: TransactionReceipt): NFTManager.NewNFTEvent[];
+        decodeNewNFTEvent(event: Event): NFTManager.NewNFTEvent;
+        parsePauseEvent(receipt: TransactionReceipt): NFTManager.PauseEvent[];
+        decodePauseEvent(event: Event): NFTManager.PauseEvent;
+        parseResumeEvent(receipt: TransactionReceipt): NFTManager.ResumeEvent[];
+        decodeResumeEvent(event: Event): NFTManager.ResumeEvent;
+        parseSetProtocolFeeToEvent(receipt: TransactionReceipt): NFTManager.SetProtocolFeeToEvent[];
+        decodeSetProtocolFeeToEvent(event: Event): NFTManager.SetProtocolFeeToEvent;
+        parseStartOwnershipTransferEvent(receipt: TransactionReceipt): NFTManager.StartOwnershipTransferEvent[];
+        decodeStartOwnershipTransferEvent(event: Event): NFTManager.StartOwnershipTransferEvent;
+        parseTransferOwnershipEvent(receipt: TransactionReceipt): NFTManager.TransferOwnershipEvent[];
+        decodeTransferOwnershipEvent(event: Event): NFTManager.TransferOwnershipEvent;
+        addNft: {
+            (params: IAddNftParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IAddNftParams, options?: TransactionOptions) => Promise<void>;
+        };
+        addStakes: {
+            (params: IAddStakesParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IAddStakesParams, options?: TransactionOptions) => Promise<void>;
+        };
+        burn: {
+            (params: IBurnParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IBurnParams, options?: TransactionOptions) => Promise<void>;
+        };
+        deny: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        getNfts: {
+            (params: IGetNftsParams, options?: TransactionOptions): Promise<{
+                nft: string;
+                desc: string;
+                stakes: BigNumber;
+                protocolFee: BigNumber;
+                paused: boolean;
+            }[]>;
+        };
+        invNfts: {
+            (param1: string, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        isPermitted: {
+            (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        mint: {
+            (nft: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (nft: string, options?: TransactionOptions) => Promise<BigNumber>;
+        };
+        newOwner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        nfts: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<{
+                nft: string;
+                desc: string;
+                stakes: BigNumber;
+                protocolFee: BigNumber;
+                paused: boolean;
+            }>;
+        };
+        nftsLength: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        owner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        pauseNFT: {
+            (nft: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (nft: string, options?: TransactionOptions) => Promise<void>;
+        };
+        permit: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        protocolFeeBalance: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        protocolFeeTo: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        resumeNFT: {
+            (nft: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (nft: string, options?: TransactionOptions) => Promise<void>;
+        };
+        scom: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        setProtocolFeeTo: {
+            (protocolFeeTo: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (protocolFeeTo: string, options?: TransactionOptions) => Promise<void>;
+        };
+        staked: {
+            (params: IStakedParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        takeOwnership: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        transferOwnership: {
+            (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        transferProtocolFee: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        private assign;
+    }
+    export module NFTManager {
+        interface AddStakesEvent {
+            minter: string;
+            nft: string;
+            tokenId: BigNumber;
+            stakes: BigNumber;
+            _event: Event;
+        }
+        interface AuthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface BurnEvent {
+            burner: string;
+            nft: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+        interface DeauthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface MintEvent {
+            minter: string;
+            nft: string;
+            tokenId: BigNumber;
+            stakes: BigNumber;
+            protocolFee: BigNumber;
+            _event: Event;
+        }
+        interface NewNFTEvent {
+            nft: string;
+            stakes: BigNumber;
+            protocolFee: BigNumber;
+            enabled: boolean;
+            _event: Event;
+        }
+        interface PauseEvent {
+            nft: string;
+            _event: Event;
+        }
+        interface ResumeEvent {
+            nft: string;
+            _event: Event;
+        }
+        interface SetProtocolFeeToEvent {
+            protocolFeeTo: string;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
+            _event: Event;
+        }
+        interface TransferOwnershipEvent {
+            user: string;
+            _event: Event;
+        }
+    }
+}
+/// <amd-module name="@scom/scom-portal-contract/contracts/NodeNFT.json.ts" />
+declare module "@scom/scom-portal-contract/contracts/NodeNFT.json.ts" {
+    const _default_6: {
+        abi: ({
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+            name?: undefined;
+            outputs?: undefined;
+        } | {
+            anonymous: boolean;
+            inputs: {
+                indexed: boolean;
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            type: string;
+            stateMutability?: undefined;
+            outputs?: undefined;
+        } | {
+            inputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            name: string;
+            outputs: {
+                internalType: string;
+                name: string;
+                type: string;
+            }[];
+            stateMutability: string;
+            type: string;
+            anonymous?: undefined;
+        })[];
+        bytecode: string;
+    };
+    export default _default_6;
+}
+/// <amd-module name="@scom/scom-portal-contract/contracts/NodeNFT.ts" />
+declare module "@scom/scom-portal-contract/contracts/NodeNFT.ts" {
+    import { IWallet, Contract as _Contract, TransactionReceipt, BigNumber, Event, TransactionOptions } from "@ijstech/eth-contract";
+    export interface IDeployParams {
+        name: string;
+        symbol: string;
+        baseURI: string;
+        manager: string;
+        stakeRequired: number | BigNumber;
+        protocolFee: number | BigNumber;
+    }
+    export interface IAddStakesParams {
+        to: string;
+        tokenId: number | BigNumber;
+    }
+    export interface IApproveParams {
+        to: string;
+        tokenId: number | BigNumber;
+    }
+    export interface IBurnParams {
+        from: string;
+        tokenId: number | BigNumber;
+    }
+    export interface IIsApprovedForAllParams {
+        owner: string;
+        operator: string;
+    }
+    export interface ISafeTransferFromParams {
+        from: string;
+        to: string;
+        tokenId: number | BigNumber;
+    }
+    export interface ISafeTransferFrom_1Params {
+        from: string;
+        to: string;
+        tokenId: number | BigNumber;
+        data: string;
+    }
+    export interface ISetApprovalForAllParams {
+        operator: string;
+        approved: boolean;
+    }
+    export interface ITokenOfOwnerByIndexParams {
+        owner: string;
+        index: number | BigNumber;
+    }
+    export interface ITransferFromParams {
+        from: string;
+        to: string;
+        tokenId: number | BigNumber;
+    }
+    export class NodeNFT extends _Contract {
+        static _abi: any;
+        constructor(wallet: IWallet, address?: string);
+        deploy(params: IDeployParams, options?: TransactionOptions): Promise<string>;
+        parseAddStakesEvent(receipt: TransactionReceipt): NodeNFT.AddStakesEvent[];
+        decodeAddStakesEvent(event: Event): NodeNFT.AddStakesEvent;
+        parseApprovalEvent(receipt: TransactionReceipt): NodeNFT.ApprovalEvent[];
+        decodeApprovalEvent(event: Event): NodeNFT.ApprovalEvent;
+        parseApprovalForAllEvent(receipt: TransactionReceipt): NodeNFT.ApprovalForAllEvent[];
+        decodeApprovalForAllEvent(event: Event): NodeNFT.ApprovalForAllEvent;
+        parseAttributeEvent(receipt: TransactionReceipt): NodeNFT.AttributeEvent[];
+        decodeAttributeEvent(event: Event): NodeNFT.AttributeEvent;
+        parseAuthorizeEvent(receipt: TransactionReceipt): NodeNFT.AuthorizeEvent[];
+        decodeAuthorizeEvent(event: Event): NodeNFT.AuthorizeEvent;
+        parseCustomAttributeEvent(receipt: TransactionReceipt): NodeNFT.CustomAttributeEvent[];
+        decodeCustomAttributeEvent(event: Event): NodeNFT.CustomAttributeEvent;
+        parseDeauthorizeEvent(receipt: TransactionReceipt): NodeNFT.DeauthorizeEvent[];
+        decodeDeauthorizeEvent(event: Event): NodeNFT.DeauthorizeEvent;
+        parseSetBaseURIEvent(receipt: TransactionReceipt): NodeNFT.SetBaseURIEvent[];
+        decodeSetBaseURIEvent(event: Event): NodeNFT.SetBaseURIEvent;
+        parseSetProtocolFeeEvent(receipt: TransactionReceipt): NodeNFT.SetProtocolFeeEvent[];
+        decodeSetProtocolFeeEvent(event: Event): NodeNFT.SetProtocolFeeEvent;
+        parseSetStakeRequiredEvent(receipt: TransactionReceipt): NodeNFT.SetStakeRequiredEvent[];
+        decodeSetStakeRequiredEvent(event: Event): NodeNFT.SetStakeRequiredEvent;
+        parseStakeEvent(receipt: TransactionReceipt): NodeNFT.StakeEvent[];
+        decodeStakeEvent(event: Event): NodeNFT.StakeEvent;
+        parseStartOwnershipTransferEvent(receipt: TransactionReceipt): NodeNFT.StartOwnershipTransferEvent[];
+        decodeStartOwnershipTransferEvent(event: Event): NodeNFT.StartOwnershipTransferEvent;
+        parseTransferEvent(receipt: TransactionReceipt): NodeNFT.TransferEvent[];
+        decodeTransferEvent(event: Event): NodeNFT.TransferEvent;
+        parseTransferOwnershipEvent(receipt: TransactionReceipt): NodeNFT.TransferOwnershipEvent[];
+        decodeTransferOwnershipEvent(event: Event): NodeNFT.TransferOwnershipEvent;
+        parseUnstakeEvent(receipt: TransactionReceipt): NodeNFT.UnstakeEvent[];
+        decodeUnstakeEvent(event: Event): NodeNFT.UnstakeEvent;
+        addStakes: {
+            (params: IAddStakesParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IAddStakesParams, options?: TransactionOptions) => Promise<void>;
+        };
+        approve: {
+            (params: IApproveParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IApproveParams, options?: TransactionOptions) => Promise<void>;
+        };
+        balanceOf: {
+            (owner: string, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        baseURI: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        burn: {
+            (params: IBurnParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: IBurnParams, options?: TransactionOptions) => Promise<void>;
+        };
+        counter: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        creationDate: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        deny: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        destoryDate: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        getApproved: {
+            (tokenId: number | BigNumber, options?: TransactionOptions): Promise<string>;
+        };
+        isApprovedForAll: {
+            (params: IIsApprovedForAllParams, options?: TransactionOptions): Promise<boolean>;
+        };
+        isPermitted: {
+            (param1: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        lastStakeDate: {
+            (param1: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        manager: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        mint: {
+            (to: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (to: string, options?: TransactionOptions) => Promise<BigNumber>;
+        };
+        name: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        newOwner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        owner: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        ownerOf: {
+            (tokenId: number | BigNumber, options?: TransactionOptions): Promise<string>;
+        };
+        permit: {
+            (user: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (user: string, options?: TransactionOptions) => Promise<void>;
+        };
+        protocolFee: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        safeTransferFrom: {
+            (params: ISafeTransferFromParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ISafeTransferFromParams, options?: TransactionOptions) => Promise<void>;
+        };
+        safeTransferFrom_1: {
+            (params: ISafeTransferFrom_1Params, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ISafeTransferFrom_1Params, options?: TransactionOptions) => Promise<void>;
+        };
+        setApprovalForAll: {
+            (params: ISetApprovalForAllParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ISetApprovalForAllParams, options?: TransactionOptions) => Promise<void>;
+        };
+        setBaseURI: {
+            (baseURI: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (baseURI: string, options?: TransactionOptions) => Promise<void>;
+        };
+        setProtocolFee: {
+            (protocolFee: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (protocolFee: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        setStakeRequired: {
+            (stakeRequired: number | BigNumber, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (stakeRequired: number | BigNumber, options?: TransactionOptions) => Promise<void>;
+        };
+        stakeRequired: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        supportsInterface: {
+            (interfaceId: string, options?: TransactionOptions): Promise<boolean>;
+        };
+        symbol: {
+            (options?: TransactionOptions): Promise<string>;
+        };
+        takeOwnership: {
+            (options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (options?: TransactionOptions) => Promise<void>;
+        };
+        tokenByIndex: {
+            (index: number | BigNumber, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        tokenOfOwnerByIndex: {
+            (params: ITokenOfOwnerByIndexParams, options?: TransactionOptions): Promise<BigNumber>;
+        };
+        tokenURI: {
+            (tokenId: number | BigNumber, options?: TransactionOptions): Promise<string>;
+        };
+        totalSupply: {
+            (options?: TransactionOptions): Promise<BigNumber>;
+        };
+        transferFrom: {
+            (params: ITransferFromParams, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (params: ITransferFromParams, options?: TransactionOptions) => Promise<void>;
+        };
+        transferOwnership: {
+            (newOwner: string, options?: TransactionOptions): Promise<TransactionReceipt>;
+            call: (newOwner: string, options?: TransactionOptions) => Promise<void>;
+        };
+        private assign;
+    }
+    export module NodeNFT {
+        interface AddStakesEvent {
+            who: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+        interface ApprovalEvent {
+            owner: string;
+            approved: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+        interface ApprovalForAllEvent {
+            owner: string;
+            operator: string;
+            approved: boolean;
+            _event: Event;
+        }
+        interface AttributeEvent {
+            tokenId: BigNumber;
+            attribute: BigNumber;
+            _event: Event;
+        }
+        interface AuthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface CustomAttributeEvent {
+            tokenId: BigNumber;
+            attribute: BigNumber;
+            _event: Event;
+        }
+        interface DeauthorizeEvent {
+            user: string;
+            _event: Event;
+        }
+        interface SetBaseURIEvent {
+            baseURI: string;
+            _event: Event;
+        }
+        interface SetProtocolFeeEvent {
+            protocolFee: BigNumber;
+            _event: Event;
+        }
+        interface SetStakeRequiredEvent {
+            stakeRequired: BigNumber;
+            _event: Event;
+        }
+        interface StakeEvent {
+            who: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+        interface StartOwnershipTransferEvent {
+            user: string;
+            _event: Event;
+        }
+        interface TransferEvent {
+            from: string;
+            to: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+        interface TransferOwnershipEvent {
+            user: string;
+            _event: Event;
+        }
+        interface UnstakeEvent {
+            who: string;
+            tokenId: BigNumber;
+            _event: Event;
+        }
+    }
+}
 /// <amd-module name="@scom/scom-portal-contract/contracts/ProjectInfo.json.ts" />
 declare module "@scom/scom-portal-contract/contracts/ProjectInfo.json.ts" {
-    const _default_5: {
+    const _default_7: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -1350,7 +1961,7 @@ declare module "@scom/scom-portal-contract/contracts/ProjectInfo.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_5;
+    export default _default_7;
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/ProjectInfo.ts" />
 declare module "@scom/scom-portal-contract/contracts/ProjectInfo.ts" {
@@ -1842,7 +2453,7 @@ declare module "@scom/scom-portal-contract/contracts/ProjectInfo.ts" {
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/RouterVaultWrapper.json.ts" />
 declare module "@scom/scom-portal-contract/contracts/RouterVaultWrapper.json.ts" {
-    const _default_6: {
+    const _default_8: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -1884,7 +2495,7 @@ declare module "@scom/scom-portal-contract/contracts/RouterVaultWrapper.json.ts"
         })[];
         bytecode: string;
     };
-    export default _default_6;
+    export default _default_8;
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/RouterVaultWrapper.ts" />
 declare module "@scom/scom-portal-contract/contracts/RouterVaultWrapper.ts" {
@@ -2042,7 +2653,7 @@ declare module "@scom/scom-portal-contract/contracts/RouterVaultWrapper.ts" {
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/Scom.json.ts" />
 declare module "@scom/scom-portal-contract/contracts/Scom.json.ts" {
-    const _default_7: {
+    const _default_9: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -2084,7 +2695,7 @@ declare module "@scom/scom-portal-contract/contracts/Scom.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_7;
+    export default _default_9;
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/Scom.ts" />
 declare module "@scom/scom-portal-contract/contracts/Scom.ts" {
@@ -2199,7 +2810,7 @@ declare module "@scom/scom-portal-contract/contracts/Scom.ts" {
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/Vault.json.ts" />
 declare module "@scom/scom-portal-contract/contracts/Vault.json.ts" {
-    const _default_8: {
+    const _default_10: {
         abi: ({
             inputs: {
                 internalType: string;
@@ -2264,7 +2875,7 @@ declare module "@scom/scom-portal-contract/contracts/Vault.json.ts" {
         })[];
         bytecode: string;
     };
-    export default _default_8;
+    export default _default_10;
 }
 /// <amd-module name="@scom/scom-portal-contract/contracts/Vault.ts" />
 declare module "@scom/scom-portal-contract/contracts/Vault.ts" {
@@ -2638,6 +3249,8 @@ declare module "@scom/scom-portal-contract/contracts/index.ts" {
     export { Authorization } from "@scom/scom-portal-contract/contracts/Authorization.ts";
     export { DomainInfo } from "@scom/scom-portal-contract/contracts/DomainInfo.ts";
     export { ModuleInfo } from "@scom/scom-portal-contract/contracts/ModuleInfo.ts";
+    export { NFTManager } from "@scom/scom-portal-contract/contracts/NFTManager.ts";
+    export { NodeNFT } from "@scom/scom-portal-contract/contracts/NodeNFT.ts";
     export { ProjectInfo } from "@scom/scom-portal-contract/contracts/ProjectInfo.ts";
     export { RouterVaultWrapper } from "@scom/scom-portal-contract/contracts/RouterVaultWrapper.ts";
     export { Scom } from "@scom/scom-portal-contract/contracts/Scom.ts";
@@ -2656,7 +3269,7 @@ declare module "@scom/scom-portal-contract" {
             initSupply?: string;
             totalSupply?: string;
         };
-        auditorInfo: {
+        auditorInfo?: {
             foundation: string;
             foundationShare: BigNumber;
             minStakes: number | BigNumber;
@@ -2664,7 +3277,7 @@ declare module "@scom/scom-portal-contract" {
             cooldownPeriod: number;
             auditors?: string[];
         };
-        projectInfo: {
+        projectInfo?: {
             admins: string[];
         };
         audit?: {
@@ -2677,6 +3290,9 @@ declare module "@scom/scom-portal-contract" {
             foundation: string;
             uniV3: string;
         };
+        nft?: {
+            protocolFeeTo: string;
+        };
     }
     export interface IDeployResult {
         token: string;
@@ -2685,13 +3301,19 @@ declare module "@scom/scom-portal-contract" {
         project: string;
         audit: string;
         vault: string;
+        nft: {
+            manager: string;
+            nft: {
+                [name: string]: string;
+            };
+        };
     }
     export var DefaultDeployOptions: IDeployOptions;
     export function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
-    const _default_9: {
+    const _default_11: {
         Contracts: typeof Contracts;
         deploy: typeof deploy;
         DefaultDeployOptions: IDeployOptions;
     };
-    export default _default_9;
+    export default _default_11;
 }

@@ -10,7 +10,7 @@ export interface IDeployOptions{
         initSupply?: string;
         totalSupply?: string;
     };
-    auditorInfo: {
+    auditorInfo?: {
         foundation: string;
         foundationShare: BigNumber;
         minStakes: number|BigNumber;
@@ -18,7 +18,7 @@ export interface IDeployOptions{
         cooldownPeriod: number;
         auditors?: string[];
     };
-    projectInfo: {
+    projectInfo?: {
         admins: string[];
     };
     audit?: {
@@ -30,6 +30,9 @@ export interface IDeployOptions{
     vault?: {
         foundation: string;
         uniV3: string;
+    };
+    nft?: {
+        protocolFeeTo: string;
     }
 };
 export interface IDeployResult{
@@ -39,6 +42,7 @@ export interface IDeployResult{
     project: string;
     audit: string;
     vault: string;
+    nft: {manager: string, nft:{[name:string]:string}};
 }
 export var DefaultDeployOptions: IDeployOptions = {
     token: {
@@ -122,9 +126,16 @@ async function deployAuditInfo(wallet: IWallet, projectInfo: string, auditorInfo
     return await auditInfo.deploy({projectInfo, auditorInfo, ...Config.audit});
 }
 
-async function deployVault(wallet: IWallet, scom: string, Config: IDeployOptions) {
+async function deployVault(wallet: IWallet, token: string, Config: IDeployOptions) {
     let vault = new Contracts.Vault(wallet);
-    return await vault.deploy({foundation: Config.vault.foundation, foundationShare: Config.auditorInfo.foundationShare, scom:scom, uniV3: Config.vault.uniV3});
+    return await vault.deploy({foundation: Config.vault.foundation, foundationShare: Config.auditorInfo.foundationShare, scom:token, uniV3: Config.vault.uniV3});
+}
+async function deployNFT(wallet: IWallet, token: string, Config: IDeployOptions) {
+    let manager = new Contracts.NFTManager(wallet);
+    await manager.deploy({scom: token, protocolFeeTo: Config.nft.protocolFeeTo})
+    let nft = new Contracts.NodeNFT(wallet);
+    await nft.deploy({name: "NFT_1", symbol: "NFT_1", baseURI: "", manager: manager.address, stakeRequired: Utils.toDecimals(1000), protocolFee: Utils.toDecimals(1)});
+    return {manager: manager.address, nft: {"NFT_1": nft.address}};
 }
 
 export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress:(msg:string)=>void): Promise<IDeployResult> {
@@ -135,8 +146,9 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
         project: '',
         audit: '',
         vault: '',
+        nft: {manager:'', nft:{}}
     };
-    onProgress('1/6 Deploy token contract')
+    onProgress('1/7 Deploy token contract')
     if (!Config.token?.address){        
         if (!Config.token.initSupplyTo){
             onProgress('ERROR: token.initSupplyTo not defined!')
@@ -147,26 +159,30 @@ export async function deploy(wallet: IWallet, Config: IDeployOptions, onProgress
     }
     else
         result.token = Config.token.address;
-    onProgress('2/6 Deploy domain contract')
+    onProgress('2/7 Deploy domain contract')
     result.domain = await deployDomainInfo(wallet, result.token);
     onProgress(`domain: ${result.domain}`)
-    onProgress('3/6 Deploy auditor contract')
+    onProgress('3/7 Deploy auditor contract')
     result.auditor = await deployAuditorInfo(wallet, result.token, Config);
     onProgress(`auditor: ${result.auditor}`)
-    onProgress('4/6 Deploy project contract')
+    onProgress('4/7 Deploy project contract')
     result.project = await deployProjectInfo(wallet, result.token, result.auditor, Config);
     onProgress(`project: ${result.project}`)
-    onProgress('5/6 Deploy audit contract')
+    onProgress('5/7 Deploy audit contract')
     if (Config.audit) {
         result.audit = await deployAuditInfo(wallet, result.project, result.auditor, Config);
         onProgress(`audit: ${result.audit}`)
     }
-    onProgress('6/6 Deploy vault contract')
+    onProgress('6/7 Deploy vault contract')
     if (Config.vault) {
         result.vault = await deployVault(wallet, result.token, Config);
         onProgress(`vault: ${result.vault}`)
     }
-
+    onProgress('7/7 Deploy vault contract')
+    if (Config.nft) {
+        result.nft = await deployNFT(wallet, result.token, Config);
+        onProgress(`nft: ${result.nft}`)
+    }
     onProgress(JSON.stringify(result, null, 2))
     return result;
 }
