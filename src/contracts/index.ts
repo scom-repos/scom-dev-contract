@@ -3,6 +3,8 @@ export { AuditorInfo } from './AuditorInfo';
 export { Authorization } from './Authorization';
 export { DomainInfo } from './DomainInfo';
 export { ModuleInfo } from './ModuleInfo';
+export { NFTManager } from './NFTManager';
+export { NodeNFT } from './NodeNFT';
 export { ProjectInfo } from './ProjectInfo';
 export { RouterVaultWrapper } from './RouterVaultWrapper';
 export { Scom } from './Scom';

@@ -583,12 +583,6 @@ contract Vault is Authorization, ReentrancyGuard {
         (amountScom2, amountEth) = uniV3.burn(minTick, maxTick, liquidity);
         (amountScom2, amountEth) = uniV3.collect(address(this), minTick, maxTick, uint128(amountScom2), uint128(amountEth));
 
-    // function collect(
-    //     address recipient,
-    //     int24 tickLower,
-    //     int24 tickUpper,
-    //     uint128 amount0Requested,
-    //     uint128 amount1Requested
         if (!token0IsScom) (amountScom2, amountEth) = (amountEth, amountScom2);
 
         amountScom2 = releasedAmount + amountScom + amountScom2;

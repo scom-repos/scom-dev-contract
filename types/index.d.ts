@@ -9,7 +9,7 @@ export interface IDeployOptions {
         initSupply?: string;
         totalSupply?: string;
     };
-    auditorInfo: {
+    auditorInfo?: {
         foundation: string;
         foundationShare: BigNumber;
         minStakes: number | BigNumber;
@@ -17,7 +17,7 @@ export interface IDeployOptions {
         cooldownPeriod: number;
         auditors?: string[];
     };
-    projectInfo: {
+    projectInfo?: {
         admins: string[];
     };
     audit?: {
@@ -30,6 +30,9 @@ export interface IDeployOptions {
         foundation: string;
         uniV3: string;
     };
+    nft?: {
+        protocolFeeTo: string;
+    };
 }
 export interface IDeployResult {
     token: string;
@@ -38,6 +41,12 @@ export interface IDeployResult {
     project: string;
     audit: string;
     vault: string;
+    nft: {
+        manager: string;
+        nft: {
+            [name: string]: string;
+        };
+    };
 }
 export declare var DefaultDeployOptions: IDeployOptions;
 export declare function deploy(wallet: IWallet, Config: IDeployOptions, onProgress: (msg: string) => void): Promise<IDeployResult>;
