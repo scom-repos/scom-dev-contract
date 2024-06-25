@@ -14,6 +14,8 @@ module.exports = {
                 "RouterVaultWrapper",
                 "Scom",
                 "Vault",
+                "NodeNFT",
+                "NFTManager"
             ];
             for (let i = 0 ; i < sources.length ; i++) {
                 console.log("overwriting " + sources[i]);
