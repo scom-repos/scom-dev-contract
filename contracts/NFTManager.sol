@@ -81,6 +81,7 @@ contract NFTManager is Authorization, ReentrancyGuard {
         require(nfts.length > 0);
         NftInfo storage _nft = nfts[invNfts[nft]];
         require(_nft.nft == nft, "nft not exists");
+        require(!_nft.paused, "NFT already paused");
         _nft.paused = true;
         emit Pause(nft);
     }
@@ -88,6 +89,7 @@ contract NFTManager is Authorization, ReentrancyGuard {
         require(nfts.length > 0);
         NftInfo storage _nft = nfts[invNfts[nft]];
         require(_nft.nft == nft, "nft not exists");
+        require(_nft.paused, "NFT not paused");
         _nft.paused = false;
         emit Resume(nft);
     }

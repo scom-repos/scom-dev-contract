@@ -21,3 +21,5 @@ import "../test/test.spec";
 import "../test/vault.spec";
 import "../test/vault2.spec";
 import "../test/vault3.spec";
+import "../test/vault-lock-buy-sell.spec";
+import "../test/nodeNFT.spec";

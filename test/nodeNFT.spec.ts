@@ -40,6 +40,7 @@ describe('NodeNFT', async function() {
 
     let manager: Contracts.NFTManager;
     let nft: Contracts.NodeNFT;
+    let dummy: Contracts.NodeNFT;
 
     it('deploy',async () => {
         wallet.defaultAccount = deployer;
@@ -108,7 +109,10 @@ describe('NodeNFT', async function() {
 
         assertEqual(await nft.symbol(), "DCLC");
         assertEqual(await nft.name(), "Decom_Lincense");
-    });
+
+        expectToFail(manager.addNft({nft: nft.address, desc: "NFT", enabled: true, stakes: Utils.toDecimals(1000), protocolFee: Utils.toDecimals(1)}), "nft exists");
+
+    }); 
     let tokenId: BigNumber;
     it('mint',async () => {
         wallet.defaultAccount = foundation;
@@ -158,6 +162,15 @@ describe('NodeNFT', async function() {
 
         assertEqual(await manager.staked({param1: buyer1, param2: nft.address, param3: tokenId}), Utils.toDecimals(1500));
     });
+    let tokenId2: BigNumber;
+    it('mint again',async () => {
+        wallet.defaultAccount = buyer1;
+        let receipt = await manager.mint(nft.address);
+        tokenId2 = manager.parseMintEvent(receipt)[0].tokenId;
+        assertEqual(await manager.staked({param1: buyer1, param2: nft.address, param3: tokenId2}), Utils.toDecimals(1000));
+        assertEqual(await nft.ownerOf(tokenId2), buyer1);
+        assertEqual(await nft.balanceOf(buyer1), 2);
+    });
     it('burn',async () => {
         wallet.defaultAccount = nobody;
         await expectToFail(manager.burn({nft: nft.address, tokenId: tokenId}), "not from owner");
@@ -179,7 +192,82 @@ describe('NodeNFT', async function() {
 
         assertEqual(balance2.minus(balance1), Utils.toDecimals(1500));
         assertEqual(await manager.staked({param1: buyer1, param2: nft.address, param3: tokenId}), Utils.toDecimals(0));
-    });
 
+        // can't burn again / burn invalid token id
+        await expectToFail(manager.addStakes({nft: nft.address, tokenId: tokenId, stakes: 1}), "ERC721: invalid token ID");
+        await expectToFail(manager.burn({nft: nft.address, tokenId: tokenId}), "ERC721: invalid token ID");
+    });
+    it('pause',async () => {
+        wallet.defaultAccount = nobody;
+        await expectToFail(manager.pauseNFT(nft.address), "Action performed by unauthorized address.");
+
+        wallet.defaultAccount = deployer;
+        let receipt = await manager.pauseNFT(nft.address);
+        let event1 = manager.parsePauseEvent(receipt);
+        assertEqual(event1.length, 1);
+        assertEqual(event1[0], {nft: nft.address}, true);
+        
+
+        wallet.defaultAccount = buyer1;
+        await expectToFail(manager.mint(nft.address), "NFT paused");
+        await expectToFail(manager.addStakes({nft: nft.address, tokenId: tokenId2, stakes:1}), "NFT paused");
+
+        await manager.burn({nft: nft.address, tokenId: tokenId2});
+
+        wallet.defaultAccount = deployer;
+        await expectToFail(manager.pauseNFT(nft.address), "NFT already paused");
+    });
+    it('resume',async () => {
+        wallet.defaultAccount = nobody;
+        await expectToFail(manager.resumeNFT(nft.address), "Action performed by unauthorized address.");
+
+        wallet.defaultAccount = deployer;
+        let receipt1 = await manager.resumeNFT(nft.address);
+        let event1 = manager.parseResumeEvent(receipt1);
+        assertEqual(event1.length, 1);
+        assertEqual(event1[0], {nft: nft.address}, true);
+
+        wallet.defaultAccount = foundation;
+        await scomContract.transfer({to: buyer2, amount: Utils.toDecimals(10000)});
+
+        wallet.defaultAccount = buyer2;
+        await scomContract.approve({spender: manager.address, amount: Utils.toDecimals(10000)});
+
+        let receipt2 = await manager.mint(nft.address);
+        let tokenId3 = manager.parseMintEvent(receipt2)[0].tokenId;
+        
+        assertEqual(await manager.staked({param1: buyer2, param2: nft.address, param3: tokenId3}), Utils.toDecimals(1000));
+        assertEqual(await nft.ownerOf(tokenId3), buyer2);
+        assertEqual(await nft.balanceOf(buyer2), 1);
+
+        wallet.defaultAccount = deployer;
+        await expectToFail(manager.resumeNFT(nft.address), "NFT not paused");
+    });
+    it('transfer protocol fee',async () => {
+        wallet.defaultAccount = nobody;
+        let balance1 = await scomContract.balanceOf(foundation);
+        let receipt = await manager.transferProtocolFee();
+        let balance2 = await scomContract.balanceOf(foundation);
+
+        print(balance2.minus(balance1));
+    });
+    it('dummy',async () => {   
+        wallet.defaultAccount = deployer;
+        dummy = new Contracts.NodeNFT(wallet);
+        let param = {
+            name: "Dummy",
+            symbol: "DUMMY",
+            baseURI: "",
+            manager: result.nft.manager,
+            stakeRequired: Utils.toDecimals(1000),
+            protocolFee: Utils.toDecimals(1)
+        }
+        await expectToFail(manager.mint(dummy.address), "nft not exists");
+        await expectToFail(manager.burn({nft:dummy.address, tokenId: 0}), "nft not exists");
+
+        wallet.defaultAccount = deployer;
+        await expectToFail(manager.pauseNFT(dummy.address), "nft not exists");
+        await expectToFail(manager.resumeNFT(dummy.address), "nft not exists");
+    });
 
 });
